@@ -114,6 +114,17 @@ import { WingmanProvider } from '@wingman/sdk';
 
 ---
 
+### 5.3 React Introspection Details (explicit)
+
+* **Feature-detect only**: attempt React details *only* when `window.__REACT_DEVTOOLS_GLOBAL_HOOK__` exists and a renderer is attached; otherwise skip. This is the primary integration path used by React DevTools (non-public, best-effort).
+* **Stability**: treat the hook as **unsupported/internal**. It is the current way DevTools talks to React, and maintainers have indicated no plans to remove it, but it is not a public API. Guard by React version; degrade gracefully if shapes change.
+* **What to read**: map DOM node → Fiber → component displayName; snapshot shallow **props/state/contexts**.
+* **Sanitization**: before adding to the payload, drop functions, large objects, and fields matching privacy rules; truncate long strings; mask obvious secrets (e.g., tokens/emails via regex rules).
+* **Performance**: do not traverse entire Fiber trees; resolve *only* the targeted node’s path.
+* **Provenance**: set `react.obtainedVia = 'devtools-hook' | 'none'`.
+
+---
+
 ## 6) Payload Schema
 
 ```ts
@@ -180,74 +191,159 @@ export interface WingmanAnnotation {
 
 ---
 
-## 8) Config & Defaults
+### 7.3 API Surface&#x20;
 
-**Extension options**
+#### Example for last submission
 
-```ts
+**GET /annotations/last** → Fetch the most recently received annotation.
+
+* **Res**: `200 OK` with the latest annotation payload.
+* **404 Not Found** if no annotations exist.
+
+Example:
+
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+
 {
-  destination: 'http://localhost:8787/annotations',
-  capture: {
-    console: true,
-    network: 'timings', // 'off' | 'timings'
-    react: 'auto'       // uses SDK if present
+  "id": "wxyz9999",
+  "receivedAt": "2025-08-17T14:30:12.111Z",
+  "annotation": { /* payload */ }
+}
+```
+
+* **POST /annotations** → Create a new annotation.
+
+  * **Req**: `WingmanAnnotation` JSON.
+  * **Res**: `201 Created` with `{ id, receivedAt }`.
+  * **Errors**: `400` (invalid JSON), `413` (payload too large), `415` (unsupported media), `422` (schema mismatch), `500` (server error).
+  * **Idempotency (optional)**: clients may send `Idempotency-Key` header; server returns the first result for repeats.
+* **GET /annotations/\*\*\*\*:id** → Fetch one.
+
+  * **Res**: `200 OK` with full stored payload; `404` if not found.
+* **GET /annotations?limit=50\&since=...** → List recent.
+
+  * **Res**: `200 OK` with `{ items: [...], nextCursor? }`.
+* **DELETE /annotations/\*\*\*\*:id** (optional, dev-only) → Remove one.
+
+  * **Res**: `204 No Content`.
+* **GET /health** → Health check (`200 OK`).
+
+**Error shape** (consistent): `{ error: string, code?: string, details?: any }`.
+
+---
+
+### Example Responses
+
+#### POST /annotations
+
+**201 Created**
+
+```
+HTTP/1.1 201 Created
+Content-Type: application/json
+Location: https://relay.local/annotations/abcd1234
+
+{
+  "id": "abcd1234",
+  "receivedAt": "2025-08-17T14:23:45.678Z"
+}
+```
+
+**400 Bad Request**
+
+```
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "error": "Invalid JSON payload",
+  "code": "INVALID_JSON"
+}
+```
+
+**413 Payload Too Large**
+
+```
+HTTP/1.1 413 Payload Too Large
+Content-Type: application/json
+
+{
+  "error": "Payload exceeds maximum allowed size",
+  "code": "PAYLOAD_TOO_LARGE"
+}
+```
+
+**422 Unprocessable Entity**
+
+```
+HTTP/1.1 422 Unprocessable Entity
+Content-Type: application/json
+
+{
+  "error": "Schema validation failed",
+  "code": "SCHEMA_ERROR",
+  "details": {
+    "missing": ["annotation.text"],
+    "invalidType": ["annotation.timestamp"]
   }
 }
 ```
 
-**SDK**
+**500 Internal Server Error**
 
-```ts
+```
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/json
+
 {
-  enabled: process.env.NODE_ENV !== 'production',
-  privacy: { maskSelectors: [] } // stub; v1 doesn’t blur screenshots
+  "error": "Unexpected server error",
+  "code": "INTERNAL_ERROR"
 }
 ```
 
----
+#### GET /annotations/\:id
 
-## 9) Tasks
+**200 OK**
 
-* Manifest v3 skeleton; overlay with element/region selection.
-* Visible-tab screenshot; POST to localhost.
-* Console + error capture; PerformanceObserver network timings.
-* Wire payload schema; options page for destination.
-* Web SDK: selector calc + basic React metadata (guarded).
-* Minimal Node relay → log and return response.
-* README with quickstart.
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
 
----
+{
+  "id": "abcd1234",
+  "receivedAt": "2025-08-17T14:23:45.678Z",
+  "annotation": { /* full payload details from POST */ }
+}
+```
 
-## 11) Quickstart
+**404 Not Found**
 
-1. **Run relay**
+```
+HTTP/1.1 404 Not Found
+Content-Type: application/json
 
-   * `npm install --save-dev typescript ts-node express node-fetch`
-   * `ts-node server.ts` (exposes `http://localhost:8787`)
-2. **Load extension**
+{
+  "error": "Annotation not found",
+  "code": "NOT_FOUND"
+}
+```
 
-   * `chrome://extensions` → Developer mode → Load unpacked → `/extension`
-   * Set destination to `http://localhost:8787/annotations`.
-3. **(Optional) Add SDK to app**
+#### GET /annotations?limit=50\&since=...
 
-   * `npm i @wingman/sdk`
-   * Wrap app with `WingmanProvider`.
-4. **Test**
+**200 OK (Paginated)**
 
-   * Invoke picker → annotate → Send → see server logs + Claude reply.
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
 
----
-
-## 12) Test Plan (v1)
-
-* Prioritize making the Wingman installable into the demo application. Use Playwright MCP to make sure that the core functionality works:
-
-  * Open the demo app
-  * Verify the Wingman icon is visible
-  * Click the Wingman icon. Verify the tool(s) are visible
-  * Click the select element tool. Move the mouse over an element on the page. Verify the element has a border/outline indicating it's being hovered over.
-  * Click the element. Verify the note input textbox is displayed.
-  * Type in a note. Click send. Verify the network call is made.
-
----
+{
+  "items": [
+    { "id": "abcd1234", "receivedAt": "2025-08-17T14:23:45.678Z" },
+    { "id": "efgh5678", "receivedAt": "2025-08-17T14:22:12.345Z" }
+  ],
+  "nextCursor": "cursor123"
+}
+```
 
