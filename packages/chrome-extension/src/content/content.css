@@ -1,0 +1,26 @@
+#wingman-overlay * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#wingman-highlighter {
+  pointer-events: none !important;
+}
+
+#wingman-note-panel {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+#wingman-note-panel textarea:focus {
+  outline: 2px solid #0084ff;
+  border-color: #0084ff;
+}
+
+#wingman-note-panel button:hover {
+  opacity: 0.9;
+}
+
+#wingman-note-panel button:active {
+  transform: scale(0.98);
+}
