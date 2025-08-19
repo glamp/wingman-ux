@@ -173,8 +173,8 @@ export function createOverlay(options: OverlayOptions) {
     const target = {
       mode: mode as 'element' | 'region',
       rect: selectedRect ? {
-        x: selectedRect.left + window.scrollX,
-        y: selectedRect.top + window.scrollY,
+        x: selectedRect.left,
+        y: selectedRect.top,
         width: selectedRect.width,
         height: selectedRect.height,
       } : null,

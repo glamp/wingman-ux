@@ -12,7 +12,7 @@ export interface WingmanAnnotation {
 
   target: {
     mode: 'element' | 'region';
-    rect: { x: number; y: number; width: number; height: number }; // page coords
+    rect: { x: number; y: number; width: number; height: number }; // viewport coords
     selector?: string; // robust CSS selector when available
   };
 

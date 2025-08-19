@@ -3,6 +3,7 @@ import type { StoredAnnotation } from '@wingman/shared';
 import ScreenshotViewer from './ScreenshotViewer';
 import TabbedInterface from './TabbedInterface';
 import ClaudeCopyButton from './ClaudeCopyButton';
+import { getRelativeTime } from '../utils/dateFormatter';
 
 interface AnnotationPreviewProps {
   annotation: StoredAnnotation;
@@ -46,7 +47,7 @@ function AnnotationPreview({ annotation }: AnnotationPreviewProps) {
                 variant="outlined" 
               />
               <Chip 
-                label={`Created: ${new Date(data.createdAt).toLocaleString()}`} 
+                label={`Created: ${getRelativeTime(data.createdAt)}`} 
                 size="small" 
                 variant="outlined" 
               />
