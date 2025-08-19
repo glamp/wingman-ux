@@ -92,6 +92,43 @@ export function annotationsRouter(storage: StorageService): Router {
     }
   });
 
+  // GET /annotations/:id/preview - Redirect to preview UI
+  router.get('/:id/preview', async (req, res, next) => {
+    try {
+      const annotation = await storage.get(req.params.id);
+      
+      if (!annotation) {
+        return res.status(404).json({
+          error: 'Annotation not found',
+          code: 'NOT_FOUND',
+        });
+      }
+
+      // Redirect to preview UI with annotation ID
+      res.redirect(`/preview/?id=${req.params.id}`);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /annotations/:id/preview-data - API endpoint for preview UI
+  router.get('/:id/preview-data', async (req, res, next) => {
+    try {
+      const annotation = await storage.get(req.params.id);
+      
+      if (!annotation) {
+        return res.status(404).json({
+          error: 'Annotation not found',
+          code: 'NOT_FOUND',
+        });
+      }
+
+      res.json(annotation);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // DELETE /annotations/:id - Delete annotation (dev only)
   router.delete('/:id', async (req, res, next) => {
     try {

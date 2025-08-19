@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { annotationsRouter } from './routes/annotations';
 import { healthRouter } from './routes/health';
 import { errorHandler } from './middleware/error-handler';
@@ -35,6 +36,19 @@ export function createServer(options: ServerOptions = {}) {
   // Routes
   app.use('/health', healthRouter);
   app.use('/annotations', annotationsRouter(storage));
+
+  // Serve static assets for preview UI
+  // Use process.cwd() to get consistent path resolution regardless of execution context
+  const previewUIPath = path.resolve(process.cwd(), '../preview-ui/dist');
+  app.use('/preview', express.static(previewUIPath, {
+    index: 'index.html',
+    fallthrough: false
+  }));
+
+  // Handle preview UI routes - serve index.html for SPA routing
+  app.get('/preview/*', (_req, res) => {
+    res.sendFile(path.join(previewUIPath, 'index.html'));
+  });
 
   // Error handler
   app.use(errorHandler);
