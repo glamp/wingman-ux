@@ -10,3 +10,4 @@ build/
 wingman/annotations/
 *.tsbuildinfo
 .wingman-dev/
+.swissarmyhammer/semantic.db
