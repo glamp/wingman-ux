@@ -56,8 +56,31 @@ The project uses a monorepo structure with shared TypeScript types across all pa
 - Use npm workspaces for monorepo management
 
 ### Testing
-- E2E tests: Use Playwright with accompanying MCP
-- Run tests: Check package.json for test commands in each package
+
+#### Testing Philosophy
+- **No Mocking**: Real integration tests are strongly preferred. Mocking is bad and should be avoided.
+- **Snapshot Testing**: Use snapshot tests for component output, API responses, and CLI output. Snapshot tests are good.
+- **Integration-First**: Test actual behavior with real servers, real file systems, and real network connections.
+- **No Test Doubles**: Avoid stubs, spies, and mocks. Use real implementations.
+
+#### Test Infrastructure
+- **Test Runner**: Vitest for all packages (fast, ESM-native, great snapshot support)
+- **API Testing**: Supertest for Express integration tests (no mocks, real servers)
+- **E2E Testing**: Playwright with accompanying MCP for browser automation
+- **Coverage**: Aim for high coverage through integration tests, not unit tests
+
+#### Writing Tests
+- Test real behavior, not isolated functions
+- Use temporary directories for file-based tests
+- Clean up resources in afterEach/afterAll hooks
+- Use dynamically allocated ports for server tests
+- Store snapshots in `__snapshots__` directories
+- Test names should describe expected behavior clearly
+
+#### Running Tests
+- `npm test` - Run all tests across workspaces
+- `npm run test:watch` - Run tests in watch mode during development
+- Check individual package.json files for package-specific test commands
 
 ### Code Quality
 - Format code: `npm run prettier` or `npx prettier --write .`
@@ -140,6 +163,7 @@ mcp__sah__search_query with query: "your search terms"
 
 ## Important Notes
 
+- **Comments**: Comment code so it is easy to follow and read.
 - **React Hook Integration**: The `__REACT_DEVTOOLS_GLOBAL_HOOK__` is an unsupported/internal API. Always feature-detect and gracefully degrade.
 - **Privacy**: Sanitize React props/state before including in payloads (remove functions, large objects, tokens/emails).
 - **Screenshot Strategy**: v1 captures visible tab only, no full-page stitching.

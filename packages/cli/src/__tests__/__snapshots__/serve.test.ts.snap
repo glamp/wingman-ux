@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`wingman serve command > should display help for serve command 1`] = `
+"Usage: wingman serve [options]
+
+Start the Wingman relay server
+
+Options:
+  -p, --port <number>   port to listen on (default: "8787")
+  -h, --host <address>  host/address to bind to (default: "localhost")
+  --help                display help for command
+"
+`;

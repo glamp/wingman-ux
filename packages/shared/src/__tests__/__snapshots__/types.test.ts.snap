@@ -1,0 +1,57 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Type validation snapshots > should match full annotation structure snapshot 1`] = `
+{
+  "consoleEvents": [
+    {
+      "args": [
+        "Function X is deprecated",
+      ],
+      "message": "Deprecation warning",
+      "timestamp": "2024-01-01T11:59:00.000Z",
+      "type": "warn",
+    },
+  ],
+  "id": "snapshot-test",
+  "networkActivity": [
+    {
+      "duration": 150,
+      "method": "GET",
+      "status": 200,
+      "timestamp": "2024-01-01T11:59:30.000Z",
+      "type": "fetch",
+      "url": "https://api.example.com/users",
+    },
+  ],
+  "pageMetadata": {
+    "title": "Example Page",
+    "viewport": {
+      "height": 1080,
+      "width": 1920,
+    },
+  },
+  "screenshot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "selectedElement": {
+    "reactInfo": {
+      "componentName": "SubmitButton",
+      "props": {
+        "disabled": false,
+        "type": "primary",
+      },
+      "state": {
+        "isLoading": false,
+      },
+    },
+    "rect": {
+      "height": 50,
+      "width": 150,
+      "x": 100,
+      "y": 200,
+    },
+    "selector": "button.submit-btn",
+  },
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "url": "https://example.com/page",
+  "userComment": "The submit button is not working correctly",
+}
+`;

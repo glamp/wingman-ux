@@ -1,0 +1,16 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`wingman CLI > should display help 1`] = `
+"Usage: wingman [options] [command]
+
+CLI for Wingman - UX feedback assistant
+
+Options:
+  -V, --version    output the version number
+  -h, --help       display help for command
+
+Commands:
+  serve [options]  Start the Wingman relay server
+  help [command]   display help for command
+"
+`;

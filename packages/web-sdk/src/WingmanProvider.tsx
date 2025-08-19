@@ -16,7 +16,7 @@ export interface WingmanProviderProps {
 }
 
 export function WingmanProvider({ config = {}, children }: WingmanProviderProps) {
-  const { enabled = true, debug = false } = config;
+  const { enabled = false, debug = false } = config;
   const introspectorRef = useRef<ReactIntrospector | null>(null);
 
   useEffect(() => {

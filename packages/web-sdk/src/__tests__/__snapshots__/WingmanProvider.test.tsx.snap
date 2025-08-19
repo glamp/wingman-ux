@@ -1,0 +1,21 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`WingmanProvider > should match snapshot for provider structure 1`] = `
+<div
+  class="app"
+>
+  <h1>
+    Test App
+  </h1>
+  <div>
+    <div
+      data-testid="enabled"
+    >
+      false
+    </div>
+    <button>
+      Capture
+    </button>
+  </div>
+</div>
+`;

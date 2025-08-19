@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Relay Server > GET /annotations/last > should return 404 when no annotations exist 1`] = `
+{
+  "code": "NOT_FOUND",
+  "error": "No annotations found",
+}
+`;
+
+exports[`Relay Server > GET /health > should return healthy status 1`] = `
+{
+  "status": "healthy",
+  "timestamp": Any<String>,
+  "uptime": Any<Number>,
+}
+`;
+
+exports[`Relay Server > POST /annotations > should accept valid annotation 1`] = `
+{
+  "id": Any<String>,
+  "receivedAt": Any<String>,
+}
+`;

@@ -132,6 +132,9 @@ export class ReactIntrospector {
         data.componentName = componentFiber.type.displayName || 
                            componentFiber.type.name || 
                            'Unknown';
+      } else if (typeof componentFiber.type === 'object' && componentFiber.type.name) {
+        // For object types with a name property (as in our tests)
+        data.componentName = componentFiber.type.name;
       }
     }
 

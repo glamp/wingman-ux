@@ -16,6 +16,9 @@ export class StorageService {
   }
 
   async save(annotation: WingmanAnnotation): Promise<StoredAnnotation> {
+    // Ensure directory exists before writing
+    await this.ensureDirectory();
+    
     const stored: StoredAnnotation = {
       id: annotation.id,
       receivedAt: new Date().toISOString(),
