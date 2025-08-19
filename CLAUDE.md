@@ -2,6 +2,41 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Server Management
+
+Wingman uses an intelligent development server manager that prevents duplicate processes and provides clear status information.
+
+### Quick Start
+```bash
+npm run dev        # Start all services (checks for existing processes)
+npm run dev:status # Check what's running
+npm run dev:stop   # Stop all services
+npm run dev:restart # Restart all services
+```
+
+### How It Works
+1. **Before Starting**: Checks if services are already running via PID files
+2. **Port Detection**: Verifies ports are available before attempting to start
+3. **Process Tracking**: Maintains PID files in `.wingman-dev/pids/`
+4. **Status Monitoring**: Run `npm run dev:status` to see what's running
+5. **Automatic Cleanup**: Removes PID files on normal exit
+
+### For Claude Code Sessions
+- **ALWAYS** run `npm run dev:status` first to check current state
+- If services are already running, you'll see a clear status table
+- The system prevents duplicate processes automatically
+- PID files persist across Claude Code sessions
+- If you see "port already in use" errors, check status first
+
+### Directory Structure
+- `.wingman-dev/` - Development server management (PID files, status)
+- `.wingman/` - Wingman feature data (annotations storage)
+
+### Troubleshooting
+- If a service crashes but PID file remains: `npm run dev:stop` then `npm run dev`
+- To force restart: `npm run dev:restart`
+- Check individual service logs in terminal output
+
 ## Project Overview
 
 Wingman is a lightweight UX feedback assistant consisting of:
