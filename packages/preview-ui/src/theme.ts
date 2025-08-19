@@ -2,20 +2,12 @@ import { createTheme } from '@mui/material/styles';
 
 export const theme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary: {
       main: '#1976d2',
     },
     secondary: {
       main: '#dc004e',
-    },
-    background: {
-      default: '#121212',
-      paper: '#1d1d1d',
-    },
-    text: {
-      primary: '#ffffff',
-      secondary: 'rgba(255, 255, 255, 0.7)',
     },
   },
   typography: {
@@ -37,7 +29,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           minHeight: '40px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
         },
       },
     },

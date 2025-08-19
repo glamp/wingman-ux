@@ -42,7 +42,7 @@ function ErrorsTab({ errors }: ErrorsTabProps) {
 
   if (errors.length === 0) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
+      <Box sx={{ pt: 6, px: 3, pb: 3, textAlign: 'center' }}>
         <Typography color="text.secondary">
           No JavaScript errors captured
         </Typography>

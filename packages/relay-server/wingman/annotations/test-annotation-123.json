@@ -1,0 +1,35 @@
+{
+  "id": "test-annotation-123",
+  "receivedAt": "2025-08-19T18:04:02.453Z",
+  "annotation": {
+    "id": "test-annotation-123",
+    "note": "Test annotation for preview",
+    "page": {
+      "title": "Demo App Test",
+      "url": "http://localhost:5173"
+    },
+    "target": {
+      "mode": "element",
+      "rect": {
+        "x": 188,
+        "y": 144,
+        "width": 1136,
+        "height": 232.5
+      },
+      "selector": "#root > div.app.light > main.main:nth-child(2) > section.counter-section:nth-child(1)"
+    },
+    "media": {
+      "screenshot": {
+        "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+      }
+    },
+    "console": {
+      "logs": []
+    },
+    "errors": [],
+    "network": {
+      "requests": []
+    },
+    "createdAt": 1737300000000
+  }
+}

@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { Box, Typography, IconButton, Tooltip } from '@mui/material';
 import { ZoomIn, ZoomOut, CenterFocusStrong } from '@mui/icons-material';
 import type { WingmanAnnotation } from '@wingman/shared';
+import { getExpansionRecommendation, applyExpansion } from '../utils/selectorParser';
 
 interface ScreenshotViewerProps {
   annotation: WingmanAnnotation;
@@ -34,18 +35,57 @@ function ScreenshotViewer({ annotation }: ScreenshotViewerProps) {
       setImageLoaded(true);
       setImageError(null);
       
-      // Set canvas size
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
+      // Use a simple max width approach for consistent sizing
+      const maxDisplayWidth = 800;
+      const scale = Math.min(maxDisplayWidth / img.naturalWidth, 1); // Only scale down, never up
+      
+      const displayWidth = img.naturalWidth * scale;
+      const displayHeight = img.naturalHeight * scale;
+      
+      // Set canvas size to display size
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
       
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Draw the screenshot
-      ctx.drawImage(img, 0, 0);
+      // Draw the screenshot scaled to fit canvas
+      ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
       
-      // Draw target rectangle overlay
-      const { rect } = annotation.target;
+      // Draw target rectangle overlay with scaled coordinates
+      const { rect, selector } = annotation.target;
+      
+      // Use smart detection to expand rectangle if needed
+      let adjustedRect = { ...rect };
+      
+      if (selector) {
+        const recommendation = getExpansionRecommendation(selector, rect);
+        adjustedRect = applyExpansion(rect, recommendation);
+        
+        // Log expansion for debugging
+        if (recommendation.shouldExpand) {
+          console.log('Smart expansion applied:', {
+            pattern: recommendation.pattern,
+            confidence: recommendation.confidence,
+            original: rect,
+            expanded: adjustedRect
+          });
+        }
+      }
+      
+      const scaledRect = {
+        x: adjustedRect.x * scale,
+        y: adjustedRect.y * scale,
+        width: adjustedRect.width * scale,
+        height: adjustedRect.height * scale
+      };
+      
+      console.log('Target rectangle scaling:', {
+        originalRect: rect,
+        scale: scale,
+        scaledRect: scaledRect,
+        canvasSize: { width: canvas.width, height: canvas.height }
+      });
       
       // Semi-transparent overlay over entire image
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
@@ -53,33 +93,33 @@ function ScreenshotViewer({ annotation }: ScreenshotViewerProps) {
       
       // Clear the target area (make it visible)
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+      ctx.fillRect(scaledRect.x, scaledRect.y, scaledRect.width, scaledRect.height);
       
       // Reset composite operation and draw target border
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = '#ff4444';
       ctx.lineWidth = 3;
       ctx.setLineDash([5, 5]);
-      ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+      ctx.strokeRect(scaledRect.x, scaledRect.y, scaledRect.width, scaledRect.height);
       
       // Add a solid border inside
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1;
       ctx.setLineDash([]);
-      ctx.strokeRect(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2);
+      ctx.strokeRect(scaledRect.x + 1, scaledRect.y + 1, scaledRect.width - 2, scaledRect.height - 2);
       
       // Add corner markers
-      const markerSize = 10;
+      const markerSize = 8;
       ctx.fillStyle = '#ff4444';
       
       // Top-left corner
-      ctx.fillRect(rect.x - markerSize/2, rect.y - markerSize/2, markerSize, markerSize);
+      ctx.fillRect(scaledRect.x - markerSize/2, scaledRect.y - markerSize/2, markerSize, markerSize);
       // Top-right corner  
-      ctx.fillRect(rect.x + rect.width - markerSize/2, rect.y - markerSize/2, markerSize, markerSize);
+      ctx.fillRect(scaledRect.x + scaledRect.width - markerSize/2, scaledRect.y - markerSize/2, markerSize, markerSize);
       // Bottom-left corner
-      ctx.fillRect(rect.x - markerSize/2, rect.y + rect.height - markerSize/2, markerSize, markerSize);
+      ctx.fillRect(scaledRect.x - markerSize/2, scaledRect.y + scaledRect.height - markerSize/2, markerSize, markerSize);
       // Bottom-right corner
-      ctx.fillRect(rect.x + rect.width - markerSize/2, rect.y + rect.height - markerSize/2, markerSize, markerSize);
+      ctx.fillRect(scaledRect.x + scaledRect.width - markerSize/2, scaledRect.y + scaledRect.height - markerSize/2, markerSize, markerSize);
     };
     
     img.onerror = () => {

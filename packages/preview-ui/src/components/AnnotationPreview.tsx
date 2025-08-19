@@ -17,9 +17,17 @@ function AnnotationPreview({ annotation }: AnnotationPreviewProps) {
       <Paper sx={{ p: 3, mb: 3 }} elevation={1}>
         <Grid container spacing={3} alignItems="center">
           <Grid item xs={12} md={8}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              Annotation Preview
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <Box 
+                component="img" 
+                src="/preview/wingman.png" 
+                alt="Wingman"
+                sx={{ width: 40, height: 40 }}
+              />
+              <Typography variant="h4" component="h1">
+                Annotation Preview
+              </Typography>
+            </Box>
             <Typography variant="h6" color="text.secondary" gutterBottom>
               {data.page.title}
             </Typography>

@@ -15,7 +15,7 @@ const PID_DIR = path.join(DEV_DIR, 'pids');
 const SERVICES = {
   server: {
     name: 'Relay Server',
-    command: 'cd packages/relay-server && npm run dev',
+    command: 'cd packages/relay-server && NODE_ENV=development npm run dev',
     defaultPort: 8787,
     pidFile: 'server.pid'
   },
@@ -24,6 +24,12 @@ const SERVICES = {
     command: 'cd packages/chrome-extension && NODE_ENV=development npm run dev',
     defaultPort: null,
     pidFile: 'extension.pid'
+  },
+  preview: {
+    name: 'Preview UI',
+    command: 'cd packages/preview-ui && npm run dev',
+    defaultPort: 3001,
+    pidFile: 'preview.pid'
   },
   demo: {
     name: 'Demo App',

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import { annotationsRouter } from './routes/annotations';
 import { healthRouter } from './routes/health';
 import { errorHandler } from './middleware/error-handler';
@@ -37,18 +38,39 @@ export function createServer(options: ServerOptions = {}) {
   app.use('/health', healthRouter);
   app.use('/annotations', annotationsRouter(storage));
 
-  // Serve static assets for preview UI
-  // Use process.cwd() to get consistent path resolution regardless of execution context
-  const previewUIPath = path.resolve(process.cwd(), '../preview-ui/dist');
-  app.use('/preview', express.static(previewUIPath, {
-    index: 'index.html',
-    fallthrough: false
-  }));
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  
+  // Serve preview UI - proxy to dev server in development, static files in production
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Using development mode - proxying to preview UI dev server');
+    // In development, proxy to the preview UI dev server
+    app.use('/preview', createProxyMiddleware({
+      target: 'http://localhost:3001/preview',
+      changeOrigin: true,
+      ws: true,
+      pathRewrite: {
+        '^/preview': '' // Remove /preview prefix since target already includes it
+      },
+      logger: console,
+      on: {
+        proxyReq: (proxyReq, req) => {
+          console.log('Proxying:', req.method, req.url, '->', proxyReq.path);
+        }
+      }
+    }));
+  } else {
+    // In production, serve static files
+    const previewUIPath = path.resolve(process.cwd(), '../preview-ui/dist');
+    app.use('/preview', express.static(previewUIPath, {
+      index: 'index.html',
+      fallthrough: false
+    }));
 
-  // Handle preview UI routes - serve index.html for SPA routing
-  app.get('/preview/*', (_req, res) => {
-    res.sendFile(path.join(previewUIPath, 'index.html'));
-  });
+    // Handle preview UI routes - serve index.html for SPA routing
+    app.get('/preview/*', (_req, res) => {
+      res.sendFile(path.join(previewUIPath, 'index.html'));
+    });
+  }
 
   // Error handler
   app.use(errorHandler);

@@ -49,7 +49,7 @@ function App() {
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
           <CircularProgress />
           <Typography variant="body1" sx={{ ml: 2 }}>
             Loading annotation...
@@ -62,9 +62,11 @@ function App() {
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        </Box>
       </Container>
     );
   }
@@ -72,9 +74,11 @@ function App() {
   if (!annotation) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="warning">
-          Annotation not found
-        </Alert>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+          <Alert severity="warning">
+            Annotation not found
+          </Alert>
+        </Box>
       </Container>
     );
   }
