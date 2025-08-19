@@ -7,6 +7,9 @@
     "packages/*",
     "demo-app"
   ],
+  "bin": {
+    "wingman": "./packages/cli/dist/index.js"
+  },
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "dev": "npm run dev --workspaces --if-present",

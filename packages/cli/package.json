@@ -1,0 +1,28 @@
+{
+  "name": "@wingman/cli",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CLI for Wingman - Lightweight UX feedback assistant",
+  "main": "dist/index.js",
+  "bin": {
+    "wingman": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@wingman/relay-server": "*",
+    "@wingman/shared": "*",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.12.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
