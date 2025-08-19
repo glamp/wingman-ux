@@ -125,6 +125,11 @@ The project uses a monorepo structure with shared TypeScript types across all pa
 ### Chrome Extension Development
 - Load unpacked extension from `packages/chrome-extension/dist` in Chrome
 - Use `npm run dev` in chrome-extension package for development
+- **Hot Reload**: The extension automatically reloads when you make changes
+  - The development build includes hot-reload-extension-vite plugin
+  - Changes to source files trigger automatic extension reload
+  - No need to manually reload the extension in Chrome
+  - Requires NODE_ENV=development (automatically set by dev-manager.js)
 
 ## Code Search and Navigation
 

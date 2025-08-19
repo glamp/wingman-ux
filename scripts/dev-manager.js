@@ -21,7 +21,7 @@ const SERVICES = {
   },
   extension: {
     name: 'Chrome Extension', 
-    command: 'cd packages/chrome-extension && npm run dev',
+    command: 'cd packages/chrome-extension && NODE_ENV=development npm run dev',
     defaultPort: null,
     pidFile: 'extension.pid'
   },

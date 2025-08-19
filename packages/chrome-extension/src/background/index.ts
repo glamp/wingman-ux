@@ -1,6 +1,6 @@
 import type { WingmanAnnotation } from '@wingman/shared';
 
-console.log('[Wingman Background] Service worker started');
+console.log('[Wingman Background] Service worker started - Hot reload enabled!');
 
 interface MessageRequest {
   type: 'CAPTURE_SCREENSHOT' | 'SUBMIT_ANNOTATION' | 'ACTIVATE_WINGMAN';

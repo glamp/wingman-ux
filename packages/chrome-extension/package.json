@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "vite build",
-    "dev": "vite build --watch",
+    "dev": "NODE_ENV=development vite build --watch",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/chrome": "^0.0.288",
     "@vitejs/plugin-react": "^5.0.0",
+    "hot-reload-extension-vite": "^1.0.13",
     "typescript": "^5.7.3",
     "vite": "^5.4.14"
   }

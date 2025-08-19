@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import fs from 'fs';
+import hotReloadExtension from 'hot-reload-extension-vite';
 
 export default defineConfig({
   build: {
@@ -20,6 +21,11 @@ export default defineConfig({
     },
   },
   plugins: [
+    // Hot reload plugin for Chrome extension development
+    hotReloadExtension({
+      log: true,
+      backgroundPath: 'src/background/index.ts'
+    }),
     {
       name: 'copy-static-files',
       writeBundle() {
