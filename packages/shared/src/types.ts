@@ -98,6 +98,7 @@ export interface WingmanAnnotation {
 export interface RelayResponse {
   id: string;
   receivedAt: string;
+  previewUrl?: string; // URL to view the annotation in preview UI
 }
 
 export interface RelayError {

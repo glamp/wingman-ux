@@ -61,7 +61,7 @@ describe('Relay Server', () => {
   });
 
   describe('POST /annotations', () => {
-    it('should accept valid annotation', async () => {
+    it('should accept valid annotation and return preview URL', async () => {
       const annotation: WingmanAnnotation = {
         id: 'test-annotation-123',
         createdAt: new Date().toISOString(),
@@ -95,8 +95,12 @@ describe('Relay Server', () => {
 
       expect(response.body).toMatchSnapshot({
         id: expect.any(String),
-        receivedAt: expect.any(String)
+        receivedAt: expect.any(String),
+        previewUrl: expect.any(String)
       });
+      
+      // Verify preview URL format
+      expect(response.body.previewUrl).toMatch(/^https?:\/\/.*\/preview\/\?id=test-annotation-123$/);
       
       // Verify file was created
       const files = await fs.readdir(annotationsDir);
@@ -115,6 +119,43 @@ describe('Relay Server', () => {
         .expect(422);
 
       expect(response.body).toHaveProperty('error');
+    });
+
+    it('should include preview URL with different protocols', async () => {
+      const annotation: WingmanAnnotation = {
+        id: 'protocol-test',
+        createdAt: new Date().toISOString(),
+        note: 'Testing protocol handling',
+        page: {
+          url: 'https://example.com',
+          title: 'Test Page',
+          ua: 'Mozilla/5.0',
+          viewport: { w: 1920, h: 1080, dpr: 1 }
+        },
+        target: {
+          mode: 'element',
+          rect: { x: 0, y: 0, width: 100, height: 100 }
+        },
+        media: {
+          screenshot: {
+            mime: 'image/png',
+            dataUrl: 'data:image/png;base64,test'
+          }
+        },
+        console: [],
+        errors: [],
+        network: []
+      };
+
+      const response = await request(app)
+        .post('/annotations')
+        .set('X-Forwarded-Proto', 'https')
+        .set('Host', 'api.example.com')
+        .send(annotation)
+        .expect(201);
+
+      // Check that preview URL uses the forwarded protocol and host
+      expect(response.body.previewUrl).toContain('/preview/?id=protocol-test');
     });
 
     it('should handle large screenshots', async () => {

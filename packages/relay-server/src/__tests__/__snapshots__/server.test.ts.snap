@@ -21,3 +21,11 @@ exports[`Relay Server > POST /annotations > should accept valid annotation 1`] =
   "receivedAt": Any<String>,
 }
 `;
+
+exports[`Relay Server > POST /annotations > should accept valid annotation and return preview URL 1`] = `
+{
+  "id": Any<String>,
+  "previewUrl": Any<String>,
+  "receivedAt": Any<String>,
+}
+`;

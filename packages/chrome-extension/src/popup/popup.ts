@@ -5,12 +5,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const statusDiv = document.getElementById('status') as HTMLDivElement;
   const connectionDot = document.getElementById('connectionDot') as HTMLDivElement;
   const connectionText = document.getElementById('connectionText') as HTMLSpanElement;
+  const showPreviewUrlCheckbox = document.getElementById('showPreviewUrl') as HTMLInputElement;
 
   let saveTimeout: number | null = null;
 
   // Load saved settings
-  const { relayUrl = 'http://localhost:8787' } = await chrome.storage.local.get('relayUrl');
+  const { relayUrl = 'http://localhost:8787', showPreviewUrl = true } = await chrome.storage.local.get(['relayUrl', 'showPreviewUrl']);
   relayUrlInput.value = relayUrl;
+  showPreviewUrlCheckbox.checked = showPreviewUrl;
 
   // Initialize connection status check
   checkConnectionStatus();
@@ -77,6 +79,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   helpItem.addEventListener('click', () => {
     showStatus('Activate: Alt+Shift+F | Cancel overlay: Esc', 'success');
+  });
+
+  // Handle preview URL toggle
+  showPreviewUrlCheckbox.addEventListener('change', async () => {
+    try {
+      await chrome.storage.local.set({ showPreviewUrl: showPreviewUrlCheckbox.checked });
+      console.log('[Wingman Popup] Preview URL setting saved:', showPreviewUrlCheckbox.checked);
+    } catch (error) {
+      console.error('Failed to save preview URL setting:', error);
+      showStatus('Failed to save setting', 'error');
+    }
   });
 
   // Auto-save URL input with debouncing

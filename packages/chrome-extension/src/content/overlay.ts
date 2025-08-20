@@ -3,6 +3,11 @@ export interface OverlayOptions {
   onCancel: () => void;
 }
 
+export interface SuccessNotificationOptions {
+  previewUrl: string;
+  onClose: () => void;
+}
+
 // HTML to Markdown converter function
 function htmlToMarkdown(html: string): string {
   // Create a temporary div to parse the HTML
@@ -436,6 +441,287 @@ export function createOverlay(options: OverlayOptions) {
   }
 
   return { cleanup };
+}
+
+export function createSuccessNotification(options: SuccessNotificationOptions) {
+  const notification = document.createElement('div');
+  notification.id = 'wingman-success-notification';
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    z-index: 2147483649;
+    width: 520px;
+    animation: slideIn 0.3s ease-out;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  `;
+
+  // Add animation styles
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Success header
+  const header = document.createElement('div');
+  header.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  `;
+
+  const successIcon = document.createElement('div');
+  successIcon.textContent = '✅';
+  successIcon.style.cssText = `
+    font-size: 24px;
+  `;
+
+  const title = document.createElement('div');
+  title.textContent = 'Feedback submitted successfully!';
+  title.style.cssText = `
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+  `;
+
+  const closeButton = document.createElement('button');
+  closeButton.textContent = '✕';
+  closeButton.style.cssText = `
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  `;
+  closeButton.onclick = () => close();
+
+  header.appendChild(successIcon);
+  header.appendChild(title);
+
+  // Preview URL section
+  const urlSection = document.createElement('div');
+  urlSection.style.cssText = `
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+  `;
+
+  const urlLabel = document.createElement('div');
+  urlLabel.textContent = 'Preview URL:';
+  urlLabel.style.cssText = `
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 6px;
+    font-weight: 500;
+  `;
+
+  const urlContainer = document.createElement('div');
+  urlContainer.style.cssText = `
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  `;
+
+  const urlInput = document.createElement('input');
+  urlInput.value = options.previewUrl;
+  urlInput.readOnly = true;
+  urlInput.style.cssText = `
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+    background: white;
+    color: #1e293b;
+  `;
+
+  const copyButton = document.createElement('button');
+  copyButton.textContent = '📋';
+  copyButton.title = 'Copy URL';
+  copyButton.style.cssText = `
+    padding: 6px 10px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+  `;
+  copyButton.onmouseover = () => {
+    copyButton.style.background = '#f0f0f0';
+    copyButton.style.borderColor = '#0084ff';
+  };
+  copyButton.onmouseout = () => {
+    copyButton.style.background = 'white';
+    copyButton.style.borderColor = '#e2e8f0';
+  };
+  copyButton.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(options.previewUrl);
+      copyButton.textContent = '✓';
+      setTimeout(() => {
+        copyButton.textContent = '📋';
+      }, 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      urlInput.select();
+      document.execCommand('copy');
+      copyButton.textContent = '✓';
+      setTimeout(() => {
+        copyButton.textContent = '📋';
+      }, 2000);
+    }
+  };
+
+  urlContainer.appendChild(urlInput);
+  urlContainer.appendChild(copyButton);
+  urlSection.appendChild(urlLabel);
+  urlSection.appendChild(urlContainer);
+
+  // Action buttons
+  const actions = document.createElement('div');
+  actions.style.cssText = `
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+  `;
+
+  const openButton = document.createElement('button');
+  openButton.textContent = 'Open Preview';
+  openButton.style.cssText = `
+    padding: 10px 20px;
+    background: #0084ff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  `;
+  openButton.onmouseover = () => {
+    openButton.style.background = '#0073e6';
+  };
+  openButton.onmouseout = () => {
+    openButton.style.background = '#0084ff';
+  };
+  openButton.onclick = () => {
+    window.open(options.previewUrl, '_blank');
+  };
+
+  const claudeButton = document.createElement('button');
+  claudeButton.textContent = 'Copy for Claude Code';
+  claudeButton.style.cssText = `
+    padding: 10px 20px;
+    background: white;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    margin-left: auto;
+  `;
+  claudeButton.onmouseover = () => {
+    claudeButton.style.background = '#f8fafc';
+    claudeButton.style.borderColor = '#0084ff';
+  };
+  claudeButton.onmouseout = () => {
+    claudeButton.style.background = 'white';
+    claudeButton.style.borderColor = '#e2e8f0';
+  };
+  claudeButton.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(options.previewUrl);
+      claudeButton.textContent = '✓ Copied!';
+      setTimeout(() => {
+        claudeButton.textContent = 'Copy for Claude Code';
+      }, 2000);
+    } catch (err) {
+      // Fallback
+      urlInput.select();
+      document.execCommand('copy');
+      claudeButton.textContent = '✓ Copied!';
+      setTimeout(() => {
+        claudeButton.textContent = 'Copy for Claude Code';
+      }, 2000);
+    }
+  };
+
+  actions.appendChild(openButton);
+  actions.appendChild(claudeButton);
+
+  // Assemble notification
+  notification.appendChild(closeButton);
+  notification.appendChild(header);
+  notification.appendChild(urlSection);
+  notification.appendChild(actions);
+
+  document.body.appendChild(notification);
+
+  // Auto-dismiss after 10 seconds
+  let dismissTimeout = setTimeout(() => {
+    close();
+  }, 10000);
+
+  function close() {
+    clearTimeout(dismissTimeout);
+    notification.style.animation = 'slideOut 0.3s ease-out';
+    setTimeout(() => {
+      notification.remove();
+      style.remove();
+      options.onClose();
+    }, 300);
+  }
+
+  // Prevent auto-dismiss on hover
+  notification.onmouseenter = () => {
+    clearTimeout(dismissTimeout);
+  };
+  notification.onmouseleave = () => {
+    dismissTimeout = setTimeout(() => {
+      close();
+    }, 10000);
+  };
+
+  return { close };
 }
 
 function generateSelector(element: HTMLElement): string {

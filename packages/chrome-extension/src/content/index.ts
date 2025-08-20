@@ -1,8 +1,8 @@
-import type { WingmanAnnotation } from '@wingman/shared';
+import type { WingmanAnnotation, RelayResponse } from '@wingman/shared';
 import { ulid } from 'ulid';
 import { ConsoleCapture } from './console-capture';
 import { NetworkCapture } from './network-capture';
-import { createOverlay } from './overlay';
+import { createOverlay, createSuccessNotification } from './overlay';
 import { SDKBridge } from './sdk-bridge';
 
 console.log('[Wingman] Content script loaded on:', window.location.href);
@@ -67,6 +67,18 @@ function activateOverlay() {
           const result = await submitAnnotation(annotation);
           console.log('[Wingman] Annotation submitted successfully:', result);
           overlayActive = false;
+
+          // Check if we should show the preview URL
+          const { showPreviewUrl = true } = await chrome.storage.local.get('showPreviewUrl');
+          
+          if (showPreviewUrl && result.previewUrl) {
+            createSuccessNotification({
+              previewUrl: result.previewUrl,
+              onClose: () => {
+                console.log('[Wingman] Success notification closed');
+              }
+            });
+          }
         } catch (error) {
           console.error('[Wingman] Failed to submit feedback:', error);
           overlayActive = false;
@@ -96,7 +108,7 @@ async function captureScreenshot(): Promise<string> {
   });
 }
 
-async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
+async function submitAnnotation(annotation: WingmanAnnotation): Promise<RelayResponse> {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ type: 'SUBMIT_ANNOTATION', payload: annotation }, (response) => {
       if (chrome.runtime.lastError) {

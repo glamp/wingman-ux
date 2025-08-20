@@ -3,10 +3,14 @@ import { resolve } from 'path';
 import fs from 'fs';
 import hotReloadExtension from 'hot-reload-extension-vite';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    minify: !isDev,
+    sourcemap: isDev,
     rollupOptions: {
       input: {
         background: resolve(__dirname, 'src/background/index.ts'),
@@ -21,11 +25,12 @@ export default defineConfig({
     },
   },
   plugins: [
-    // Hot reload plugin for Chrome extension development
-    hotReloadExtension({
+    // Hot reload plugin for Chrome extension development - only in dev mode
+    ...(isDev ? [hotReloadExtension({
       log: true,
-      backgroundPath: 'src/background/index.ts'
-    }),
+      backgroundPath: 'src/background/index.ts',
+      port: 8081  // Use port 8081 to avoid conflicts
+    })] : []),
     {
       name: 'copy-static-files',
       writeBundle() {

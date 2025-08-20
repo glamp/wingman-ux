@@ -25,9 +25,15 @@ export function annotationsRouter(storage: StorageService): Router {
 
       const stored = await storage.save(annotation);
       
+      // Construct the full preview URL
+      const protocol = req.protocol;
+      const host = req.get('host') || 'localhost:8787';
+      const previewUrl = `${protocol}://${host}/preview/?id=${stored.id}`;
+      
       const response: RelayResponse = {
         id: stored.id,
         receivedAt: stored.receivedAt,
+        previewUrl,
       };
 
       res.status(201)
