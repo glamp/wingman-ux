@@ -187,7 +187,7 @@ export function annotationsRouter(storage: StorageService): Router {
         .filter(a => a.createdAt)
         .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
       
-      if (sortedAnnotations.length > 0) {
+      if (sortedAnnotations.length > 0 && sortedAnnotations[0]) {
         stats.lastAnnotationTime = sortedAnnotations[0].createdAt!;
       }
 
