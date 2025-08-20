@@ -1,4 +1,5 @@
 import type { WingmanAnnotation } from '@wingman/shared';
+import { ulid } from 'ulid';
 import { ConsoleCapture } from './console-capture';
 import { NetworkCapture } from './network-capture';
 import { createOverlay } from './overlay';
@@ -148,5 +149,5 @@ function buildAnnotation(
 }
 
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return ulid();
 }
