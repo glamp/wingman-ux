@@ -33,9 +33,22 @@ clean_builds() {
 # Function to build a package
 build_package() {
     local package=$1
+    local environment="${2:-production}"
     log "Building $package..."
     cd "$ROOT_DIR/packages/$package"
-    npm run build
+    
+    if [ "$package" = "chrome-extension" ]; then
+        if [ "$environment" = "development" ]; then
+            npm run build:dev
+        elif [ "$environment" = "staging" ]; then
+            npm run build:staging
+        else
+            npm run build:prod
+        fi
+    else
+        npm run build
+    fi
+    
     cd "$ROOT_DIR"
 }
 
@@ -46,16 +59,23 @@ ensure_dir() {
 
 # Function to create Chrome extension ZIP
 create_chrome_zip() {
-    log "Creating Chrome Extension ZIP..."
-    local ext_dir="$ROOT_DIR/packages/chrome-extension/dist"
+    local environment="${1:-production}"
+    log "Creating Chrome Extension ZIP for ${environment}..."
+    local ext_dir="$ROOT_DIR/packages/chrome-extension/dist/${environment}"
     local release_chrome="$RELEASE_DIR/chrome-extension"
     
     ensure_dir "$release_chrome"
     
+    if [ ! -d "$ext_dir" ]; then
+        error "Extension directory not found: $ext_dir"
+        return 1
+    fi
+    
     cd "$ext_dir"
-    zip -r "$release_chrome/wingman-chrome-extension.zip" . -q
-    local zip_size=$(du -h "$release_chrome/wingman-chrome-extension.zip" | cut -f1)
-    success "Chrome Extension ZIP created: $zip_size"
+    local zip_name="wingman-chrome-extension-${environment}.zip"
+    zip -r "$release_chrome/$zip_name" . -q
+    local zip_size=$(du -h "$release_chrome/$zip_name" | cut -f1)
+    success "Chrome Extension ZIP created: $zip_name ($zip_size)"
     cd "$ROOT_DIR"
 }
 
@@ -181,14 +201,14 @@ main() {
     build_package "preview-ui"
     build_package "relay-server"
     build_package "cli"
-    build_package "chrome-extension"
+    build_package "chrome-extension" "production"
     
     # Create release artifacts
     log "Creating release packages..."
     package_web_sdk
     embed_preview_ui
     package_cli
-    create_chrome_zip
+    create_chrome_zip "production"
     create_release_readme
     
     echo -e "\n${GREEN}✅ Build complete!${NC} Release artifacts are in the ${BLUE}release/${NC} directory"
@@ -204,9 +224,25 @@ case "${1:-}" in
         log "Building Chrome Extension only..."
         clean_builds
         build_package "shared"
-        build_package "chrome-extension"
+        build_package "chrome-extension" "production"
         ensure_dir "$RELEASE_DIR"
-        create_chrome_zip
+        create_chrome_zip "production"
+        ;;
+    --chrome-dev)
+        log "Building Chrome Extension (Development) only..."
+        clean_builds
+        build_package "shared"
+        build_package "chrome-extension" "development"
+        ensure_dir "$RELEASE_DIR"
+        create_chrome_zip "development"
+        ;;
+    --chrome-staging)
+        log "Building Chrome Extension (Staging) only..."
+        clean_builds
+        build_package "shared"
+        build_package "chrome-extension" "staging"
+        ensure_dir "$RELEASE_DIR"
+        create_chrome_zip "staging"
         ;;
     --cli)
         log "Building CLI only..."
@@ -233,14 +269,17 @@ case "${1:-}" in
         echo "Usage: $0 [options]"
         echo ""
         echo "Options:"
-        echo "  --chrome    Build only Chrome Extension"
-        echo "  --cli       Build only CLI package"
-        echo "  --sdk       Build only Web SDK"
-        echo "  --help      Show this help message"
+        echo "  --chrome         Build Chrome Extension (production)"
+        echo "  --chrome-dev     Build Chrome Extension (development)"
+        echo "  --chrome-staging Build Chrome Extension (staging)"
+        echo "  --cli            Build only CLI package"
+        echo "  --sdk            Build only Web SDK"
+        echo "  --help           Show this help message"
         echo ""
         echo "Examples:"
-        echo "  $0              # Build everything"
-        echo "  $0 --cli        # Build only CLI"
+        echo "  $0                   # Build everything"
+        echo "  $0 --cli             # Build only CLI"
+        echo "  $0 --chrome-dev      # Build dev Chrome Extension"
         exit 0
         ;;
     "")

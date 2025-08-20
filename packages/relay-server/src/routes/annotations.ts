@@ -2,10 +2,12 @@ import { Router } from 'express';
 import type { WingmanAnnotation, RelayResponse } from '@wingman/shared';
 import type { StorageService } from '../services/storage';
 import { SearchService } from '../services/search';
+import { ImageProcessor } from '../services/image-processor';
 
 export function annotationsRouter(storage: StorageService): Router {
   const router = Router();
   const searchService = new SearchService();
+  const imageProcessor = new ImageProcessor();
 
   // POST /annotations - Create new annotation
   router.post('/', async (req, res, next) => {
@@ -275,6 +277,36 @@ export function annotationsRouter(storage: StorageService): Router {
 
       res.json(annotation);
     } catch (error) {
+      next(error);
+    }
+  });
+
+  // GET /annotations/:id/screenshot - Get annotated screenshot with bounding box
+  router.get('/:id/screenshot', async (req, res, next) => {
+    try {
+      const annotation = await storage.get(req.params.id);
+      
+      if (!annotation) {
+        return res.status(404).json({
+          error: 'Annotation not found',
+          code: 'NOT_FOUND',
+        });
+      }
+      
+      // Generate the annotated screenshot
+      const imageBuffer = await imageProcessor.generateAnnotatedScreenshot(annotation.annotation);
+      
+      // Set appropriate headers for image response
+      res.set({
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'Content-Length': imageBuffer.length.toString(),
+      });
+      
+      // Send the image
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error('Error generating screenshot:', error);
       next(error);
     }
   });

@@ -1,3 +1,6 @@
+import type { WingmanAnnotation } from '@wingman/shared';
+import { formatAnnotationForClaude } from '@wingman/shared';
+
 export interface OverlayOptions {
   onSubmit: (note: string, target: any, element?: HTMLElement) => void;
   onCancel: () => void;
@@ -5,6 +8,7 @@ export interface OverlayOptions {
 
 export interface SuccessNotificationOptions {
   previewUrl?: string;
+  annotation?: WingmanAnnotation;
   mode?: 'clipboard' | 'server';
   onClose: () => void;
 }
@@ -678,15 +682,33 @@ export function createSuccessNotification(options: SuccessNotificationOptions) {
   };
   claudeButton.onclick = async () => {
     try {
-      await navigator.clipboard.writeText(options.previewUrl);
+      // If we have annotation data, format it as markdown, otherwise fall back to URL
+      const textToCopy = options.annotation 
+        ? formatAnnotationForClaude(options.annotation)
+        : options.previewUrl;
+      
+      await navigator.clipboard.writeText(textToCopy);
       claudeButton.textContent = '✓ Copied!';
       setTimeout(() => {
         claudeButton.textContent = 'Copy for Claude Code';
       }, 2000);
     } catch (err) {
       // Fallback
-      urlInput.select();
-      document.execCommand('copy');
+      if (options.annotation) {
+        // Try to copy the formatted text using fallback method
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = formatAnnotationForClaude(options.annotation);
+        tempTextArea.style.position = 'fixed';
+        tempTextArea.style.left = '-999999px';
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempTextArea);
+      } else {
+        // Fall back to copying URL
+        urlInput.select();
+        document.execCommand('copy');
+      }
       claudeButton.textContent = '✓ Copied!';
       setTimeout(() => {
         claudeButton.textContent = 'Copy for Claude Code';

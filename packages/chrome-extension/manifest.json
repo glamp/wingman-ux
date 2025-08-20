@@ -9,6 +9,10 @@
     "tabs",
     "storage"
   ],
+  "host_permissions": [
+    "http://localhost:*/*",
+    "https://*/*"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"

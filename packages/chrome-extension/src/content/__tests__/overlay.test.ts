@@ -111,8 +111,60 @@ describe('Success Notification', () => {
       windowOpenSpy.mockRestore();
     });
 
-    it('should copy URL when Copy for Claude Code is clicked', async () => {
+    it('should copy formatted markdown when annotation is provided', async () => {
       const previewUrl = 'http://localhost:8787/preview/?id=test-claude';
+      const mockAnnotation = {
+        id: 'test-claude',
+        createdAt: '2024-01-15T10:30:00Z',
+        page: {
+          title: 'Test Page',
+          url: 'https://example.com',
+          ua: 'Mozilla/5.0',
+          viewport: { w: 1920, h: 1080, dpr: 1 }
+        },
+        target: {
+          mode: 'element' as const,
+          rect: { x: 0, y: 0, width: 100, height: 100 }
+        },
+        media: {
+          screenshot: {
+            dataUrl: 'data:image/png;base64,test',
+            timestamp: Date.now()
+          }
+        },
+        console: [],
+        network: [],
+        errors: [],
+        note: 'Test note'
+      };
+      
+      createSuccessNotification({
+        previewUrl,
+        annotation: mockAnnotation,
+        onClose: vi.fn()
+      });
+
+      // Find the Claude button
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const claudeButton = buttons.find(btn => btn.textContent === 'Copy for Claude Code');
+      expect(claudeButton).toBeTruthy();
+      
+      // Click Claude button
+      await claudeButton?.click();
+      
+      // Check clipboard was called with formatted markdown
+      const clipboardCall = (navigator.clipboard.writeText as any).mock.calls[0][0];
+      expect(clipboardCall).toContain('# Wingman Annotation');
+      expect(clipboardCall).toContain('**Annotation ID:** test-claude');
+      expect(clipboardCall).toContain('Test note');
+      expect(clipboardCall).toContain('![Wingman Screenshot](http://localhost:8787/annotations/test-claude/screenshot)');
+      
+      // Check button text changed to indicate success
+      expect(claudeButton?.textContent).toBe('✓ Copied!');
+    });
+
+    it('should copy URL when annotation is not provided', async () => {
+      const previewUrl = 'http://localhost:8787/preview/?id=test-url-only';
       
       createSuccessNotification({
         previewUrl,
@@ -127,14 +179,14 @@ describe('Success Notification', () => {
       // Click Claude button
       await claudeButton?.click();
       
-      // Check clipboard was called
+      // Check clipboard was called with just the URL
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(previewUrl);
       
       // Check button text changed to indicate success
       expect(claudeButton?.textContent).toBe('✓ Copied!');
     });
 
-    it('should auto-dismiss after 10 seconds', () => {
+    it('should auto-dismiss after 4 seconds', () => {
       vi.useFakeTimers();
       const onClose = vi.fn();
       
@@ -146,8 +198,8 @@ describe('Success Notification', () => {
       const notification = document.getElementById('wingman-success-notification');
       expect(notification).toBeTruthy();
       
-      // Fast-forward 10 seconds
-      vi.advanceTimersByTime(10000);
+      // Fast-forward 4 seconds (actual timeout in code)
+      vi.advanceTimersByTime(4000);
       
       // Wait for close animation
       vi.advanceTimersByTime(300);
@@ -169,15 +221,13 @@ describe('Success Notification', () => {
       const notification = document.getElementById('wingman-success-notification');
       expect(notification).toBeTruthy();
       
-      // Fast-forward 5 seconds
-      vi.advanceTimersByTime(5000);
-      
-      // Simulate mouse enter
+      // Simulate mouse enter before auto-dismiss (within 4 seconds)
+      vi.advanceTimersByTime(2000);
       const mouseEnter = new MouseEvent('mouseenter');
       notification!.dispatchEvent(mouseEnter);
       
-      // Fast-forward another 10 seconds (should not close while hovering)
-      vi.advanceTimersByTime(10000);
+      // Fast-forward another 5 seconds (should not close while hovering)
+      vi.advanceTimersByTime(5000);
       
       expect(onClose).not.toHaveBeenCalled();
       
@@ -185,8 +235,8 @@ describe('Success Notification', () => {
       const mouseLeave = new MouseEvent('mouseleave');
       notification!.dispatchEvent(mouseLeave);
       
-      // Fast-forward 10 seconds after mouse leave
-      vi.advanceTimersByTime(10000);
+      // Now it should close after 4 seconds from mouse leave
+      vi.advanceTimersByTime(4000);
       vi.advanceTimersByTime(300); // animation time
       
       expect(onClose).toHaveBeenCalled();
@@ -202,24 +252,52 @@ describe('Success Notification', () => {
       document.execCommand = vi.fn().mockReturnValue(true);
       
       const previewUrl = 'http://localhost:8787/preview/?id=test-fallback';
+      const mockAnnotation = {
+        id: 'test-fallback',
+        createdAt: '2024-01-15T10:30:00Z',
+        page: {
+          title: 'Test Page',
+          url: 'https://example.com',
+          ua: 'Mozilla/5.0',
+          viewport: { w: 1920, h: 1080, dpr: 1 }
+        },
+        target: {
+          mode: 'element' as const,
+          rect: { x: 0, y: 0, width: 100, height: 100 }
+        },
+        media: {
+          screenshot: {
+            dataUrl: 'data:image/png;base64,test',
+            timestamp: Date.now()
+          }
+        },
+        console: [],
+        network: [],
+        errors: [],
+        note: 'Test note'
+      };
       
       createSuccessNotification({
         previewUrl,
+        annotation: mockAnnotation,
         onClose: vi.fn()
       });
 
-      // Find copy button
+      // Find the Claude button (not the URL copy button)
       const buttons = Array.from(document.querySelectorAll('button'));
-      const copyButton = buttons.find(btn => btn.textContent === '📋');
+      const claudeButton = buttons.find(btn => btn.textContent === 'Copy for Claude Code');
       
-      // Click copy button
-      await copyButton?.click();
+      // Click Claude button
+      await claudeButton?.click();
       
       // Wait for promise to reject and fallback to execute
       await new Promise(resolve => setTimeout(resolve, 0));
       
-      // Check fallback was used
+      // Check fallback was used with a textarea
       expect(document.execCommand).toHaveBeenCalledWith('copy');
+      
+      // Verify button text changed to indicate success
+      expect(claudeButton?.textContent).toBe('✓ Copied!');
     });
 
     it('should create valid snapshot of notification HTML', () => {

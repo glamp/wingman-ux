@@ -68,12 +68,23 @@ function activateOverlay() {
           console.log('[Wingman] Annotation submitted successfully:', result);
           overlayActive = false;
 
-          // Check if we should show the preview URL
+          // Show appropriate success notification
           const { showPreviewUrl = true } = await chrome.storage.local.get('showPreviewUrl');
-
-          if (showPreviewUrl && result.previewUrl) {
+          
+          if (result.message === 'Copied to clipboard') {
+            // Clipboard mode - always show copy notification
+            createSuccessNotification({
+              mode: 'clipboard',
+              annotation,  // Pass the annotation data
+              onClose: () => {
+                console.log('[Wingman] Success notification closed');
+              },
+            });
+          } else if (showPreviewUrl && result.previewUrl) {
+            // Server mode - show preview URL if enabled
             createSuccessNotification({
               previewUrl: result.previewUrl,
+              annotation,  // Pass the annotation data
               onClose: () => {
                 console.log('[Wingman] Success notification closed');
               },
