@@ -12,7 +12,9 @@
     "dev": "tsx watch src/index.ts",
     "clean": "rm -rf dist",
     "test": "vitest run",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "coverage": "npm run test:coverage"
   },
   "dependencies": {
     "@wingman/relay-server": "*",

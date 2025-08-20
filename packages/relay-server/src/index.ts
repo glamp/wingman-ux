@@ -12,15 +12,17 @@ import type { Server } from 'http';
 export interface ServerOptions {
   port?: number;
   host?: string;
+  storagePath?: string;
 }
 
 export function createServer(options: ServerOptions = {}) {
   const app = express();
-  const port = options.port || 8787;
+  const port = options.port ?? 8787;
   const host = options.host || 'localhost';
+  const storagePath = options.storagePath || './wingman/annotations';
 
   // Initialize storage
-  const storage = new StorageService('./wingman/annotations');
+  const storage = new StorageService(storagePath);
 
   // Middleware
   app.use(cors());
@@ -41,7 +43,8 @@ export function createServer(options: ServerOptions = {}) {
   console.log('NODE_ENV:', process.env.NODE_ENV);
   
   // Serve preview UI - proxy to dev server in development, static files in production
-  if (process.env.NODE_ENV === 'development') {
+  // Skip preview UI setup during testing to avoid proxy issues
+  if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV === 'development') {
     console.log('Using development mode - proxying to preview UI dev server');
     // In development, proxy to the preview UI dev server
     app.use('/preview', createProxyMiddleware({
@@ -79,9 +82,11 @@ export function createServer(options: ServerOptions = {}) {
   const start = (): Promise<Server> => {
     return new Promise((resolve, reject) => {
       const server = app.listen(port, host, () => {
-        console.log(`Wingman Relay Server running on http://${host}:${port}`);
-        console.log(`Health check: http://${host}:${port}/health`);
-        console.log(`Annotations endpoint: http://${host}:${port}/annotations`);
+        const address = server.address();
+        const actualPort = typeof address === 'string' ? parseInt(address) : address?.port || port;
+        console.log(`Wingman Relay Server running on http://${host}:${actualPort}`);
+        console.log(`Health check: http://${host}:${actualPort}/health`);
+        console.log(`Annotations endpoint: http://${host}:${actualPort}/annotations`);
         resolve(server);
       }).on('error', reject);
     });

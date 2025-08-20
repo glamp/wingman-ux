@@ -3,8 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'happy-dom',
-    setupFiles: ['./src/__tests__/setup.ts'],
+    environment: 'node',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'json-summary'],
@@ -14,17 +13,11 @@ export default defineConfig({
         'dist/**',
         '**/*.config.ts',
         '**/*.test.ts',
-        '**/*.test.tsx',
         '**/__tests__/**',
-        '**/types.ts',
-        '**/setup.ts'
+        '**/types.ts'
       ],
-      thresholds: {
-        statements: 50,
-        branches: 50,
-        functions: 50,
-        lines: 50
-      },
+      // No thresholds for shared package (types only)
+      thresholds: undefined,
       all: true,
       clean: true
     }

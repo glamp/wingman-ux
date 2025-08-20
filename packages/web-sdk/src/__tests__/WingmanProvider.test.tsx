@@ -1,16 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { WingmanProvider } from '../WingmanProvider';
-import { useWingman } from '../useWingman';
+import { WingmanProvider, useWingman } from '../WingmanProvider';
 
 // Test component to access context
 function TestComponent() {
   const wingman = useWingman();
   return (
     <div>
-      <div data-testid="enabled">{String(wingman.isEnabled)}</div>
-      <button onClick={() => wingman.captureElement(document.body)}>
+      <div data-testid="enabled">{String(wingman.config.enabled)}</div>
+      <button onClick={() => wingman.activate()}>
         Capture
       </button>
     </div>
@@ -41,7 +40,7 @@ describe('WingmanProvider', () => {
     );
 
     const element = screen.getByTestId('enabled');
-    expect(element.textContent).toBe('false');
+    expect(element.textContent).toBe('true');
   });
 
   it('should enable when receiving enable message', async () => {

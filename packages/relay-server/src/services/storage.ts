@@ -3,15 +3,21 @@ import path from 'path';
 import type { WingmanAnnotation, StoredAnnotation } from '@wingman/shared';
 
 export class StorageService {
+  private _initialized = false;
+
   constructor(private basePath: string) {
-    this.ensureDirectory();
+    // Don't call async method in constructor
   }
 
   private async ensureDirectory() {
+    if (this._initialized) return;
+    
     try {
       await fs.mkdir(this.basePath, { recursive: true });
+      this._initialized = true;
     } catch (error) {
       console.error('Failed to create storage directory:', error);
+      throw error;
     }
   }
 
@@ -47,6 +53,7 @@ export class StorageService {
 
   async getLast(): Promise<StoredAnnotation | null> {
     try {
+      await this.ensureDirectory();
       const files = await fs.readdir(this.basePath);
       const jsonFiles = files.filter(f => f.endsWith('.json'));
       
@@ -84,6 +91,7 @@ export class StorageService {
 
   async list(options: { limit: number; since?: string }): Promise<StoredAnnotation[]> {
     try {
+      await this.ensureDirectory();
       const files = await fs.readdir(this.basePath);
       const jsonFiles = files.filter(f => f.endsWith('.json'));
       
@@ -137,6 +145,30 @@ export class StorageService {
         return false;
       }
       throw error;
+    }
+  }
+
+  async getAllAnnotations(): Promise<WingmanAnnotation[]> {
+    try {
+      await this.ensureDirectory();
+      const files = await fs.readdir(this.basePath);
+      const jsonFiles = files.filter(f => f.endsWith('.json'));
+      
+      const annotations = await Promise.all(
+        jsonFiles.map(async (file) => {
+          const content = await fs.readFile(
+            path.join(this.basePath, file),
+            'utf-8'
+          );
+          const stored = JSON.parse(content) as StoredAnnotation;
+          return stored.annotation;
+        })
+      );
+
+      return annotations;
+    } catch (error) {
+      console.error('Failed to get all annotations:', error);
+      return [];
     }
   }
 }

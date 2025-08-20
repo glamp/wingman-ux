@@ -10,8 +10,8 @@ import { WingmanAnnotation } from '@wingman/shared';
 describe('Relay Server', () => {
   let app: Express;
   let server: Server;
-  const testPort = 0; // Use dynamic port allocation
-  const annotationsDir = './wingman/annotations';
+  let actualPort: number;
+  const annotationsDir = './test-wingman/annotations';
 
   beforeEach(async () => {
     // Clean up any existing annotations
@@ -21,9 +21,13 @@ describe('Relay Server', () => {
       // Directory might not exist, that's fine
     }
 
-    const serverInstance = createServer({ port: testPort, host: 'localhost' });
+    const serverInstance = createServer({ port: 0, host: 'localhost', storagePath: annotationsDir }); // Use port 0 for dynamic allocation
     app = serverInstance.app;
     server = await serverInstance.start();
+    
+    // Get the actual port that was assigned
+    const address = server.address();
+    actualPort = typeof address === 'string' ? parseInt(address) : address!.port;
   });
 
   afterEach(async () => {

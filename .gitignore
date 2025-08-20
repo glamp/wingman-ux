@@ -11,3 +11,8 @@ wingman/annotations/
 *.tsbuildinfo
 .wingman-dev/
 .swissarmyhammer/
+
+# Coverage directories
+coverage/
+.nyc_output/
+*.lcov

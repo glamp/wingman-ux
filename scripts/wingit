@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
-const blessed = require('blessed');
-const contrib = require('blessed-contrib');
-const { spawn, execSync } = require('child_process');
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { detect } = require('detect-port');
@@ -53,15 +51,8 @@ const SERVICES = {
 };
 
 // Global state
-let screen;
-let table;
-let statusBox;
-let selectedIndex = 0;
-let serviceStatuses = {};
 let buildStats = {};
 let watchers = [];
-let watchMode = true;
-let isQuitting = false;
 
 // Ensure directories exist
 function ensureDirectories() {
@@ -81,6 +72,57 @@ function loadBuildStats() {
       buildStats = {};
     }
   }
+}
+
+// Scan existing build artifacts to initialize build times
+function scanBuildTimes() {
+  Object.entries(SERVICES).forEach(([key, service]) => {
+    const distPath = path.join(process.cwd(), service.distPath);
+    
+    // Check if dist directory exists
+    if (fs.existsSync(distPath)) {
+      try {
+        // Get the most recent modification time from dist directory
+        const stats = fs.statSync(distPath);
+        let mostRecentTime = stats.mtime;
+        
+        // Check a few key files in the dist directory for more accurate timing
+        const filesToCheck = ['index.js', 'index.html', 'manifest.json', 'main.js'];
+        
+        for (const file of filesToCheck) {
+          const filePath = path.join(distPath, file);
+          if (fs.existsSync(filePath)) {
+            const fileStats = fs.statSync(filePath);
+            if (fileStats.mtime > mostRecentTime) {
+              mostRecentTime = fileStats.mtime;
+            }
+          }
+        }
+        
+        // Initialize or update build stats
+        if (!buildStats[key]) {
+          buildStats[key] = {};
+        }
+        
+        // Only update if we don't have a build time or if the status is "building"
+        if (!buildStats[key].lastBuild || buildStats[key].status === 'building') {
+          buildStats[key].lastBuild = mostRecentTime.toISOString();
+          buildStats[key].status = 'success';
+        }
+      } catch (e) {
+        // If we can't read the directory, don't update build stats
+        console.error(`Warning: Could not scan ${service.distPath}: ${e.message}`);
+      }
+    } else {
+      // If dist doesn't exist and status is "building", clear it
+      if (buildStats[key] && buildStats[key].status === 'building') {
+        delete buildStats[key].status;
+        delete buildStats[key].lastBuild;
+      }
+    }
+  });
+  
+  saveBuildStats();
 }
 
 // Save build stats
@@ -133,7 +175,7 @@ function formatBuildTime(serviceKey) {
   }
   
   if (stats.status === 'building') {
-    return '{yellow-fg}Building...{/yellow-fg}';
+    return 'Building...';
   }
   
   const buildTime = dayjs(stats.lastBuild);
@@ -141,12 +183,12 @@ function formatBuildTime(serviceKey) {
   const diffMinutes = now.diff(buildTime, 'minute');
   
   if (diffMinutes < 1) {
-    return '{green-fg}Just now{/green-fg}';
+    return 'Just now';
   } else if (diffMinutes < 60) {
-    return `${diffMinutes} min${diffMinutes > 1 ? 's' : ''} ago`;
+    return `${diffMinutes}m ago`;
   } else if (diffMinutes < 1440) {
     const hours = Math.floor(diffMinutes / 60);
-    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return `${hours}h ago`;
   } else {
     return buildTime.format('MMM DD HH:mm');
   }
@@ -159,13 +201,31 @@ async function getServiceStatus(serviceKey, service) {
   if (pid && isProcessRunning(pid)) {
     let port = service.defaultPort;
     
+    // Check if port is actually in use
     if (port) {
-      const availablePort = await detect(port);
-      if (availablePort !== port) {
+      try {
+        const availablePort = await detect(port);
+        if (availablePort !== port) {
+          // Port is in use, likely by our service
+          return {
+            status: 'running',
+            pid,
+            port
+          };
+        } else {
+          // Port is free but process is running (might be starting up)
+          return {
+            status: 'running',
+            pid,
+            port: port
+          };
+        }
+      } catch (e) {
+        // Error checking port, assume service is running
         return {
           status: 'running',
           pid,
-          port
+          port: port || '-'
         };
       }
     }
@@ -173,62 +233,63 @@ async function getServiceStatus(serviceKey, service) {
     return {
       status: 'running',
       pid,
-      port: port || '-'
+      port: '-'
     };
   } else {
+    // Clean up stale PID file
     if (pid) {
       removePidFile(service.pidFile);
     }
     return {
       status: 'stopped',
-      pid: '-',
-      port: '-'
+      pid: null,
+      port: null
     };
   }
 }
 
-// Update table data
-async function updateTable() {
-  const tableData = [];
+// Print status table
+async function printStatus(showTimestamp = false) {
+  console.log('\n╔═══════════════════════════════════════════════════════════════════╗');
+  console.log('║                    🛩️  Wingman Control Tower                      ║');
+  console.log('╠═══════════════════════════════════════════════════════════════════╣');
+  console.log('║ Service          │ Status    │  PID  │ Port │ Last Built         ║');
+  console.log('╟──────────────────┼───────────┼───────┼──────┼────────────────────╢');
+  
+  let allRunning = true;
+  let anyRunning = false;
   
   for (const [key, service] of Object.entries(SERVICES)) {
     const status = await getServiceStatus(key, service);
-    serviceStatuses[key] = status;
+    const statusText = status.status === 'running' ? '● Running' : '○ Stopped';
+    const statusColor = status.status === 'running' ? '\x1b[32m' : '\x1b[31m';
+    const reset = '\x1b[0m';
     
-    const statusIcon = status.status === 'running' 
-      ? '{green-fg}● UP{/green-fg}'
-      : '{red-fg}● DOWN{/red-fg}';
+    if (status.status === 'running') {
+      anyRunning = true;
+    } else {
+      allRunning = false;
+    }
+    
+    const pidDisplay = status.pid ? status.pid.toString() : '-';
+    const portDisplay = status.port ? status.port.toString() : '-';
     
     const buildTime = formatBuildTime(key);
     
-    tableData.push([
-      service.name,
-      statusIcon,
-      status.pid.toString(),
-      (status.port || '-').toString(),
-      buildTime
-    ]);
+    console.log(
+      `║ ${service.name.padEnd(16)} │ ${statusColor}${statusText.padEnd(9)}${reset} │ ${
+        pidDisplay.padEnd(5)
+      } │ ${portDisplay.padEnd(4)} │ ${buildTime.padEnd(18)} ║`
+    );
   }
   
-  if (table) {
-    table.setData({
-      headers: ['Service', 'Status', 'PID', 'Port', 'Last Built'],
-      data: tableData
-    });
-    
-    // Highlight selected row
-    if (table.rows && table.rows.items[selectedIndex]) {
-      table.rows.items.forEach((item, idx) => {
-        if (idx === selectedIndex) {
-          item.style = { fg: 'cyan', bold: true };
-        } else {
-          item.style = { fg: 'white' };
-        }
-      });
-    }
-    
-    screen.render();
+  console.log('╚══════════════════╧═══════════╧═══════╧══════╧════════════════════╝');
+  
+  if (showTimestamp) {
+    console.log(`\n Last updated: ${dayjs().format('HH:mm:ss')}`);
   }
+  
+  return { allRunning, anyRunning };
 }
 
 // Start a service
@@ -236,18 +297,18 @@ async function startService(serviceKey, service) {
   const existingPid = readPidFile(service.pidFile);
   
   if (existingPid && isProcessRunning(existingPid)) {
-    showStatus(`${service.name} is already running (PID: ${existingPid})`, 'yellow');
+    console.log(`  ${service.name} is already running (PID: ${existingPid})`);
     return existingPid;
   }
   
   if (service.defaultPort) {
     const availablePort = await detect(service.defaultPort);
     if (availablePort !== service.defaultPort) {
-      showStatus(`Port ${service.defaultPort} is already in use for ${service.name}`, 'yellow');
+      console.log(`  ⚠️  Port ${service.defaultPort} is already in use for ${service.name}`);
     }
   }
   
-  showStatus(`Starting ${service.name}...`, 'blue');
+  console.log(`  Starting ${service.name}...`);
   
   const logFile = path.join(DEV_DIR, `${serviceKey}.log`);
   const cmd = `nohup sh -c '${service.command}' > ${logFile} 2>&1 & echo $!`;
@@ -261,14 +322,13 @@ async function startService(serviceKey, service) {
     const pidNum = parseInt(pid);
     if (!isNaN(pidNum)) {
       writePidFile(service.pidFile, pidNum);
-      showStatus(`${service.name} started (PID: ${pidNum})`, 'green');
-      await updateTable();
+      console.log(`  ✓ ${service.name} started (PID: ${pidNum})`);
       return pidNum;
     } else {
-      showStatus(`Failed to start ${service.name}: Invalid PID`, 'red');
+      console.log(`  ✗ Failed to start ${service.name}: Invalid PID`);
     }
   } catch (error) {
-    showStatus(`Failed to start ${service.name}: ${error.message}`, 'red');
+    console.log(`  ✗ Failed to start ${service.name}: ${error.message}`);
   }
   
   return null;
@@ -279,14 +339,13 @@ async function stopService(serviceKey, service) {
   const pid = readPidFile(service.pidFile);
   
   if (!pid) {
-    showStatus(`${service.name} is not running`, 'gray');
+    console.log(`  ${service.name} is not running`);
     return;
   }
   
   if (!isProcessRunning(pid)) {
-    showStatus(`${service.name} PID file exists but process is not running`, 'yellow');
+    console.log(`  ${service.name} PID file exists but process is not running`);
     removePidFile(service.pidFile);
-    await updateTable();
     return;
   }
   
@@ -294,31 +353,32 @@ async function stopService(serviceKey, service) {
     execSync(`pkill -P ${pid} 2>/dev/null || true`, { encoding: 'utf8' });
     process.kill(pid, 'SIGTERM');
     removePidFile(service.pidFile);
-    showStatus(`${service.name} stopped (PID: ${pid})`, 'green');
-    await updateTable();
+    console.log(`  ✓ ${service.name} stopped (PID: ${pid})`);
   } catch (error) {
-    showStatus(`Failed to stop ${service.name}: ${error.message}`, 'red');
+    console.log(`  ✗ Failed to stop ${service.name}: ${error.message}`);
   }
 }
 
-// Restart a service
-async function restartService(serviceKey, service) {
-  showStatus(`Restarting ${service.name}...`, 'yellow');
-  await stopService(serviceKey, service);
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  await startService(serviceKey, service);
-}
-
-// Show status message
-function showStatus(message, color = 'white') {
-  if (statusBox) {
-    const timestamp = dayjs().format('HH:mm:ss');
-    statusBox.setContent(`{${color}-fg}[${timestamp}] ${message}{/${color}-fg}`);
-    screen.render();
+// Start all services
+async function startAll() {
+  console.log('\n🚀 Starting Wingman services...\n');
+  for (const [key, service] of Object.entries(SERVICES)) {
+    await startService(key, service);
+    await new Promise(resolve => setTimeout(resolve, 1500));
   }
+  console.log('\n✅ All services started\n');
 }
 
-// Setup file watchers
+// Stop all services
+async function stopAll() {
+  console.log('\n🛑 Stopping Wingman services...\n');
+  for (const [key, service] of Object.entries(SERVICES)) {
+    await stopService(key, service);
+  }
+  console.log('\n✅ All services stopped\n');
+}
+
+// Setup file watchers for build detection
 function setupWatchers() {
   // Clear existing watchers
   watchers.forEach(w => w.close());
@@ -331,29 +391,26 @@ function setupWatchers() {
     if (fs.existsSync(path.dirname(distPath))) {
       const watcher = chokidar.watch(distPath, {
         persistent: true,
-        ignoreInitial: true,
-        depth: 1
+        ignoreInitial: false, // Changed to false to detect initial files
+        depth: 2, // Increased depth to catch more build artifacts
+        awaitWriteFinish: {
+          stabilityThreshold: 500,
+          pollInterval: 100
+        }
       });
       
-      watcher.on('change', () => {
+      // Handle both 'add' and 'change' events for build detection
+      const updateBuildSuccess = () => {
         if (!buildStats[key]) {
           buildStats[key] = {};
         }
         buildStats[key].lastBuild = new Date().toISOString();
         buildStats[key].status = 'success';
         saveBuildStats();
-        updateTable();
-      });
+      };
       
-      watcher.on('add', () => {
-        if (!buildStats[key]) {
-          buildStats[key] = {};
-        }
-        buildStats[key].lastBuild = new Date().toISOString();
-        buildStats[key].status = 'success';
-        saveBuildStats();
-        updateTable();
-      });
+      watcher.on('change', updateBuildSuccess);
+      watcher.on('add', updateBuildSuccess);
       
       watchers.push(watcher);
     }
@@ -365,17 +422,18 @@ function setupWatchers() {
       if (fs.existsSync(fullPath)) {
         const sourceWatcher = chokidar.watch(fullPath, {
           persistent: true,
-          ignoreInitial: true
+          ignoreInitial: true,
+          ignored: /node_modules|\.git/
         });
         
         sourceWatcher.on('change', () => {
           if (!buildStats[key]) {
             buildStats[key] = {};
           }
-          // Mark as building when source changes
-          if (buildStats[key].status !== 'building') {
+          // Mark as building when source changes, but only if we have a previous successful build
+          if (buildStats[key].lastBuild && buildStats[key].status !== 'building') {
             buildStats[key].status = 'building';
-            updateTable();
+            saveBuildStats();
           }
         });
         
@@ -385,295 +443,72 @@ function setupWatchers() {
   });
 }
 
-// Create TUI
-function createTUI() {
-  screen = blessed.screen({
-    smartCSR: true,
-    title: 'Wingman Control Tower'
-  });
-  
-  // Main container
-  const container = blessed.box({
-    parent: screen,
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    border: {
-      type: 'line'
-    },
-    style: {
-      border: {
-        fg: 'cyan'
-      }
-    }
-  });
-  
-  // Title
-  const title = blessed.box({
-    parent: container,
-    top: 0,
-    left: 'center',
-    width: 'shrink',
-    height: 1,
-    content: '{bold}🛩️  Wingman Control Tower{/bold}',
-    tags: true,
-    style: {
-      fg: 'white'
-    }
-  });
-  
-  // Service table
-  table = contrib.table({
-    parent: container,
-    top: 2,
-    left: 1,
-    width: '100%-2',
-    height: '60%',
-    border: {
-      type: 'line',
-      fg: 'cyan'
-    },
-    columnSpacing: 3,
-    columnWidth: [20, 10, 8, 8, 15],
-    keys: true,
-    mouse: true,
-    vi: true,
-    style: {
-      header: {
-        fg: 'cyan',
-        bold: true
-      },
-      cell: {
-        fg: 'white'
-      }
-    },
-    tags: true
-  });
-  
-  // Status box
-  statusBox = blessed.box({
-    parent: container,
-    bottom: 3,
-    left: 1,
-    width: '100%-2',
-    height: 3,
-    border: {
-      type: 'line',
-      fg: 'gray'
-    },
-    label: ' Status ',
-    content: 'Ready',
-    tags: true,
-    scrollable: true,
-    alwaysScroll: true
-  });
-  
-  // Help bar
-  const helpBar = blessed.box({
-    parent: container,
-    bottom: 0,
-    left: 0,
-    width: '100%',
-    height: 1,
-    content: ' [r]estart [s]top [a]ll [↑/↓]navigate [w]atch [q]uit ',
-    style: {
-      fg: 'gray'
-    }
-  });
-  
-  // Watch mode indicator
-  const watchIndicator = blessed.box({
-    parent: container,
-    bottom: 0,
-    right: 1,
-    width: 12,
-    height: 1,
-    content: watchMode ? '{green-fg}Watch: ON{/green-fg}' : '{red-fg}Watch: OFF{/red-fg}',
-    tags: true,
-    style: {
-      fg: 'white'
-    }
-  });
-  
-  // Keyboard handlers
-  screen.key(['up', 'k'], () => {
-    selectedIndex = Math.max(0, selectedIndex - 1);
-    updateTable();
-  });
-  
-  screen.key(['down', 'j'], () => {
-    selectedIndex = Math.min(Object.keys(SERVICES).length - 1, selectedIndex + 1);
-    updateTable();
-  });
-  
-  screen.key('r', async () => {
-    const serviceKeys = Object.keys(SERVICES);
-    const serviceKey = serviceKeys[selectedIndex];
-    const service = SERVICES[serviceKey];
-    await restartService(serviceKey, service);
-  });
-  
-  screen.key('s', async () => {
-    const serviceKeys = Object.keys(SERVICES);
-    const serviceKey = serviceKeys[selectedIndex];
-    const service = SERVICES[serviceKey];
-    await stopService(serviceKey, service);
-  });
-  
-  screen.key('a', async () => {
-    showStatus('Restarting all services...', 'yellow');
-    for (const [key, service] of Object.entries(SERVICES)) {
-      await restartService(key, service);
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    showStatus('All services restarted', 'green');
-  });
-  
-  screen.key('w', () => {
-    watchMode = !watchMode;
-    watchIndicator.setContent(watchMode ? '{green-fg}Watch: ON{/green-fg}' : '{red-fg}Watch: OFF{/red-fg}');
-    
-    if (watchMode) {
-      setupWatchers();
-      showStatus('Watch mode enabled', 'green');
-    } else {
-      watchers.forEach(w => w.close());
-      watchers = [];
-      showStatus('Watch mode disabled', 'yellow');
-    }
-    
-    screen.render();
-  });
-  
-  screen.key(['q', 'C-c'], async () => {
-    if (isQuitting) return;
-    isQuitting = true;
-    
-    // Check if any services are running
-    const runningServices = [];
-    for (const [key, service] of Object.entries(SERVICES)) {
-      const status = await getServiceStatus(key, service);
-      if (status.status === 'running') {
-        runningServices.push(service.name);
-      }
-    }
-    
-    if (runningServices.length > 0) {
-      const dialog = blessed.question({
-        parent: screen,
-        border: 'line',
-        height: 'shrink',
-        width: 'half',
-        top: 'center',
-        left: 'center',
-        label: ' Quit ',
-        tags: true,
-        keys: true,
-        vi: true
-      });
-      
-      dialog.ask('Services are still running. Stop them and quit? (y/n)', async (err, value) => {
-        if (value && value.toLowerCase() === 'y') {
-          showStatus('Stopping all services...', 'yellow');
-          for (const [key, service] of Object.entries(SERVICES)) {
-            await stopService(key, service);
-          }
-          cleanup();
-          process.exit(0);
-        } else {
-          isQuitting = false;
-          screen.render();
-        }
-      });
-    } else {
-      cleanup();
-      process.exit(0);
-    }
-  });
-  
-  screen.render();
-}
-
-// Cleanup on exit
+// Cleanup watchers
 function cleanup() {
   watchers.forEach(w => w.close());
-  if (screen) {
-    screen.destroy();
-  }
 }
 
-// Start all services
-async function startAll() {
-  for (const [key, service] of Object.entries(SERVICES)) {
-    await startService(key, service);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-  }
-}
-
-// Stop all services
-async function stopAll() {
-  for (const [key, service] of Object.entries(SERVICES)) {
-    await stopService(key, service);
-  }
-}
-
-// Print simple status (non-TUI mode)
-async function printSimpleStatus() {
-  console.log('\n╔═══════════════════════════════════════════════════════════════╗');
-  console.log('║                    🛩️  Wingman Control Tower                   ║');
-  console.log('╠═══════════════════════════════════════════════════════════════╣');
-  console.log('║ Service          │ Status │  PID  │ Port │ Last Built        ║');
-  console.log('╟──────────────────┼────────┼───────┼──────┼───────────────────╢');
+// Watch mode
+async function watchMode() {
+  setupWatchers();
   
-  for (const [key, service] of Object.entries(SERVICES)) {
-    const status = await getServiceStatus(key, service);
-    const statusText = status.status === 'running' ? '● UP  ' : '● DOWN';
-    const statusColor = status.status === 'running' ? '\x1b[32m' : '\x1b[31m';
-    const reset = '\x1b[0m';
-    
-    const buildTime = buildStats[key] && buildStats[key].lastBuild
-      ? dayjs(buildStats[key].lastBuild).fromNow()
-      : 'Never';
-    
-    console.log(
-      `║ ${service.name.padEnd(16)} │ ${statusColor}${statusText}${reset} │ ${
-        status.pid.toString().padEnd(5)
-      } │ ${(status.port || '-').toString().padEnd(4)} │ ${buildTime.padEnd(17)} ║`
-    );
-  }
+  // Clear screen and show initial status
+  console.clear();
+  await printStatus(true);
+  console.log('\n 👀 Watching for changes... (Press Ctrl+C to exit)\n');
   
-  console.log('╚══════════════════╧════════╧═══════╧══════╧═══════════════════╝\n');
+  // Update every 2 seconds
+  const interval = setInterval(async () => {
+    console.clear();
+    await printStatus(true);
+    console.log('\n 👀 Watching for changes... (Press Ctrl+C to exit)\n');
+  }, 2000);
+  
+  // Handle exit
+  process.on('SIGINT', () => {
+    clearInterval(interval);
+    cleanup();
+    console.log('\n\n✅ Watch mode stopped\n');
+    process.exit(0);
+  });
+  
+  process.on('SIGTERM', () => {
+    clearInterval(interval);
+    cleanup();
+    process.exit(0);
+  });
 }
 
 // Main function
 async function main() {
   ensureDirectories();
   loadBuildStats();
+  scanBuildTimes(); // Scan existing builds on startup
   
-  const command = process.argv[2];
+  const args = process.argv.slice(2);
+  const command = args[0];
+  const watchFlag = args.includes('--watch');
   
   switch (command) {
     case 'stop':
       await stopAll();
-      console.log('All services stopped.');
-      process.exit(0);
       break;
       
     case 'status':
-      await printSimpleStatus();
-      process.exit(0);
+      await printStatus();
+      console.log('');
       break;
       
     case 'restart':
       await stopAll();
       await new Promise(resolve => setTimeout(resolve, 2000));
       await startAll();
-      // Fall through to TUI
+      await printStatus();
+      console.log('');
       break;
       
     default:
-      // Start services if not running
+      // Check if any services need starting
       let needStart = false;
       for (const [key, service] of Object.entries(SERVICES)) {
         const status = await getServiceStatus(key, service);
@@ -683,35 +518,29 @@ async function main() {
         }
       }
       
-      if (needStart && command !== 'watch') {
+      // Start services if needed
+      if (needStart) {
         await startAll();
       }
+      
+      // Setup watchers to keep build stats updated (even in non-watch mode)
+      setupWatchers();
+      
+      // Show status
+      await printStatus();
+      console.log('');
+      
+      // Enter watch mode if requested
+      if (watchFlag) {
+        await watchMode();
+      } else {
+        // Cleanup watchers after a short delay if not in watch mode
+        setTimeout(() => {
+          cleanup();
+        }, 5000);
+      }
+      break;
   }
-  
-  // Start TUI
-  createTUI();
-  
-  // Initial table update
-  await updateTable();
-  
-  // Setup watchers if watch mode is on
-  if (watchMode) {
-    setupWatchers();
-  }
-  
-  // Update table periodically
-  setInterval(updateTable, 2000);
-  
-  // Handle process signals
-  process.on('SIGINT', () => {
-    cleanup();
-    process.exit(0);
-  });
-  
-  process.on('SIGTERM', () => {
-    cleanup();
-    process.exit(0);
-  });
 }
 
 // Run

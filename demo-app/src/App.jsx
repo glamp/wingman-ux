@@ -1,12 +1,18 @@
 import { useState } from 'react'
 import './App.css'
 import { TestComponentWithContext } from './TestComponent'
+import Header from './components/Header'
+import Counter from './components/Counter'
+import InputForm from './components/InputForm'
+import TodoList from './components/TodoList'
+import ErrorTester from './components/ErrorTester'
+import InfoPanel from './components/InfoPanel'
+import Footer from './components/Footer'
 
 function App() {
   const [count, setCount] = useState(0)
   const [text, setText] = useState('')
   const [darkMode, setDarkMode] = useState(false)
-  const [showError, setShowError] = useState(false)
   const [todos, setTodos] = useState([
     { id: 1, text: 'Buy groceries', done: false },
     { id: 2, text: 'Walk the dog', done: true },
@@ -30,112 +36,47 @@ function App() {
     ))
   }
 
-  const triggerError = () => {
-    console.error('User triggered an intentional error!')
-    setShowError(true)
-    setTimeout(() => {
-      throw new Error('This is an intentional error for testing!')
-    }, 100)
+  const handleResetCounter = () => {
+    setCount(0)
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log('Form submitted with text:', text)
-    alert(`You submitted: ${text}`)
+  const handleSubmitForm = () => {
     setText('')
+  }
+
+  const handleToggleDarkMode = () => {
+    setDarkMode(!darkMode)
   }
 
   return (
     <div className={`app ${darkMode ? 'dark' : 'light'}`}>
-      <header className="header">
-        <h1>Wingman Demo App</h1>
-        <button 
-          className="theme-toggle"
-          onClick={() => setDarkMode(!darkMode)}
-        >
-          {darkMode ? '☀️' : '🌙'}
-        </button>
-      </header>
+      <Header 
+        darkMode={darkMode} 
+        onToggleDarkMode={handleToggleDarkMode}
+      />
 
       <main className="main">
-        <section className="counter-section">
-          <h2>Counter Section</h2>
-          <div className="counter">
-            <button onClick={handleDecrement}>-</button>
-            <span className="count-display">{count}</span>
-            <button onClick={handleIncrement}>+</button>
-          </div>
-          <button className="reset-btn" onClick={() => setCount(0)}>
-            Reset Counter
-          </button>
-        </section>
+        <Counter 
+          count={count}
+          onIncrement={handleIncrement}
+          onDecrement={handleDecrement}
+          onReset={handleResetCounter}
+        />
 
-        <section className="form-section">
-          <h2>Input Form</h2>
-          <form onSubmit={handleSubmit}>
-            <input
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Type something..."
-              className="text-input"
-            />
-            <button type="submit" className="submit-btn">
-              Submit
-            </button>
-          </form>
-        </section>
+        <InputForm 
+          text={text}
+          onTextChange={setText}
+          onSubmit={handleSubmitForm}
+        />
 
-        <section className="todo-section">
-          <h2>Todo List</h2>
-          <ul className="todo-list">
-            {todos.map(todo => (
-              <li 
-                key={todo.id} 
-                className={`todo-item ${todo.done ? 'done' : ''}`}
-                onClick={() => handleToggleTodo(todo.id)}
-              >
-                <input 
-                  type="checkbox" 
-                  checked={todo.done}
-                  onChange={() => {}}
-                />
-                <span>{todo.text}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <TodoList 
+          todos={todos}
+          onToggleTodo={handleToggleTodo}
+        />
 
-        <section className="error-section">
-          <h2>Error Testing</h2>
-          <button 
-            className="error-btn"
-            onClick={triggerError}
-          >
-            Trigger Error
-          </button>
-          {showError && (
-            <div className="error-message">
-              An error will be thrown shortly!
-            </div>
-          )}
-        </section>
+        <ErrorTester />
 
-        <section className="info-section">
-          <h2>Information Panel</h2>
-          <div className="info-card">
-            <h3>About This Demo</h3>
-            <p>This is a simple demo app for testing the Wingman browser extension.</p>
-            <p>It includes various UI elements like buttons, forms, and lists to test element selection and screenshot capture.</p>
-          </div>
-          <div className="info-card highlight">
-            <h3>Highlighted Section</h3>
-            <p>This section has a different background to test region selection.</p>
-            <button onClick={() => console.info('Info button clicked!')}>
-              Log Info Message
-            </button>
-          </div>
-        </section>
+        <InfoPanel />
 
         <section className="react-test-section">
           <h2>React Context & Hooks Test</h2>
@@ -143,9 +84,7 @@ function App() {
         </section>
       </main>
 
-      <footer className="footer">
-        <p>© 2025 Wingman Demo - Testing Only</p>
-      </footer>
+      <Footer />
     </div>
   )
 }

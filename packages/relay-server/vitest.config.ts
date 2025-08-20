@@ -1,26 +1,25 @@
 import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    setupFiles: [],
+    env: {
+      NODE_ENV: 'test'
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'json-summary'],
+      reportsDirectory: './coverage',
       exclude: [
         'node_modules/**',
         'dist/**',
         '**/*.config.ts',
-        '**/*.config.js',
-        '**/types.ts',
-        '**/__tests__/**',
         '**/*.test.ts',
-        '**/*.test.tsx',
-        '**/setup.ts',
-        'demo-app/**',
-        'scripts/**',
-        'packages/chrome-extension/**', // Chrome extension tested separately
-        'packages/preview-ui/**' // UI components tested separately
+        '**/__tests__/**',
+        '**/types.ts'
       ],
       thresholds: {
         statements: 50,
@@ -29,10 +28,12 @@ export default defineConfig({
         lines: 50
       },
       all: true,
-      clean: true,
-      reportsDirectory: './coverage'
-    },
-    testTimeout: 10000,
-    hookTimeout: 10000,
+      clean: true
+    }
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
   }
 });

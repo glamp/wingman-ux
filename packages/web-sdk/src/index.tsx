@@ -1,3 +1,2 @@
-export { WingmanProvider } from './WingmanProvider';
-export { useWingman } from './useWingman';
+export { WingmanProvider, useWingman } from './WingmanProvider';
 export type { WingmanConfig } from './types';

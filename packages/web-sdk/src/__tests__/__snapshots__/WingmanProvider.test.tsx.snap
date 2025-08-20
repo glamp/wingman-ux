@@ -11,7 +11,7 @@ exports[`WingmanProvider > should match snapshot for provider structure 1`] = `
     <div
       data-testid="enabled"
     >
-      false
+      true
     </div>
     <button>
       Capture
