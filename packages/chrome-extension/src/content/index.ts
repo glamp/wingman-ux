@@ -1,4 +1,4 @@
-import type { WingmanAnnotation, RelayResponse } from '@wingman/shared';
+import type { RelayResponse, WingmanAnnotation } from '@wingman/shared';
 import { ulid } from 'ulid';
 import { ConsoleCapture } from './console-capture';
 import { NetworkCapture } from './network-capture';
@@ -70,13 +70,13 @@ function activateOverlay() {
 
           // Check if we should show the preview URL
           const { showPreviewUrl = true } = await chrome.storage.local.get('showPreviewUrl');
-          
+
           if (showPreviewUrl && result.previewUrl) {
             createSuccessNotification({
               previewUrl: result.previewUrl,
               onClose: () => {
                 console.log('[Wingman] Success notification closed');
-              }
+              },
             });
           }
         } catch (error) {

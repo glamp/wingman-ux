@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { detect } = require('detect-port');
@@ -15,6 +15,18 @@ const DEV_DIR = path.join(process.cwd(), '.wingman-dev');
 const PID_DIR = path.join(DEV_DIR, 'pids');
 const BUILD_STATS_FILE = path.join(DEV_DIR, 'build-stats.json');
 
+// Color codes for services
+const COLORS = {
+  server: '\x1b[34m',     // blue
+  extension: '\x1b[32m',  // green  
+  preview: '\x1b[36m',    // cyan
+  demo: '\x1b[33m',       // yellow
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  gray: '\x1b[90m',
+  red: '\x1b[31m'
+};
+
 const SERVICES = {
   server: {
     name: 'Relay Server',
@@ -22,7 +34,9 @@ const SERVICES = {
     defaultPort: 8787,
     pidFile: 'server.pid',
     watchPaths: ['packages/relay-server/src'],
-    distPath: 'packages/relay-server/dist'
+    distPath: 'packages/relay-server/dist',
+    color: COLORS.server,
+    prefix: 'SERVER'
   },
   extension: {
     name: 'Chrome Extension', 
@@ -30,7 +44,9 @@ const SERVICES = {
     defaultPort: null,
     pidFile: 'extension.pid',
     watchPaths: ['packages/chrome-extension/src'],
-    distPath: 'packages/chrome-extension/dist'
+    distPath: 'packages/chrome-extension/dist',
+    color: COLORS.extension,
+    prefix: 'EXTENSION'
   },
   preview: {
     name: 'Preview UI',
@@ -38,7 +54,9 @@ const SERVICES = {
     defaultPort: 3001,
     pidFile: 'preview.pid',
     watchPaths: ['packages/preview-ui/src'],
-    distPath: 'packages/preview-ui/dist'
+    distPath: 'packages/preview-ui/dist',
+    color: COLORS.preview,
+    prefix: 'PREVIEW'
   },
   demo: {
     name: 'Demo App',
@@ -46,13 +64,16 @@ const SERVICES = {
     defaultPort: 5173,
     pidFile: 'demo.pid',
     watchPaths: ['demo-app/src'],
-    distPath: 'demo-app/dist'
+    distPath: 'demo-app/dist',
+    color: COLORS.demo,
+    prefix: 'DEMO'
   }
 };
 
 // Global state
 let buildStats = {};
 let watchers = [];
+let logStreams = [];
 
 // Ensure directories exist
 function ensureDirectories() {
@@ -311,27 +332,203 @@ async function startService(serviceKey, service) {
   console.log(`  Starting ${service.name}...`);
   
   const logFile = path.join(DEV_DIR, `${serviceKey}.log`);
-  const cmd = `nohup sh -c '${service.command}' > ${logFile} 2>&1 & echo $!`;
+  
+  // Clear log file before starting
+  fs.writeFileSync(logFile, '');
+  
+  // Open log file for appending
+  const out = fs.openSync(logFile, 'a');
+  const err = fs.openSync(logFile, 'a');
   
   try {
-    const pid = execSync(cmd, { 
-      encoding: 'utf8',
-      shell: '/bin/sh'
-    }).trim();
+    // Parse the command to extract the working directory and actual command
+    const commandParts = service.command.split(' && ');
+    let cwd = process.cwd();
+    let actualCommand = service.command;
     
-    const pidNum = parseInt(pid);
-    if (!isNaN(pidNum)) {
-      writePidFile(service.pidFile, pidNum);
-      console.log(`  ✓ ${service.name} started (PID: ${pidNum})`);
-      return pidNum;
+    // If command starts with 'cd', extract the directory and command
+    if (commandParts.length === 2 && commandParts[0].startsWith('cd ')) {
+      cwd = path.join(process.cwd(), commandParts[0].substring(3));
+      actualCommand = commandParts[1];
+    }
+    
+    // Set up environment
+    const env = { ...process.env };
+    if (actualCommand.includes('NODE_ENV=development')) {
+      env.NODE_ENV = 'development';
+      actualCommand = actualCommand.replace('NODE_ENV=development ', '');
+    }
+    
+    // Parse npm command
+    const args = actualCommand.trim().split(' ');
+    const command = args[0];
+    const commandArgs = args.slice(1);
+    
+    // Spawn the process
+    const child = spawn(command, commandArgs, {
+      cwd: cwd,
+      env: env,
+      detached: true,
+      stdio: ['ignore', out, err]
+    });
+    
+    // Unref the child so the parent can exit
+    child.unref();
+    
+    if (child.pid) {
+      writePidFile(service.pidFile, child.pid);
+      console.log(`  ✓ ${service.name} started (PID: ${child.pid})`);
+      
+      // Close file descriptors
+      fs.closeSync(out);
+      fs.closeSync(err);
+      
+      return child.pid;
     } else {
-      console.log(`  ✗ Failed to start ${service.name}: Invalid PID`);
+      console.log(`  ✗ Failed to start ${service.name}: No PID`);
+      fs.closeSync(out);
+      fs.closeSync(err);
     }
   } catch (error) {
     console.log(`  ✗ Failed to start ${service.name}: ${error.message}`);
+    try {
+      fs.closeSync(out);
+      fs.closeSync(err);
+    } catch {}
   }
   
   return null;
+}
+
+// Format log line with service prefix and timestamp
+function formatLogLine(serviceKey, line) {
+  const service = SERVICES[serviceKey];
+  const timestamp = dayjs().format('HH:mm:ss');
+  const prefix = `${service.color}[${timestamp}] [${service.prefix}]${COLORS.reset}`;
+  return `${prefix} ${line}`;
+}
+
+// Stream logs from a specific service
+function streamServiceLogs(serviceKey, follow = true) {
+  const service = SERVICES[serviceKey];
+  const logFile = path.join(DEV_DIR, `${serviceKey}.log`);
+  
+  if (!fs.existsSync(logFile)) {
+    console.log(formatLogLine(serviceKey, `${COLORS.gray}No log file found${COLORS.reset}`));
+    return null;
+  }
+  
+  const args = follow ? ['-f', logFile] : ['-n', '50', logFile];
+  const tail = spawn('tail', args);
+  
+  tail.stdout.on('data', (data) => {
+    const lines = data.toString().split('\n').filter(line => line.trim());
+    lines.forEach(line => {
+      console.log(formatLogLine(serviceKey, line));
+    });
+  });
+  
+  tail.stderr.on('data', (data) => {
+    console.error(formatLogLine(serviceKey, `${COLORS.red}${data.toString()}${COLORS.reset}`));
+  });
+  
+  tail.on('error', (error) => {
+    console.error(formatLogLine(serviceKey, `${COLORS.red}Error: ${error.message}${COLORS.reset}`));
+  });
+  
+  return tail;
+}
+
+// Stream logs from all services
+async function streamAllLogs(follow = true) {
+  console.log(`${COLORS.bold}\n📜 Streaming logs from all services...\n${COLORS.reset}`);
+  console.log(`${COLORS.gray}Press Ctrl+C to stop\n${COLORS.reset}`);
+  
+  // Start streaming from each service
+  for (const [key, service] of Object.entries(SERVICES)) {
+    const status = await getServiceStatus(key, service);
+    if (status.status === 'running' || !follow) {
+      const stream = streamServiceLogs(key, follow);
+      if (stream) {
+        logStreams.push(stream);
+      }
+    }
+  }
+  
+  if (logStreams.length === 0) {
+    console.log(`${COLORS.demo}No running services found\n${COLORS.reset}`);
+    return;
+  }
+  
+  // Handle cleanup on exit
+  process.on('SIGINT', () => {
+    cleanupLogStreams();
+    console.log(`${COLORS.extension}\n\n✅ Log streaming stopped\n${COLORS.reset}`);
+    process.exit(0);
+  });
+  
+  process.on('SIGTERM', () => {
+    cleanupLogStreams();
+    process.exit(0);
+  });
+}
+
+// Clean up log streams
+function cleanupLogStreams() {
+  logStreams.forEach(stream => {
+    if (stream && !stream.killed) {
+      stream.kill('SIGTERM');
+    }
+  });
+  logStreams = [];
+}
+
+// Show log info
+function showLogInfo() {
+  console.log(`${COLORS.bold}\n📊 Log File Information\n${COLORS.reset}`);
+  console.log(`${COLORS.gray}${'─'.repeat(60)}${COLORS.reset}`);
+  
+  for (const [key, service] of Object.entries(SERVICES)) {
+    const logFile = path.join(DEV_DIR, `${key}.log`);
+    
+    if (fs.existsSync(logFile)) {
+      const stats = fs.statSync(logFile);
+      const sizeKB = (stats.size / 1024).toFixed(2);
+      const modified = dayjs(stats.mtime).format('MMM DD HH:mm:ss');
+      
+      console.log(`${service.color}${service.prefix.padEnd(10)}${COLORS.reset} │ ${logFile}`);
+      console.log(`           │ Size: ${sizeKB} KB, Modified: ${modified}`);
+    } else {
+      console.log(`${service.color}${service.prefix.padEnd(10)}${COLORS.reset} │ ${COLORS.gray}No log file${COLORS.reset}`);
+    }
+    console.log(`${COLORS.gray}${'─'.repeat(60)}${COLORS.reset}`);
+  }
+  console.log('');
+}
+
+// Clear log files
+function clearLogs(serviceKey = null) {
+  if (serviceKey) {
+    const logFile = path.join(DEV_DIR, `${serviceKey}.log`);
+    if (fs.existsSync(logFile)) {
+      fs.writeFileSync(logFile, '');
+      console.log(`${COLORS.extension}✓ Cleared log file for ${SERVICES[serviceKey].name}${COLORS.reset}`);
+    } else {
+      console.log(`${COLORS.demo}No log file found for ${SERVICES[serviceKey].name}${COLORS.reset}`);
+    }
+  } else {
+    // Clear all log files
+    console.log(`${COLORS.bold}\n🧹 Clearing all log files...\n${COLORS.reset}`);
+    
+    for (const [key, service] of Object.entries(SERVICES)) {
+      const logFile = path.join(DEV_DIR, `${key}.log`);
+      if (fs.existsSync(logFile)) {
+        fs.writeFileSync(logFile, '');
+        console.log(`${COLORS.extension}✓ Cleared ${service.name} logs${COLORS.reset}`);
+      }
+    }
+    console.log(`${COLORS.extension}\n✅ All log files cleared\n${COLORS.reset}`);
+  }
 }
 
 // Stop a service
@@ -350,23 +547,52 @@ async function stopService(serviceKey, service) {
   }
   
   try {
-    execSync(`pkill -P ${pid} 2>/dev/null || true`, { encoding: 'utf8' });
-    process.kill(pid, 'SIGTERM');
+    // Try to kill the process group first (negative PID)
+    try {
+      process.kill(-pid, 'SIGTERM');
+    } catch (e) {
+      // If process group kill fails, try individual process
+      process.kill(pid, 'SIGTERM');
+    }
+    
+    // Give it a moment to shut down gracefully
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Check if still running and force kill if necessary
+    if (isProcessRunning(pid)) {
+      try {
+        process.kill(-pid, 'SIGKILL');
+      } catch (e) {
+        process.kill(pid, 'SIGKILL');
+      }
+    }
+    
     removePidFile(service.pidFile);
     console.log(`  ✓ ${service.name} stopped (PID: ${pid})`);
   } catch (error) {
-    console.log(`  ✗ Failed to stop ${service.name}: ${error.message}`);
+    // Process might have already exited
+    if (error.code !== 'ESRCH') {
+      console.log(`  ✗ Failed to stop ${service.name}: ${error.message}`);
+    } else {
+      removePidFile(service.pidFile);
+      console.log(`  ✓ ${service.name} stopped`);
+    }
   }
 }
 
 // Start all services
-async function startAll() {
+async function startAll(showLogs = false) {
   console.log('\n🚀 Starting Wingman services...\n');
   for (const [key, service] of Object.entries(SERVICES)) {
     await startService(key, service);
     await new Promise(resolve => setTimeout(resolve, 1500));
   }
   console.log('\n✅ All services started\n');
+  
+  if (showLogs) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await streamAllLogs(true);
+  }
 }
 
 // Stop all services
@@ -446,6 +672,7 @@ function setupWatchers() {
 // Cleanup watchers
 function cleanup() {
   watchers.forEach(w => w.close());
+  cleanupLogStreams();
 }
 
 // Watch mode
@@ -488,6 +715,7 @@ async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
   const watchFlag = args.includes('--watch');
+  const logsFlag = args.includes('--logs');
   
   switch (command) {
     case 'stop':
@@ -502,9 +730,49 @@ async function main() {
     case 'restart':
       await stopAll();
       await new Promise(resolve => setTimeout(resolve, 2000));
-      await startAll();
-      await printStatus();
-      console.log('');
+      await startAll(logsFlag);
+      if (!logsFlag) {
+        await printStatus();
+        console.log('');
+      }
+      break;
+      
+    case 'logs':
+      // Handle logs command
+      const subCommand = args[1];
+      
+      if (subCommand === '--clear') {
+        clearLogs();
+      } else if (subCommand === '--info') {
+        showLogInfo();
+      } else if (subCommand && !subCommand.startsWith('--')) {
+        // Stream logs for specific service
+        if (SERVICES[subCommand]) {
+          console.log(`${COLORS.bold}\n📜 Streaming logs for ${SERVICES[subCommand].name}...\n${COLORS.reset}`);
+          console.log(`${COLORS.gray}Press Ctrl+C to stop\n${COLORS.reset}`);
+          const stream = streamServiceLogs(subCommand, true);
+          if (stream) {
+            logStreams.push(stream);
+            
+            process.on('SIGINT', () => {
+              cleanupLogStreams();
+              console.log(`${COLORS.extension}\n\n✅ Log streaming stopped\n${COLORS.reset}`);
+              process.exit(0);
+            });
+            
+            process.on('SIGTERM', () => {
+              cleanupLogStreams();
+              process.exit(0);
+            });
+          }
+        } else {
+          console.log(`${COLORS.red}Unknown service: ${subCommand}${COLORS.reset}`);
+          console.log(`${COLORS.gray}Available services: ${Object.keys(SERVICES).join(', ')}${COLORS.reset}`);
+        }
+      } else {
+        // Stream all logs
+        await streamAllLogs(true);
+      }
       break;
       
     default:
@@ -520,24 +788,30 @@ async function main() {
       
       // Start services if needed
       if (needStart) {
-        await startAll();
+        await startAll(logsFlag);
+      } else if (logsFlag) {
+        // If services are already running and --logs was passed, stream logs
+        await streamAllLogs(true);
       }
       
-      // Setup watchers to keep build stats updated (even in non-watch mode)
-      setupWatchers();
-      
-      // Show status
-      await printStatus();
-      console.log('');
-      
-      // Enter watch mode if requested
-      if (watchFlag) {
-        await watchMode();
-      } else {
-        // Cleanup watchers after a short delay if not in watch mode
-        setTimeout(() => {
-          cleanup();
-        }, 5000);
+      // Only show status and setup watchers if not streaming logs
+      if (!logsFlag) {
+        // Setup watchers to keep build stats updated (even in non-watch mode)
+        setupWatchers();
+        
+        // Show status
+        await printStatus();
+        console.log('');
+        
+        // Enter watch mode if requested
+        if (watchFlag) {
+          await watchMode();
+        } else {
+          // Cleanup watchers after a short delay if not in watch mode
+          setTimeout(() => {
+            cleanup();
+          }, 5000);
+        }
       }
       break;
   }
