@@ -1,5 +1,5 @@
 {
-  "name": "wingman-cli",
+  "name": "@wingman/cli",
   "version": "1.0.0",
   "description": "CLI for Wingman - Lightweight UX feedback assistant with local relay server",
   "keywords": ["wingman", "ux", "feedback", "cli", "developer-tools"],
@@ -9,6 +9,10 @@
     "type": "git",
     "url": "https://github.com/wingman/wingman.git",
     "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "main": "dist/index.js",
   "bin": {

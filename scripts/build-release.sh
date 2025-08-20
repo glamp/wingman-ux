@@ -136,11 +136,11 @@ create_release_readme() {
 ### CLI Package (\`cli/\`)
 - Ready for npm publishing with \`npm publish\`
 - Includes embedded relay server and preview UI
-- Install globally with \`npm install -g wingman-cli\`
+- Install globally with \`npm install -g @wingman/cli\`
 
 ### Web SDK (\`web-sdk/\`)
 - Ready for npm publishing with \`npm publish\`
-- Install in React projects with \`npm install wingman-sdk\`
+- Install in React projects with \`npm install @wingman/sdk\`
 
 ## Publishing Instructions
 

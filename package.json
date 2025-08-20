@@ -7,9 +7,6 @@
     "packages/*",
     "demo-app"
   ],
-  "bin": {
-    "wingman": "./packages/cli/dist/index.js"
-  },
   "scripts": {
     "dev": "./scripts/wingit --workspace=false",
     "dev:stop": "./scripts/wingit stop --workspace=false",

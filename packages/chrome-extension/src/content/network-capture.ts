@@ -34,7 +34,7 @@ export class NetworkCapture {
         }
       });
 
-      this.observer.observe({ entryTypes: ['resource'], buffered: true });
+      this.observer.observe({ type: 'resource', buffered: true });
     } catch (error) {
       console.warn('Failed to setup PerformanceObserver:', error);
     }

@@ -9,6 +9,10 @@
     "url": "https://github.com/wingman/wingman.git",
     "directory": "packages/chrome-extension"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "vite build",
     "dev": "NODE_ENV=development vite build --watch",

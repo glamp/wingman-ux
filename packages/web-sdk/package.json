@@ -1,5 +1,5 @@
 {
-  "name": "wingman-sdk",
+  "name": "@wingman/sdk",
   "version": "1.0.0",
   "description": "Wingman Web SDK - React integration for UX feedback collection",
   "keywords": ["wingman", "react", "sdk", "ux", "feedback", "developer-tools"],
@@ -9,6 +9,10 @@
     "type": "git",
     "url": "https://github.com/wingman/wingman.git",
     "directory": "packages/web-sdk"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

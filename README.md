@@ -21,13 +21,13 @@ npm run build
 Install the Wingman SDK in your React app:
 
 ```bash
-npm install wingman-sdk
+npm install @wingman/sdk
 ```
 
 Wrap your app with the WingmanProvider:
 
 ```jsx
-import { WingmanProvider } from 'wingman-sdk';
+import { WingmanProvider } from '@wingman/sdk';
 
 function App() {
   return (
