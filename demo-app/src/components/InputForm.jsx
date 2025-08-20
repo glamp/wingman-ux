@@ -1,12 +1,14 @@
-import React from 'react'
+import React from 'react';
 
 function InputForm({ text, onTextChange, onSubmit }) {
   const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log('Form submitted with text:', text)
-    alert(`You submitted: ${text}`)
-    onSubmit()
-  }
+    e.preventDefault();
+    console.log('Form submitted with text:', text);
+    alert(`You submitted: ${text}`);
+    onSubmit();
+  };
+
+  console.log('InputForm rendered');
 
   return (
     <section className="form-section">
@@ -24,7 +26,7 @@ function InputForm({ text, onTextChange, onSubmit }) {
         </button>
       </form>
     </section>
-  )
+  );
 }
 
-export default InputForm
+export default InputForm;
