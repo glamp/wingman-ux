@@ -57,6 +57,7 @@ export default defineConfig({
         entryFileNames: '[name].js',
         chunkFileNames: '[name].js',
         assetFileNames: '[name].[ext]',
+        format: 'es',
       },
     },
   },
@@ -71,6 +72,22 @@ export default defineConfig({
       backgroundPath: 'src/background/index.ts',
       port: 8081
     })] : []),
+    {
+      name: 'watch-static-files',
+      async buildStart() {
+        if (isDev) {
+          // Watch HTML and CSS files for changes
+          this.addWatchFile(resolve(__dirname, 'src/popup/popup.html'));
+          this.addWatchFile(resolve(__dirname, 'src/content/content.css'));
+          console.log('[Vite] Watching static files for changes');
+        }
+      },
+      async watchChange(id) {
+        if (id.includes('popup.html') || id.includes('content.css')) {
+          console.log(`[Vite] Static file changed: ${id.split('/').pop()}`);
+        }
+      }
+    },
     {
       name: 'copy-static-files',
       writeBundle() {

@@ -4,7 +4,8 @@ export interface OverlayOptions {
 }
 
 export interface SuccessNotificationOptions {
-  previewUrl: string;
+  previewUrl?: string;
+  mode?: 'clipboard' | 'server';
   onClose: () => void;
 }
 
@@ -503,7 +504,13 @@ export function createSuccessNotification(options: SuccessNotificationOptions) {
   `;
 
   const title = document.createElement('div');
-  title.textContent = 'Feedback submitted successfully!';
+  if (options.mode === 'clipboard') {
+    successIcon.textContent = '📋';
+    title.textContent = 'Feedback copied to clipboard!';
+  } else {
+    successIcon.textContent = '✅';
+    title.textContent = 'Feedback submitted successfully!';
+  }
   title.style.cssText = `
     font-size: 16px;
     font-weight: 600;
@@ -529,125 +536,127 @@ export function createSuccessNotification(options: SuccessNotificationOptions) {
   header.appendChild(successIcon);
   header.appendChild(title);
 
-  // Preview URL section
-  const urlSection = document.createElement('div');
-  urlSection.style.cssText = `
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 12px;
+  // Only show URL section for server mode
+  if (options.previewUrl && options.mode !== 'clipboard') {
+    // Preview URL section
+    const urlSection = document.createElement('div');
+    urlSection.style.cssText = `
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    `;
+
+    const urlLabel = document.createElement('div');
+    urlLabel.textContent = 'Preview URL:';
+    urlLabel.style.cssText = `
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 6px;
+      font-weight: 500;
   `;
 
-  const urlLabel = document.createElement('div');
-  urlLabel.textContent = 'Preview URL:';
-  urlLabel.style.cssText = `
-    font-size: 12px;
-    color: #64748b;
-    margin-bottom: 6px;
-    font-weight: 500;
-  `;
+    const urlContainer = document.createElement('div');
+    urlContainer.style.cssText = `
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    `;
 
-  const urlContainer = document.createElement('div');
-  urlContainer.style.cssText = `
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  `;
+    const urlInput = document.createElement('input');
+    urlInput.value = options.previewUrl!;
+    urlInput.readOnly = true;
+    urlInput.style.cssText = `
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      background: white;
+      color: #1e293b;
+    `;
 
-  const urlInput = document.createElement('input');
-  urlInput.value = options.previewUrl;
-  urlInput.readOnly = true;
-  urlInput.style.cssText = `
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 12px;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-    background: white;
-    color: #1e293b;
-  `;
+    const copyButton = document.createElement('button');
+    copyButton.textContent = '📋';
+    copyButton.title = 'Copy URL';
+    copyButton.style.cssText = `
+      padding: 6px 10px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    `;
+    copyButton.onmouseover = () => {
+      copyButton.style.background = '#f0f0f0';
+      copyButton.style.borderColor = '#0084ff';
+    };
+    copyButton.onmouseout = () => {
+      copyButton.style.background = 'white';
+      copyButton.style.borderColor = '#e2e8f0';
+    };
+    copyButton.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(options.previewUrl!);
+        copyButton.textContent = '✓';
+        setTimeout(() => {
+          copyButton.textContent = '📋';
+        }, 2000);
+      } catch (err) {
+        // Fallback for older browsers
+        urlInput.select();
+        document.execCommand('copy');
+        copyButton.textContent = '✓';
+        setTimeout(() => {
+          copyButton.textContent = '📋';
+        }, 2000);
+      }
+    };
 
-  const copyButton = document.createElement('button');
-  copyButton.textContent = '📋';
-  copyButton.title = 'Copy URL';
-  copyButton.style.cssText = `
-    padding: 6px 10px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.2s;
-  `;
-  copyButton.onmouseover = () => {
-    copyButton.style.background = '#f0f0f0';
-    copyButton.style.borderColor = '#0084ff';
-  };
-  copyButton.onmouseout = () => {
-    copyButton.style.background = 'white';
-    copyButton.style.borderColor = '#e2e8f0';
-  };
-  copyButton.onclick = async () => {
-    try {
-      await navigator.clipboard.writeText(options.previewUrl);
-      copyButton.textContent = '✓';
-      setTimeout(() => {
-        copyButton.textContent = '📋';
-      }, 2000);
-    } catch (err) {
-      // Fallback for older browsers
-      urlInput.select();
-      document.execCommand('copy');
-      copyButton.textContent = '✓';
-      setTimeout(() => {
-        copyButton.textContent = '📋';
-      }, 2000);
-    }
-  };
+    urlContainer.appendChild(urlInput);
+    urlContainer.appendChild(copyButton);
+    urlSection.appendChild(urlLabel);
+    urlSection.appendChild(urlContainer);
 
-  urlContainer.appendChild(urlInput);
-  urlContainer.appendChild(copyButton);
-  urlSection.appendChild(urlLabel);
-  urlSection.appendChild(urlContainer);
+    // Action buttons
+    const actions = document.createElement('div');
+    actions.style.cssText = `
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+    `;
 
-  // Action buttons
-  const actions = document.createElement('div');
-  actions.style.cssText = `
-    display: flex;
-    gap: 12px;
-    justify-content: space-between;
-  `;
+    const openButton = document.createElement('button');
+    openButton.textContent = 'Open Preview';
+    openButton.style.cssText = `
+      padding: 10px 20px;
+      background: #0084ff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    `;
+    openButton.onmouseover = () => {
+      openButton.style.background = '#0073e6';
+    };
+    openButton.onmouseout = () => {
+      openButton.style.background = '#0084ff';
+    };
+    openButton.onclick = () => {
+      window.open(options.previewUrl!, '_blank');
+    };
 
-  const openButton = document.createElement('button');
-  openButton.textContent = 'Open Preview';
-  openButton.style.cssText = `
-    padding: 10px 20px;
-    background: #0084ff;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  `;
-  openButton.onmouseover = () => {
-    openButton.style.background = '#0073e6';
-  };
-  openButton.onmouseout = () => {
-    openButton.style.background = '#0084ff';
-  };
-  openButton.onclick = () => {
-    window.open(options.previewUrl, '_blank');
-  };
-
-  const claudeButton = document.createElement('button');
-  claudeButton.textContent = 'Copy for Claude Code';
-  claudeButton.style.cssText = `
-    padding: 10px 20px;
+    const claudeButton = document.createElement('button');
+    claudeButton.textContent = 'Copy for Claude Code';
+    claudeButton.style.cssText = `
+      padding: 10px 20px;
     background: white;
     color: #1e293b;
     border: 1px solid #e2e8f0;
@@ -685,14 +694,19 @@ export function createSuccessNotification(options: SuccessNotificationOptions) {
     }
   };
 
-  actions.appendChild(openButton);
-  actions.appendChild(claudeButton);
+    actions.appendChild(openButton);
+    actions.appendChild(claudeButton);
 
-  // Assemble notification
-  notification.appendChild(closeButton);
-  notification.appendChild(header);
-  notification.appendChild(urlSection);
-  notification.appendChild(actions);
+    // Assemble notification for server mode
+    notification.appendChild(closeButton);
+    notification.appendChild(header);
+    notification.appendChild(urlSection);
+    notification.appendChild(actions);
+  } else {
+    // Clipboard mode - simpler notification
+    notification.appendChild(closeButton);
+    notification.appendChild(header);
+  }
 
   document.body.appendChild(notification);
 

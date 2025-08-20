@@ -29,16 +29,22 @@
       box-sizing: border-box;
     }
 
+    html {
+      width: 420px;
+      height: 100%;
+    }
+
     body {
-      width: 380px;
-      min-height: 240px;
+      width: 100%;
+      height: 100%;
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       font-size: 14px;
       background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
       color: var(--text-primary);
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: hidden;
       position: relative;
     }
 
@@ -64,7 +70,7 @@
 
     .header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .logo-container {
@@ -104,7 +110,7 @@
       display: flex;
       justify-content: center;
       gap: 16px;
-      margin: 16px 0 24px 0;
+      margin: 16px 0 20px 0;
       padding: 12px;
       background: var(--bg-glass);
       backdrop-filter: blur(10px);
@@ -305,7 +311,7 @@
 
     .preset-btn {
       flex: 1;
-      padding: 4px 8px;
+      padding: 6px 8px;
       font-size: 10px;
       background: var(--bg-secondary);
       border: 1px solid var(--border-color);
@@ -314,29 +320,180 @@
       transition: all 0.2s ease;
       color: var(--text-secondary);
       font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      position: relative;
     }
 
     .preset-btn:hover {
       background: var(--primary-color);
       color: white;
       transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 132, 255, 0.2);
     }
 
+    .preset-icon {
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .preset-text {
+      font-size: 9px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .preset-btn[title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      bottom: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      white-space: nowrap;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+    }
+
+    .dropdown-selected {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 13px;
+    }
+
+    .dropdown-selected:hover {
+      background: white;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
+    }
+
+    .dropdown-selected.active {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
+    }
+
+    .dropdown-arrow {
+      margin-left: auto;
+      transition: transform 0.2s ease;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .dropdown-selected.active .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-options {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid var(--border-color);
+      border-top: none;
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+      transition: all 0.2s ease;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .dropdown-options.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    .dropdown-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .dropdown-option:last-child {
+      border-bottom: none;
+    }
+
+    .dropdown-option:hover {
+      background: var(--bg-secondary);
+      transform: translateX(2px);
+    }
+
+    .dropdown-option.selected {
+      background: rgba(0, 132, 255, 0.1);
+      color: var(--primary-color);
+    }
+
+    .format-icon {
+      font-size: 16px;
+      width: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .format-text {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .format-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .dropdown-option.selected .format-desc {
+      color: var(--primary-color);
+      opacity: 0.8;
+    }
 
     .status-message {
-      margin-top: 12px;
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
       padding: 10px 12px;
       border-radius: var(--radius-md);
       font-size: 12px;
       font-weight: 500;
       transform: translateY(10px);
       opacity: 0;
+      pointer-events: none;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
     }
 
     .status-message.visible {
       transform: translateY(0);
       opacity: 1;
+      pointer-events: auto;
     }
 
     .status-message.success {
@@ -389,7 +546,7 @@
       <div class="dock-item primary" id="activateItem">
         <div class="dock-icon">🎯</div>
         <div class="dock-label">Select Element</div>
-        <div class="dock-shortcut">Alt+Shift+0</div>
+        <div class="dock-shortcut" id="shortcutText">⌘+Shift+K</div>
       </div>
       <div class="dock-item secondary" id="helpItem">
         <div class="dock-icon">❓</div>
@@ -411,6 +568,34 @@
             <span class="toggle-slider"></span>
           </label>
           <span style="font-size: 12px; color: #64748b;">Display preview link after submission</span>
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-bottom: 12px;">
+        <label class="input-label" for="copyFormat">Copy Format</label>
+        <div class="custom-dropdown" id="copyFormatDropdown">
+          <div class="dropdown-selected" id="copyFormatSelected">
+            <span class="format-icon">🤖</span>
+            <span class="format-text">Claude Code</span>
+            <span class="dropdown-arrow">▼</span>
+          </div>
+          <div class="dropdown-options" id="copyFormatOptions">
+            <div class="dropdown-option" data-value="claude" data-icon="🤖">
+              <span class="format-icon">🤖</span>
+              <span class="format-text">Claude Code</span>
+              <span class="format-desc">Optimized for AI conversations</span>
+            </div>
+            <div class="dropdown-option" data-value="json" data-icon="📄">
+              <span class="format-icon">📄</span>
+              <span class="format-text">JSON</span>
+              <span class="format-desc">Raw structured data</span>
+            </div>
+            <div class="dropdown-option" data-value="markdown" data-icon="📝">
+              <span class="format-icon">📝</span>
+              <span class="format-text">Markdown</span>
+              <span class="format-desc">Human-readable format</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -470,9 +655,18 @@
         <label class="input-label" for="relayUrl">Relay Server URL</label>
         <input type="text" id="relayUrl" class="input-field" placeholder="http://localhost:8787">
         <div class="preset-buttons">
-          <button class="preset-btn" data-url="http://localhost:8787">:8787</button>
-          <button class="preset-btn" data-url="http://localhost:3000">:3000</button>
-          <button class="preset-btn" data-url="https://api.wingman.dev">Remote</button>
+          <button class="preset-btn" data-url="http://localhost:8787" title="Send to local relay server on port 8787">
+            <span class="preset-icon">🏠</span>
+            <span class="preset-text">Local</span>
+          </button>
+          <button class="preset-btn" data-url="https://api.wingman.dev" title="Send to remote Wingman server">
+            <span class="preset-icon">🌐</span>
+            <span class="preset-text">Remote</span>
+          </button>
+          <button class="preset-btn" data-url="clipboard" title="Copy feedback to clipboard (no server needed)">
+            <span class="preset-icon">📋</span>
+            <span class="preset-text">Copy</span>
+          </button>
         </div>
       </div>
 
@@ -481,6 +675,6 @@
     <div id="status" class="status-message"></div>
   </div>
 
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

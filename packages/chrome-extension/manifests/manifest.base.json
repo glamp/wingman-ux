@@ -7,6 +7,10 @@
     "tabs",
     "storage"
   ],
+  "host_permissions": [
+    "http://localhost:*/*",
+    "https://*/*"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -33,10 +37,10 @@
     "128": "icons/icon128.png"
   },
   "commands": {
-    "_execute_action": {
+    "activate-overlay": {
       "suggested_key": {
-        "default": "Alt+Shift+U",
-        "mac": "Alt+Shift+U"
+        "default": "Alt+Shift+K",
+        "mac": "MacCtrl+Shift+K"
       },
       "description": "Activate Wingman feedback"
     }
