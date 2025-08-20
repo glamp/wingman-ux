@@ -699,7 +699,7 @@ export function createSuccessNotification(options: SuccessNotificationOptions) {
   // Auto-dismiss after 10 seconds
   let dismissTimeout = setTimeout(() => {
     close();
-  }, 10000);
+  }, 4000);
 
   function close() {
     clearTimeout(dismissTimeout);
@@ -718,7 +718,7 @@ export function createSuccessNotification(options: SuccessNotificationOptions) {
   notification.onmouseleave = () => {
     dismissTimeout = setTimeout(() => {
       close();
-    }, 10000);
+    }, 4000);
   };
 
   return { close };

@@ -37,8 +37,8 @@
   "commands": {
     "_execute_action": {
       "suggested_key": {
-        "default": "Alt+Shift+U",
-        "mac": "Alt+Shift+U"
+        "default": "Alt+Shift+0",
+        "mac": "Alt+Shift+0"
       },
       "description": "Activate Wingman feedback"
     }
