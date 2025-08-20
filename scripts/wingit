@@ -1,0 +1,722 @@
+#!/usr/bin/env node
+
+const blessed = require('blessed');
+const contrib = require('blessed-contrib');
+const { spawn, execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const { detect } = require('detect-port');
+const chokidar = require('chokidar');
+const dayjs = require('dayjs');
+const relativeTime = require('dayjs/plugin/relativeTime');
+
+dayjs.extend(relativeTime);
+
+// Configuration
+const DEV_DIR = path.join(process.cwd(), '.wingman-dev');
+const PID_DIR = path.join(DEV_DIR, 'pids');
+const BUILD_STATS_FILE = path.join(DEV_DIR, 'build-stats.json');
+
+const SERVICES = {
+  server: {
+    name: 'Relay Server',
+    command: 'cd packages/relay-server && NODE_ENV=development npm run dev',
+    defaultPort: 8787,
+    pidFile: 'server.pid',
+    watchPaths: ['packages/relay-server/src'],
+    distPath: 'packages/relay-server/dist'
+  },
+  extension: {
+    name: 'Chrome Extension', 
+    command: 'cd packages/chrome-extension && NODE_ENV=development npm run dev',
+    defaultPort: null,
+    pidFile: 'extension.pid',
+    watchPaths: ['packages/chrome-extension/src'],
+    distPath: 'packages/chrome-extension/dist'
+  },
+  preview: {
+    name: 'Preview UI',
+    command: 'cd packages/preview-ui && npm run dev',
+    defaultPort: 3001,
+    pidFile: 'preview.pid',
+    watchPaths: ['packages/preview-ui/src'],
+    distPath: 'packages/preview-ui/dist'
+  },
+  demo: {
+    name: 'Demo App',
+    command: 'cd demo-app && npm run dev',
+    defaultPort: 5173,
+    pidFile: 'demo.pid',
+    watchPaths: ['demo-app/src'],
+    distPath: 'demo-app/dist'
+  }
+};
+
+// Global state
+let screen;
+let table;
+let statusBox;
+let selectedIndex = 0;
+let serviceStatuses = {};
+let buildStats = {};
+let watchers = [];
+let watchMode = true;
+let isQuitting = false;
+
+// Ensure directories exist
+function ensureDirectories() {
+  [DEV_DIR, PID_DIR].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  });
+}
+
+// Load build stats
+function loadBuildStats() {
+  if (fs.existsSync(BUILD_STATS_FILE)) {
+    try {
+      buildStats = JSON.parse(fs.readFileSync(BUILD_STATS_FILE, 'utf8'));
+    } catch (e) {
+      buildStats = {};
+    }
+  }
+}
+
+// Save build stats
+function saveBuildStats() {
+  fs.writeFileSync(BUILD_STATS_FILE, JSON.stringify(buildStats, null, 2));
+}
+
+// Check if a process is running
+function isProcessRunning(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Read PID from file
+function readPidFile(filename) {
+  const pidPath = path.join(PID_DIR, filename);
+  if (fs.existsSync(pidPath)) {
+    const content = fs.readFileSync(pidPath, 'utf8').trim();
+    const pid = parseInt(content);
+    if (!isNaN(pid)) {
+      return pid;
+    }
+  }
+  return null;
+}
+
+// Write PID to file
+function writePidFile(filename, pid) {
+  const pidPath = path.join(PID_DIR, filename);
+  fs.writeFileSync(pidPath, pid.toString());
+}
+
+// Remove PID file
+function removePidFile(filename) {
+  const pidPath = path.join(PID_DIR, filename);
+  if (fs.existsSync(pidPath)) {
+    fs.unlinkSync(pidPath);
+  }
+}
+
+// Format build time
+function formatBuildTime(serviceKey) {
+  const stats = buildStats[serviceKey];
+  if (!stats || !stats.lastBuild) {
+    return 'Never';
+  }
+  
+  if (stats.status === 'building') {
+    return '{yellow-fg}Building...{/yellow-fg}';
+  }
+  
+  const buildTime = dayjs(stats.lastBuild);
+  const now = dayjs();
+  const diffMinutes = now.diff(buildTime, 'minute');
+  
+  if (diffMinutes < 1) {
+    return '{green-fg}Just now{/green-fg}';
+  } else if (diffMinutes < 60) {
+    return `${diffMinutes} min${diffMinutes > 1 ? 's' : ''} ago`;
+  } else if (diffMinutes < 1440) {
+    const hours = Math.floor(diffMinutes / 60);
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  } else {
+    return buildTime.format('MMM DD HH:mm');
+  }
+}
+
+// Get service status
+async function getServiceStatus(serviceKey, service) {
+  const pid = readPidFile(service.pidFile);
+  
+  if (pid && isProcessRunning(pid)) {
+    let port = service.defaultPort;
+    
+    if (port) {
+      const availablePort = await detect(port);
+      if (availablePort !== port) {
+        return {
+          status: 'running',
+          pid,
+          port
+        };
+      }
+    }
+    
+    return {
+      status: 'running',
+      pid,
+      port: port || '-'
+    };
+  } else {
+    if (pid) {
+      removePidFile(service.pidFile);
+    }
+    return {
+      status: 'stopped',
+      pid: '-',
+      port: '-'
+    };
+  }
+}
+
+// Update table data
+async function updateTable() {
+  const tableData = [];
+  
+  for (const [key, service] of Object.entries(SERVICES)) {
+    const status = await getServiceStatus(key, service);
+    serviceStatuses[key] = status;
+    
+    const statusIcon = status.status === 'running' 
+      ? '{green-fg}● UP{/green-fg}'
+      : '{red-fg}● DOWN{/red-fg}';
+    
+    const buildTime = formatBuildTime(key);
+    
+    tableData.push([
+      service.name,
+      statusIcon,
+      status.pid.toString(),
+      (status.port || '-').toString(),
+      buildTime
+    ]);
+  }
+  
+  if (table) {
+    table.setData({
+      headers: ['Service', 'Status', 'PID', 'Port', 'Last Built'],
+      data: tableData
+    });
+    
+    // Highlight selected row
+    if (table.rows && table.rows.items[selectedIndex]) {
+      table.rows.items.forEach((item, idx) => {
+        if (idx === selectedIndex) {
+          item.style = { fg: 'cyan', bold: true };
+        } else {
+          item.style = { fg: 'white' };
+        }
+      });
+    }
+    
+    screen.render();
+  }
+}
+
+// Start a service
+async function startService(serviceKey, service) {
+  const existingPid = readPidFile(service.pidFile);
+  
+  if (existingPid && isProcessRunning(existingPid)) {
+    showStatus(`${service.name} is already running (PID: ${existingPid})`, 'yellow');
+    return existingPid;
+  }
+  
+  if (service.defaultPort) {
+    const availablePort = await detect(service.defaultPort);
+    if (availablePort !== service.defaultPort) {
+      showStatus(`Port ${service.defaultPort} is already in use for ${service.name}`, 'yellow');
+    }
+  }
+  
+  showStatus(`Starting ${service.name}...`, 'blue');
+  
+  const logFile = path.join(DEV_DIR, `${serviceKey}.log`);
+  const cmd = `nohup sh -c '${service.command}' > ${logFile} 2>&1 & echo $!`;
+  
+  try {
+    const pid = execSync(cmd, { 
+      encoding: 'utf8',
+      shell: '/bin/sh'
+    }).trim();
+    
+    const pidNum = parseInt(pid);
+    if (!isNaN(pidNum)) {
+      writePidFile(service.pidFile, pidNum);
+      showStatus(`${service.name} started (PID: ${pidNum})`, 'green');
+      await updateTable();
+      return pidNum;
+    } else {
+      showStatus(`Failed to start ${service.name}: Invalid PID`, 'red');
+    }
+  } catch (error) {
+    showStatus(`Failed to start ${service.name}: ${error.message}`, 'red');
+  }
+  
+  return null;
+}
+
+// Stop a service
+async function stopService(serviceKey, service) {
+  const pid = readPidFile(service.pidFile);
+  
+  if (!pid) {
+    showStatus(`${service.name} is not running`, 'gray');
+    return;
+  }
+  
+  if (!isProcessRunning(pid)) {
+    showStatus(`${service.name} PID file exists but process is not running`, 'yellow');
+    removePidFile(service.pidFile);
+    await updateTable();
+    return;
+  }
+  
+  try {
+    execSync(`pkill -P ${pid} 2>/dev/null || true`, { encoding: 'utf8' });
+    process.kill(pid, 'SIGTERM');
+    removePidFile(service.pidFile);
+    showStatus(`${service.name} stopped (PID: ${pid})`, 'green');
+    await updateTable();
+  } catch (error) {
+    showStatus(`Failed to stop ${service.name}: ${error.message}`, 'red');
+  }
+}
+
+// Restart a service
+async function restartService(serviceKey, service) {
+  showStatus(`Restarting ${service.name}...`, 'yellow');
+  await stopService(serviceKey, service);
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  await startService(serviceKey, service);
+}
+
+// Show status message
+function showStatus(message, color = 'white') {
+  if (statusBox) {
+    const timestamp = dayjs().format('HH:mm:ss');
+    statusBox.setContent(`{${color}-fg}[${timestamp}] ${message}{/${color}-fg}`);
+    screen.render();
+  }
+}
+
+// Setup file watchers
+function setupWatchers() {
+  // Clear existing watchers
+  watchers.forEach(w => w.close());
+  watchers = [];
+  
+  Object.entries(SERVICES).forEach(([key, service]) => {
+    // Watch dist directory for build completions
+    const distPath = path.join(process.cwd(), service.distPath);
+    
+    if (fs.existsSync(path.dirname(distPath))) {
+      const watcher = chokidar.watch(distPath, {
+        persistent: true,
+        ignoreInitial: true,
+        depth: 1
+      });
+      
+      watcher.on('change', () => {
+        if (!buildStats[key]) {
+          buildStats[key] = {};
+        }
+        buildStats[key].lastBuild = new Date().toISOString();
+        buildStats[key].status = 'success';
+        saveBuildStats();
+        updateTable();
+      });
+      
+      watcher.on('add', () => {
+        if (!buildStats[key]) {
+          buildStats[key] = {};
+        }
+        buildStats[key].lastBuild = new Date().toISOString();
+        buildStats[key].status = 'success';
+        saveBuildStats();
+        updateTable();
+      });
+      
+      watchers.push(watcher);
+    }
+    
+    // Watch source directories to detect when builds start
+    service.watchPaths.forEach(watchPath => {
+      const fullPath = path.join(process.cwd(), watchPath);
+      
+      if (fs.existsSync(fullPath)) {
+        const sourceWatcher = chokidar.watch(fullPath, {
+          persistent: true,
+          ignoreInitial: true
+        });
+        
+        sourceWatcher.on('change', () => {
+          if (!buildStats[key]) {
+            buildStats[key] = {};
+          }
+          // Mark as building when source changes
+          if (buildStats[key].status !== 'building') {
+            buildStats[key].status = 'building';
+            updateTable();
+          }
+        });
+        
+        watchers.push(sourceWatcher);
+      }
+    });
+  });
+}
+
+// Create TUI
+function createTUI() {
+  screen = blessed.screen({
+    smartCSR: true,
+    title: 'Wingman Control Tower'
+  });
+  
+  // Main container
+  const container = blessed.box({
+    parent: screen,
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    border: {
+      type: 'line'
+    },
+    style: {
+      border: {
+        fg: 'cyan'
+      }
+    }
+  });
+  
+  // Title
+  const title = blessed.box({
+    parent: container,
+    top: 0,
+    left: 'center',
+    width: 'shrink',
+    height: 1,
+    content: '{bold}🛩️  Wingman Control Tower{/bold}',
+    tags: true,
+    style: {
+      fg: 'white'
+    }
+  });
+  
+  // Service table
+  table = contrib.table({
+    parent: container,
+    top: 2,
+    left: 1,
+    width: '100%-2',
+    height: '60%',
+    border: {
+      type: 'line',
+      fg: 'cyan'
+    },
+    columnSpacing: 3,
+    columnWidth: [20, 10, 8, 8, 15],
+    keys: true,
+    mouse: true,
+    vi: true,
+    style: {
+      header: {
+        fg: 'cyan',
+        bold: true
+      },
+      cell: {
+        fg: 'white'
+      }
+    },
+    tags: true
+  });
+  
+  // Status box
+  statusBox = blessed.box({
+    parent: container,
+    bottom: 3,
+    left: 1,
+    width: '100%-2',
+    height: 3,
+    border: {
+      type: 'line',
+      fg: 'gray'
+    },
+    label: ' Status ',
+    content: 'Ready',
+    tags: true,
+    scrollable: true,
+    alwaysScroll: true
+  });
+  
+  // Help bar
+  const helpBar = blessed.box({
+    parent: container,
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    height: 1,
+    content: ' [r]estart [s]top [a]ll [↑/↓]navigate [w]atch [q]uit ',
+    style: {
+      fg: 'gray'
+    }
+  });
+  
+  // Watch mode indicator
+  const watchIndicator = blessed.box({
+    parent: container,
+    bottom: 0,
+    right: 1,
+    width: 12,
+    height: 1,
+    content: watchMode ? '{green-fg}Watch: ON{/green-fg}' : '{red-fg}Watch: OFF{/red-fg}',
+    tags: true,
+    style: {
+      fg: 'white'
+    }
+  });
+  
+  // Keyboard handlers
+  screen.key(['up', 'k'], () => {
+    selectedIndex = Math.max(0, selectedIndex - 1);
+    updateTable();
+  });
+  
+  screen.key(['down', 'j'], () => {
+    selectedIndex = Math.min(Object.keys(SERVICES).length - 1, selectedIndex + 1);
+    updateTable();
+  });
+  
+  screen.key('r', async () => {
+    const serviceKeys = Object.keys(SERVICES);
+    const serviceKey = serviceKeys[selectedIndex];
+    const service = SERVICES[serviceKey];
+    await restartService(serviceKey, service);
+  });
+  
+  screen.key('s', async () => {
+    const serviceKeys = Object.keys(SERVICES);
+    const serviceKey = serviceKeys[selectedIndex];
+    const service = SERVICES[serviceKey];
+    await stopService(serviceKey, service);
+  });
+  
+  screen.key('a', async () => {
+    showStatus('Restarting all services...', 'yellow');
+    for (const [key, service] of Object.entries(SERVICES)) {
+      await restartService(key, service);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    showStatus('All services restarted', 'green');
+  });
+  
+  screen.key('w', () => {
+    watchMode = !watchMode;
+    watchIndicator.setContent(watchMode ? '{green-fg}Watch: ON{/green-fg}' : '{red-fg}Watch: OFF{/red-fg}');
+    
+    if (watchMode) {
+      setupWatchers();
+      showStatus('Watch mode enabled', 'green');
+    } else {
+      watchers.forEach(w => w.close());
+      watchers = [];
+      showStatus('Watch mode disabled', 'yellow');
+    }
+    
+    screen.render();
+  });
+  
+  screen.key(['q', 'C-c'], async () => {
+    if (isQuitting) return;
+    isQuitting = true;
+    
+    // Check if any services are running
+    const runningServices = [];
+    for (const [key, service] of Object.entries(SERVICES)) {
+      const status = await getServiceStatus(key, service);
+      if (status.status === 'running') {
+        runningServices.push(service.name);
+      }
+    }
+    
+    if (runningServices.length > 0) {
+      const dialog = blessed.question({
+        parent: screen,
+        border: 'line',
+        height: 'shrink',
+        width: 'half',
+        top: 'center',
+        left: 'center',
+        label: ' Quit ',
+        tags: true,
+        keys: true,
+        vi: true
+      });
+      
+      dialog.ask('Services are still running. Stop them and quit? (y/n)', async (err, value) => {
+        if (value && value.toLowerCase() === 'y') {
+          showStatus('Stopping all services...', 'yellow');
+          for (const [key, service] of Object.entries(SERVICES)) {
+            await stopService(key, service);
+          }
+          cleanup();
+          process.exit(0);
+        } else {
+          isQuitting = false;
+          screen.render();
+        }
+      });
+    } else {
+      cleanup();
+      process.exit(0);
+    }
+  });
+  
+  screen.render();
+}
+
+// Cleanup on exit
+function cleanup() {
+  watchers.forEach(w => w.close());
+  if (screen) {
+    screen.destroy();
+  }
+}
+
+// Start all services
+async function startAll() {
+  for (const [key, service] of Object.entries(SERVICES)) {
+    await startService(key, service);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  }
+}
+
+// Stop all services
+async function stopAll() {
+  for (const [key, service] of Object.entries(SERVICES)) {
+    await stopService(key, service);
+  }
+}
+
+// Print simple status (non-TUI mode)
+async function printSimpleStatus() {
+  console.log('\n╔═══════════════════════════════════════════════════════════════╗');
+  console.log('║                    🛩️  Wingman Control Tower                   ║');
+  console.log('╠═══════════════════════════════════════════════════════════════╣');
+  console.log('║ Service          │ Status │  PID  │ Port │ Last Built        ║');
+  console.log('╟──────────────────┼────────┼───────┼──────┼───────────────────╢');
+  
+  for (const [key, service] of Object.entries(SERVICES)) {
+    const status = await getServiceStatus(key, service);
+    const statusText = status.status === 'running' ? '● UP  ' : '● DOWN';
+    const statusColor = status.status === 'running' ? '\x1b[32m' : '\x1b[31m';
+    const reset = '\x1b[0m';
+    
+    const buildTime = buildStats[key] && buildStats[key].lastBuild
+      ? dayjs(buildStats[key].lastBuild).fromNow()
+      : 'Never';
+    
+    console.log(
+      `║ ${service.name.padEnd(16)} │ ${statusColor}${statusText}${reset} │ ${
+        status.pid.toString().padEnd(5)
+      } │ ${(status.port || '-').toString().padEnd(4)} │ ${buildTime.padEnd(17)} ║`
+    );
+  }
+  
+  console.log('╚══════════════════╧════════╧═══════╧══════╧═══════════════════╝\n');
+}
+
+// Main function
+async function main() {
+  ensureDirectories();
+  loadBuildStats();
+  
+  const command = process.argv[2];
+  
+  switch (command) {
+    case 'stop':
+      await stopAll();
+      console.log('All services stopped.');
+      process.exit(0);
+      break;
+      
+    case 'status':
+      await printSimpleStatus();
+      process.exit(0);
+      break;
+      
+    case 'restart':
+      await stopAll();
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await startAll();
+      // Fall through to TUI
+      break;
+      
+    default:
+      // Start services if not running
+      let needStart = false;
+      for (const [key, service] of Object.entries(SERVICES)) {
+        const status = await getServiceStatus(key, service);
+        if (status.status === 'stopped') {
+          needStart = true;
+          break;
+        }
+      }
+      
+      if (needStart && command !== 'watch') {
+        await startAll();
+      }
+  }
+  
+  // Start TUI
+  createTUI();
+  
+  // Initial table update
+  await updateTable();
+  
+  // Setup watchers if watch mode is on
+  if (watchMode) {
+    setupWatchers();
+  }
+  
+  // Update table periodically
+  setInterval(updateTable, 2000);
+  
+  // Handle process signals
+  process.on('SIGINT', () => {
+    cleanup();
+    process.exit(0);
+  });
+  
+  process.on('SIGTERM', () => {
+    cleanup();
+    process.exit(0);
+  });
+}
+
+// Run
+main().catch(error => {
+  console.error('Error:', error);
+  cleanup();
+  process.exit(1);
+});

@@ -129,7 +129,7 @@ The project uses a monorepo structure with shared TypeScript types across all pa
   - The development build includes hot-reload-extension-vite plugin
   - Changes to source files trigger automatic extension reload
   - No need to manually reload the extension in Chrome
-  - Requires NODE_ENV=development (automatically set by dev-manager.js)
+  - Requires NODE_ENV=development (automatically set by wingit)
 
 ## Code Search and Navigation
 
