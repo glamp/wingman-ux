@@ -1,5 +1,5 @@
 export class ConsoleCapture {
-  private entries: Array<{ level: string; args: any[]; ts: number }> = [];
+  private entries: Array<{ level: 'log' | 'info' | 'warn' | 'error'; args: any[]; ts: number }> = [];
   private errors: Array<{ message: string; stack?: string; ts: number }> = [];
   private maxEntries = 100;
 
@@ -38,7 +38,7 @@ export class ConsoleCapture {
     });
   }
 
-  private addEntry(level: string, args: any[]) {
+  private addEntry(level: 'log' | 'info' | 'warn' | 'error', args: any[]) {
     this.entries.push({
       level,
       args: this.sanitizeArgs(args),

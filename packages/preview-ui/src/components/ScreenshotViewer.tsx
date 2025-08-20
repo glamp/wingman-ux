@@ -39,7 +39,7 @@ function ScreenshotViewer({ annotation }: ScreenshotViewerProps) {
       const dpr = annotation.page.viewport.dpr || 1;
       const viewportWidth = img.naturalWidth / dpr;
       const viewportHeight = img.naturalHeight / dpr;
-      
+
       // Use a simple max width approach for consistent sizing
       const maxDisplayWidth = 800;
       const scale = Math.min(maxDisplayWidth / viewportWidth, 1); // Only scale down, never up
@@ -177,6 +177,7 @@ function ScreenshotViewer({ annotation }: ScreenshotViewerProps) {
   const canvasStyle = {
     transform: `scale(${zoom})`,
     transformOrigin: '0 0',
+    maxWidth: '100%',
     height: 'auto',
     border: '1px solid',
     borderColor: 'divider',

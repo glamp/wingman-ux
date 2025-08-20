@@ -37,10 +37,61 @@ export interface WingmanAnnotation {
   }>;
 
   react?: {
+    // Component Information
     componentName?: string;
+    componentType?: 'function' | 'class' | 'memo' | 'forwardRef' | 'lazy' | 'unknown';
+    displayName?: string;
+    
+    // Source Location
+    source?: {
+      fileName?: string;
+      lineNumber?: number;
+      columnNumber?: number;
+    };
+    
+    // Component Tree
+    componentStack?: Array<{
+      name: string;
+      props?: any;
+      key?: string | number;
+    }>;
+    parentComponents?: string[]; // Names of parent components up the tree
+    
+    // Props & State
     props?: any; // sanitized
-    state?: any; // sanitized
-    obtainedVia: 'devtools-hook' | 'none';
+    state?: any; // sanitized for class components
+    
+    // Hooks (for function components)
+    hooks?: Array<{
+      type: 'state' | 'effect' | 'context' | 'reducer' | 'callback' | 'memo' | 'ref' | 'layoutEffect' | 'imperativeHandle' | 'custom';
+      name?: string; // For custom hooks
+      value?: any; // Current value (sanitized)
+      dependencies?: any[]; // For effect/memo/callback
+    }>;
+    
+    // React Context Values
+    contexts?: Array<{
+      displayName?: string;
+      value: any; // sanitized
+    }>;
+    
+    // Render Information
+    renderCount?: number;
+    lastRenderDuration?: number;
+    renderReasons?: string[]; // Why component re-rendered
+    
+    // Error Boundary
+    errorBoundary?: {
+      componentName: string;
+      error?: string;
+      errorInfo?: any;
+    };
+    
+    // Fiber information
+    fiberType?: string; // The fiber node type
+    effectTags?: string[]; // Current effect tags on the fiber
+    
+    obtainedVia: 'devtools-hook' | 'fiber-direct' | 'sdk-bridge' | 'none';
   };
 }
 

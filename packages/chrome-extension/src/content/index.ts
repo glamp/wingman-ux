@@ -2,11 +2,13 @@ import type { WingmanAnnotation } from '@wingman/shared';
 import { ConsoleCapture } from './console-capture';
 import { NetworkCapture } from './network-capture';
 import { createOverlay } from './overlay';
+import { SDKBridge } from './sdk-bridge';
 
 console.log('[Wingman] Content script loaded on:', window.location.href);
 
 const consoleCapture = new ConsoleCapture();
 const networkCapture = new NetworkCapture();
+const sdkBridge = new SDKBridge({ debug: true });
 let overlayActive = false;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -29,12 +31,40 @@ function activateOverlay() {
     overlayActive = true;
     console.log('[Wingman] Creating overlay UI...');
     const overlay = createOverlay({
-    onSubmit: async (note: string, target: any) => {
+    onSubmit: async (note: string, target: any, element?: HTMLElement) => {
       try {
         const screenshot = await captureScreenshot();
-        const annotation = buildAnnotation(note, target, screenshot);
+        
+        // Get React data if element is provided
+        let reactData = undefined;
+        if (element) {
+          console.log('[Wingman] Extracting React data for element...');
+          reactData = await sdkBridge.getReactData(element);
+          
+          // Also try to get a robust selector from SDK
+          const robustSelector = await sdkBridge.getRobustSelector(element);
+          if (robustSelector) {
+            target.selector = robustSelector;
+          }
+        }
+        
+        const annotation = buildAnnotation(note, target, screenshot, reactData);
+        
+        // Log the annotation payload (with truncated screenshot)
+        const logPayload = {
+          ...annotation,
+          media: {
+            ...annotation.media,
+            screenshot: {
+              ...annotation.media.screenshot,
+              dataUrl: annotation.media.screenshot.dataUrl.substring(0, 100) + '...[truncated]'
+            }
+          }
+        };
+        console.log('[Wingman] Sending annotation payload:', logPayload);
+        
         const result = await submitAnnotation(annotation);
-        console.log('Annotation submitted:', result);
+        console.log('[Wingman] Annotation submitted successfully:', result);
         overlayActive = false;
       } catch (error) {
         console.error('[Wingman] Failed to submit feedback:', error);
@@ -86,7 +116,8 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
 function buildAnnotation(
   note: string,
   target: any,
-  screenshot: string
+  screenshot: string,
+  reactData?: any
 ): WingmanAnnotation {
   return {
     id: generateId(),
@@ -112,6 +143,7 @@ function buildAnnotation(
     console: consoleCapture.getEntries(),
     errors: consoleCapture.getErrors(),
     network: networkCapture.getEntries(),
+    react: reactData,
   };
 }
 

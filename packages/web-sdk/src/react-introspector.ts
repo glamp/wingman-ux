@@ -14,6 +14,8 @@ export class ReactIntrospector {
   private debug: boolean;
   private hook: ReactDevToolsHook | null = null;
   private fiberRoot: any = null;
+  private renderCounts = new WeakMap<any, number>();
+  private renderTimings = new WeakMap<any, number>();
 
   constructor(debug = false) {
     this.debug = debug;
@@ -79,7 +81,7 @@ export class ReactIntrospector {
         return { obtainedVia: 'none' };
       }
 
-      // Extract component data
+      // Extract comprehensive component data
       const componentData = this.extractComponentData(fiber);
       
       return {
@@ -96,12 +98,29 @@ export class ReactIntrospector {
 
   private findFiberByHostInstance(element: HTMLElement): any {
     // React stores fiber reference in DOM element
-    const key = Object.keys(element).find(
+    // Support multiple React versions:
+    // React 16-17: __reactFiber, __reactInternalInstance
+    // React 18-19: __reactFiber$[hash], __reactProps$[hash]
+    const keys = Object.keys(element);
+    
+    // Log React-related keys for debugging
+    const reactKeys = keys.filter(k => k.includes('react') || k.includes('React'));
+    if (reactKeys.length > 0 && this.debug) {
+      console.log('[Wingman Introspector] React keys on element:', reactKeys);
+    }
+    
+    const key = keys.find(
       key => key.startsWith('__reactInternalInstance') || 
-             key.startsWith('__reactFiber')
+             key.startsWith('__reactFiber') ||
+             key.startsWith('_reactInternal') ||
+             /^__reactFiber\$/.test(key) ||
+             /^__reactProps\$/.test(key)
     );
     
     if (key) {
+      if (this.debug) {
+        console.log('[Wingman Introspector] Found React fiber with key:', key);
+      }
       return (element as any)[key];
     }
 
@@ -126,52 +145,435 @@ export class ReactIntrospector {
       return data;
     }
 
-    // Get component name
-    if (componentFiber.type) {
-      if (typeof componentFiber.type === 'function') {
-        data.componentName = componentFiber.type.displayName || 
-                           componentFiber.type.name || 
-                           'Unknown';
-      } else if (typeof componentFiber.type === 'object' && componentFiber.type.name) {
-        // For object types with a name property (as in our tests)
-        data.componentName = componentFiber.type.name;
-      }
-    }
+    // Get component name and type
+    const componentInfo = this.extractComponentInfo(componentFiber);
+    Object.assign(data, componentInfo);
+
+    // Get source location
+    data.source = this.extractSourceLocation(componentFiber);
+
+    // Get component stack
+    data.componentStack = this.extractComponentStack(componentFiber);
+    data.parentComponents = this.extractParentComponents(componentFiber);
 
     // Get props (sanitized)
     if (componentFiber.memoizedProps) {
       data.props = this.sanitizeData(componentFiber.memoizedProps);
     }
 
-    // Get state (for class components or hooks)
+    // Get state and hooks
     if (componentFiber.memoizedState) {
       // For function components with hooks
       if (componentFiber.type && typeof componentFiber.type === 'function') {
-        const states = this.extractHookStates(componentFiber.memoizedState);
-        if (states.length > 0) {
-          data.state = states;
+        const isClassComponent = componentFiber.type.prototype?.isReactComponent;
+        
+        if (isClassComponent) {
+          // Class component state
+          data.state = this.sanitizeData(componentFiber.memoizedState);
+        } else {
+          // Function component hooks
+          data.hooks = this.extractHooks(componentFiber);
         }
-      } else {
-        // For class components
-        data.state = this.sanitizeData(componentFiber.memoizedState);
       }
     }
+
+    // Get React Context values
+    data.contexts = this.extractContextValues(componentFiber);
+
+    // Get render information
+    const renderInfo = this.extractRenderInfo(componentFiber);
+    Object.assign(data, renderInfo);
+
+    // Get error boundary info
+    data.errorBoundary = this.findErrorBoundary(componentFiber);
+
+    // Get fiber information
+    data.fiberType = this.getFiberType(componentFiber);
+    data.effectTags = this.getEffectTags(componentFiber);
 
     return data;
   }
 
-  private extractHookStates(memoizedState: any): any[] {
-    const states: any[] = [];
-    let current = memoizedState;
-    
-    while (current) {
-      if (current.memoizedState !== undefined) {
-        states.push(this.sanitizeData(current.memoizedState));
+  private extractComponentInfo(fiber: any): any {
+    const info: any = {};
+
+    if (fiber.type) {
+      if (typeof fiber.type === 'function') {
+        info.componentName = fiber.type.displayName || 
+                           fiber.type.name || 
+                           'Unknown';
+        info.displayName = fiber.type.displayName;
+        
+        // Determine component type
+        if (fiber.type.prototype?.isReactComponent) {
+          info.componentType = 'class';
+        } else if (fiber.type.$$typeof) {
+          const typeSymbol = fiber.type.$$typeof.toString();
+          if (typeSymbol.includes('react.memo')) {
+            info.componentType = 'memo';
+          } else if (typeSymbol.includes('react.forward_ref')) {
+            info.componentType = 'forwardRef';
+          } else if (typeSymbol.includes('react.lazy')) {
+            info.componentType = 'lazy';
+          } else {
+            info.componentType = 'function';
+          }
+        } else {
+          info.componentType = 'function';
+        }
+      } else if (typeof fiber.type === 'object') {
+        if (fiber.type.$$typeof) {
+          const typeSymbol = fiber.type.$$typeof.toString();
+          if (typeSymbol.includes('react.memo')) {
+            info.componentType = 'memo';
+            info.componentName = fiber.type.type?.name || 'Memo';
+          } else if (typeSymbol.includes('react.forward_ref')) {
+            info.componentType = 'forwardRef';
+            info.componentName = fiber.type.render?.name || 'ForwardRef';
+          } else if (typeSymbol.includes('react.lazy')) {
+            info.componentType = 'lazy';
+            info.componentName = 'Lazy';
+          }
+        }
+        
+        if (fiber.type.displayName) {
+          info.displayName = fiber.type.displayName;
+          info.componentName = fiber.type.displayName;
+        } else if (fiber.type.name) {
+          info.componentName = fiber.type.name;
+        }
       }
-      current = current.next;
+    }
+
+    if (!info.componentType) {
+      info.componentType = 'unknown';
+    }
+
+    return info;
+  }
+
+  private extractSourceLocation(fiber: any): any {
+    // Try to get source from _debugSource
+    if (fiber._debugSource) {
+      return {
+        fileName: fiber._debugSource.fileName,
+        lineNumber: fiber._debugSource.lineNumber,
+        columnNumber: fiber._debugSource.columnNumber,
+      };
+    }
+
+    // Try to get from type's _source
+    if (fiber.type?._source) {
+      return {
+        fileName: fiber.type._source.fileName,
+        lineNumber: fiber.type._source.lineNumber,
+        columnNumber: fiber.type._source.columnNumber,
+      };
+    }
+
+    // Try to extract from stack trace
+    if (fiber.type && typeof fiber.type === 'function') {
+      const stack = new Error().stack;
+      if (stack) {
+        const match = stack.match(/at\s+(\S+)\s+\((.+):(\d+):(\d+)\)/);
+        if (match && match[3] && match[4]) {
+          return {
+            fileName: match[2],
+            lineNumber: parseInt(match[3], 10),
+            columnNumber: parseInt(match[4], 10),
+          };
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private extractComponentStack(fiber: any): any[] {
+    const stack: any[] = [];
+    let current = fiber;
+    let depth = 0;
+    const maxDepth = 10;
+
+    while (current && depth < maxDepth) {
+      if (current.type && typeof current.type !== 'string') {
+        const componentName = this.getComponentName(current);
+        if (componentName && componentName !== 'Unknown') {
+          stack.push({
+            name: componentName,
+            props: current.memoizedProps ? this.sanitizeData(current.memoizedProps, 0, 1) : undefined,
+            key: current.key,
+          });
+        }
+      }
+      current = current.return;
+      depth++;
+    }
+
+    return stack.reverse();
+  }
+
+  private extractParentComponents(fiber: any): string[] {
+    const parents: string[] = [];
+    let current = fiber.return;
+    let depth = 0;
+    const maxDepth = 10;
+
+    while (current && depth < maxDepth) {
+      if (current.type && typeof current.type !== 'string') {
+        const componentName = this.getComponentName(current);
+        if (componentName && componentName !== 'Unknown') {
+          parents.push(componentName);
+        }
+      }
+      current = current.return;
+      depth++;
+    }
+
+    return parents;
+  }
+
+  private getComponentName(fiber: any): string {
+    if (!fiber.type) return 'Unknown';
+    
+    if (typeof fiber.type === 'function') {
+      return fiber.type.displayName || fiber.type.name || 'Unknown';
     }
     
-    return states;
+    if (typeof fiber.type === 'object') {
+      if (fiber.type.displayName) return fiber.type.displayName;
+      if (fiber.type.name) return fiber.type.name;
+      if (fiber.type.$$typeof) {
+        const typeSymbol = fiber.type.$$typeof.toString();
+        if (typeSymbol.includes('react.memo') && fiber.type.type) {
+          return fiber.type.type.displayName || fiber.type.type.name || 'Memo';
+        }
+        if (typeSymbol.includes('react.forward_ref') && fiber.type.render) {
+          return fiber.type.render.displayName || fiber.type.render.name || 'ForwardRef';
+        }
+      }
+    }
+    
+    return 'Unknown';
+  }
+
+  private extractHooks(fiber: any): any[] {
+    const hooks: any[] = [];
+    let current = fiber.memoizedState;
+    let hookIndex = 0;
+    
+    // Map of React's internal hook tags to our hook types
+    const hookTypes: { [key: string]: string } = {
+      '0': 'state',
+      '1': 'reducer',
+      '2': 'context',
+      '3': 'ref',
+      '4': 'effect',
+      '5': 'layoutEffect',
+      '6': 'callback',
+      '7': 'memo',
+      '8': 'imperativeHandle',
+    };
+
+    while (current) {
+      const hook: any = {
+        type: 'custom', // default
+        value: undefined,
+      };
+
+      // Try to determine hook type from the tag
+      if (current.tag !== undefined) {
+        hook.type = hookTypes[current.tag] || 'custom';
+      }
+
+      // Extract hook value based on type
+      if (current.memoizedState !== undefined) {
+        hook.value = this.sanitizeData(current.memoizedState);
+      }
+
+      // Extract dependencies for effect/memo/callback hooks
+      if (current.deps) {
+        hook.dependencies = this.sanitizeData(current.deps);
+      }
+
+      // Try to get custom hook name from stack trace (experimental)
+      if (hook.type === 'custom' && fiber.type) {
+        const funcString = fiber.type.toString();
+        const customHookMatch = funcString.match(/use[A-Z]\w*/g);
+        if (customHookMatch && customHookMatch[hookIndex]) {
+          hook.name = customHookMatch[hookIndex];
+        }
+      }
+
+      hooks.push(hook);
+      current = current.next;
+      hookIndex++;
+    }
+    
+    return hooks;
+  }
+
+  private extractContextValues(fiber: any): any[] {
+    const contexts: any[] = [];
+    let current = fiber;
+
+    while (current) {
+      // Check for context providers
+      if (current.type?._context) {
+        const context = current.type._context;
+        contexts.push({
+          displayName: context.displayName || 'Context',
+          value: this.sanitizeData(current.memoizedProps?.value),
+        });
+      }
+
+      // Check for context consumers
+      if (current.dependencies?.firstContext) {
+        let contextDep = current.dependencies.firstContext;
+        while (contextDep) {
+          contexts.push({
+            displayName: contextDep.context?.displayName || 'Context',
+            value: this.sanitizeData(contextDep.memoizedValue),
+          });
+          contextDep = contextDep.next;
+        }
+      }
+
+      current = current.return;
+    }
+
+    // Remove duplicates
+    const seen = new Set();
+    return contexts.filter(ctx => {
+      const key = JSON.stringify(ctx);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private extractRenderInfo(fiber: any): any {
+    const info: any = {};
+
+    // Track render count
+    const currentCount = this.renderCounts.get(fiber) || 0;
+    info.renderCount = currentCount + 1;
+    this.renderCounts.set(fiber, info.renderCount);
+
+    // Track render duration (if available)
+    if (fiber.actualDuration !== undefined) {
+      info.lastRenderDuration = fiber.actualDuration;
+      this.renderTimings.set(fiber, fiber.actualDuration);
+    }
+
+    // Try to determine render reasons
+    const reasons: string[] = [];
+    
+    if (fiber.alternate) {
+      // Props changed
+      if (fiber.memoizedProps !== fiber.alternate.memoizedProps) {
+        reasons.push('props changed');
+      }
+      
+      // State changed
+      if (fiber.memoizedState !== fiber.alternate.memoizedState) {
+        if (fiber.type?.prototype?.isReactComponent) {
+          reasons.push('state changed');
+        } else {
+          reasons.push('hooks changed');
+        }
+      }
+      
+      // Context changed
+      if (fiber.dependencies !== fiber.alternate.dependencies) {
+        reasons.push('context changed');
+      }
+    } else {
+      reasons.push('initial render');
+    }
+
+    if (reasons.length > 0) {
+      info.renderReasons = reasons;
+    }
+
+    return info;
+  }
+
+  private findErrorBoundary(fiber: any): any {
+    let current = fiber.return;
+
+    while (current) {
+      if (current.type?.getDerivedStateFromError || 
+          current.type?.prototype?.componentDidCatch) {
+        const errorBoundaryName = this.getComponentName(current);
+        
+        // Check if there's an error in state
+        if (current.memoizedState?.error) {
+          return {
+            componentName: errorBoundaryName,
+            error: current.memoizedState.error.toString(),
+            errorInfo: this.sanitizeData(current.memoizedState.errorInfo),
+          };
+        }
+        
+        return {
+          componentName: errorBoundaryName,
+        };
+      }
+      current = current.return;
+    }
+
+    return undefined;
+  }
+
+  private getFiberType(fiber: any): string | undefined {
+    const tag = fiber.tag;
+    
+    // React fiber tags
+    const tagNames: { [key: number]: string } = {
+      0: 'FunctionComponent',
+      1: 'ClassComponent',
+      2: 'IndeterminateComponent',
+      3: 'HostRoot',
+      4: 'HostPortal',
+      5: 'HostComponent',
+      6: 'HostText',
+      7: 'Fragment',
+      8: 'Mode',
+      9: 'ContextConsumer',
+      10: 'ContextProvider',
+      11: 'ForwardRef',
+      12: 'Profiler',
+      13: 'SuspenseComponent',
+      14: 'MemoComponent',
+      15: 'SimpleMemoComponent',
+      16: 'LazyComponent',
+    };
+
+    return tagNames[tag] || `Unknown(${tag})`;
+  }
+
+  private getEffectTags(fiber: any): string[] | undefined {
+    const flags = fiber.flags || fiber.effectTag;
+    if (!flags) return undefined;
+
+    const tags: string[] = [];
+    
+    // React effect flags
+    if (flags & 1) tags.push('PerformedWork');
+    if (flags & 2) tags.push('Placement');
+    if (flags & 4) tags.push('Update');
+    if (flags & 8) tags.push('PlacementAndUpdate');
+    if (flags & 16) tags.push('Deletion');
+    if (flags & 32) tags.push('ContentReset');
+    if (flags & 64) tags.push('Callback');
+    if (flags & 128) tags.push('DidCapture');
+    if (flags & 256) tags.push('Ref');
+    if (flags & 512) tags.push('Snapshot');
+    if (flags & 1024) tags.push('Passive');
+    if (flags & 2048) tags.push('Hydrating');
+
+    return tags.length > 0 ? tags : undefined;
   }
 
   private sanitizeData(data: any, depth = 0, maxDepth = 3): any {
@@ -186,6 +588,11 @@ export class ReactIntrospector {
     // Remove functions
     if (typeof data === 'function') {
       return '[Function]';
+    }
+
+    // Handle symbols
+    if (typeof data === 'symbol') {
+      return data.toString();
     }
 
     // Truncate long strings
@@ -207,6 +614,20 @@ export class ReactIntrospector {
 
     // Handle objects
     if (typeof data === 'object') {
+      // Handle special objects
+      if (data instanceof Date) {
+        return data.toISOString();
+      }
+      if (data instanceof RegExp) {
+        return data.toString();
+      }
+      if (data instanceof Error) {
+        return {
+          message: data.message,
+          stack: data.stack?.substring(0, 500),
+        };
+      }
+
       const sanitized: any = {};
       const keys = Object.keys(data).slice(0, 20); // Limit keys
       
@@ -236,7 +657,7 @@ export class ReactIntrospector {
   }
 
   private looksLikeSensitiveKey(key: string): boolean {
-    const sensitive = ['password', 'token', 'secret', 'key', 'auth', 'credential'];
+    const sensitive = ['password', 'token', 'secret', 'key', 'auth', 'credential', 'api_key', 'apikey'];
     const lowerKey = key.toLowerCase();
     return sensitive.some(s => lowerKey.includes(s));
   }
@@ -246,8 +667,10 @@ export class ReactIntrospector {
     const patterns = [
       /^[A-Za-z0-9-_]{20,}$/, // JWT-like
       /^sk_[a-zA-Z0-9]{32,}$/, // Stripe-like
+      /^pk_[a-zA-Z0-9]{32,}$/, // Public key patterns
       /\b[A-Z0-9]{20,}\b/, // Generic API key
       /^Bearer\s+/, // Auth header
+      /^ey[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/, // JWT token
     ];
     
     return patterns.some(pattern => pattern.test(value));

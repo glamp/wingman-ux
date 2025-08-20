@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import './App.css'
+import { TestComponentWithContext } from './TestComponent'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -134,6 +135,11 @@ function App() {
               Log Info Message
             </button>
           </div>
+        </section>
+
+        <section className="react-test-section">
+          <h2>React Context & Hooks Test</h2>
+          <TestComponentWithContext />
         </section>
       </main>
 

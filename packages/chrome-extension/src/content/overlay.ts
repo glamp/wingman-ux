@@ -1,5 +1,5 @@
 export interface OverlayOptions {
-  onSubmit: (note: string, target: any) => void;
+  onSubmit: (note: string, target: any, element?: HTMLElement) => void;
   onCancel: () => void;
 }
 
@@ -182,7 +182,7 @@ export function createOverlay(options: OverlayOptions) {
     };
 
     cleanup();
-    options.onSubmit(note, target);
+    options.onSubmit(note, target, selectedElement || undefined);
   });
 
   // ESC key to cancel
