@@ -29,7 +29,11 @@
     "coverage": "npm run test:coverage",
     "coverage:open": "open coverage/index.html",
     "prettier": "prettier --write .",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "release:build": "./scripts/build-release.sh",
+    "release:chrome": "./scripts/build-release.sh --chrome",
+    "release:cli": "./scripts/build-release.sh --cli",
+    "release:sdk": "./scripts/build-release.sh --sdk"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.0",

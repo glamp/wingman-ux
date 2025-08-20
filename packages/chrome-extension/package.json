@@ -1,7 +1,14 @@
 {
   "name": "@wingman/chrome-extension",
   "version": "1.0.0",
-  "private": true,
+  "description": "Wingman Chrome Extension - Lightweight UX feedback assistant for web applications",
+  "author": "Wingman Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wingman/wingman.git",
+    "directory": "packages/chrome-extension"
+  },
   "scripts": {
     "build": "vite build",
     "dev": "NODE_ENV=development vite build --watch",
