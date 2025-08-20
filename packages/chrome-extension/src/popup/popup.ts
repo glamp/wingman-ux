@@ -1,3 +1,5 @@
+import { getEnvironmentConfig } from '../utils/config';
+
 document.addEventListener('DOMContentLoaded', async () => {
   const relayUrlInput = document.getElementById('relayUrl') as HTMLInputElement;
   const activateItem = document.getElementById('activateItem') as HTMLDivElement;
@@ -6,8 +8,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const connectionDot = document.getElementById('connectionDot') as HTMLDivElement;
   const connectionText = document.getElementById('connectionText') as HTMLSpanElement;
   const showPreviewUrlCheckbox = document.getElementById('showPreviewUrl') as HTMLInputElement;
+  const header = document.querySelector('.header') as HTMLDivElement;
 
   let saveTimeout: number | null = null;
+
+  // Initialize environment UI
+  initializeEnvironmentUI();
 
   // Load saved settings
   const { relayUrl = 'http://localhost:8787', showPreviewUrl = true } = await chrome.storage.local.get(['relayUrl', 'showPreviewUrl']);
@@ -176,6 +182,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => {
       statusDiv.classList.remove('visible');
     }, 3000);
+  }
+
+  // Environment UI initialization
+  function initializeEnvironmentUI() {
+    try {
+      const config = getEnvironmentConfig();
+      
+      // Add environment banner if enabled
+      if (config.ui.showEnvironmentBanner && config.ui.environmentLabel) {
+        const banner = document.createElement('div');
+        banner.className = 'environment-banner';
+        banner.textContent = config.ui.environmentLabel;
+        banner.style.cssText = `
+          background-color: ${config.ui.headerColor};
+          color: white;
+          padding: 4px 12px;
+          text-align: center;
+          font-size: 11px;
+          font-weight: bold;
+          letter-spacing: 0.5px;
+          margin-bottom: 8px;
+          border-radius: 3px;
+        `;
+        
+        // Insert banner at the top of the popup
+        document.body.insertBefore(banner, document.body.firstChild);
+      }
+      
+      // Apply header color
+      if (header) {
+        header.style.backgroundColor = config.ui.headerColor;
+      }
+      
+    } catch (error) {
+      console.warn('[Wingman Popup] Failed to initialize environment UI:', error);
+    }
   }
 
   // Auto-check connection every 10 seconds since settings are always visible

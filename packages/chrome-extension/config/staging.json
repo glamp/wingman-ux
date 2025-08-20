@@ -1,0 +1,20 @@
+{
+  "environment": "staging",
+  "environmentName": "Staging",
+  "relayUrl": "http://localhost:8787",
+  "debug": false,
+  "badge": {
+    "text": "STG",
+    "color": "#FFA500"
+  },
+  "features": {
+    "verboseLogging": false,
+    "hotReload": false,
+    "debugPanel": true
+  },
+  "ui": {
+    "headerColor": "#F57C00",
+    "environmentLabel": "STAGING",
+    "showEnvironmentBanner": true
+  }
+}

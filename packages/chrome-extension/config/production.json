@@ -1,0 +1,20 @@
+{
+  "environment": "production",
+  "environmentName": "Production",
+  "relayUrl": "http://localhost:8787",
+  "debug": false,
+  "badge": {
+    "text": "",
+    "color": ""
+  },
+  "features": {
+    "verboseLogging": false,
+    "hotReload": false,
+    "debugPanel": false
+  },
+  "ui": {
+    "headerColor": "#1976D2",
+    "environmentLabel": "",
+    "showEnvironmentBanner": false
+  }
+}

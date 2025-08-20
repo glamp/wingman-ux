@@ -14,9 +14,14 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "vite build",
-    "dev": "NODE_ENV=development vite build --watch",
+    "build": "WINGMAN_ENV=production vite build",
+    "build:dev": "WINGMAN_ENV=development vite build",
+    "build:staging": "WINGMAN_ENV=staging vite build",
+    "build:prod": "WINGMAN_ENV=production vite build",
+    "dev": "WINGMAN_ENV=development vite build --watch",
+    "dev:icons": "node scripts/create-dev-icons.js",
     "clean": "rm -rf dist",
+    "clean:all": "rm -rf dist/development dist/staging dist/production",
     "test": "vitest run",
     "test:watch": "vitest watch"
   },
@@ -27,10 +32,11 @@
   "devDependencies": {
     "@types/chrome": "^0.0.288",
     "@vitejs/plugin-react": "^5.0.0",
+    "canvas": "^3.2.0",
     "hot-reload-extension-vite": "^1.0.13",
+    "jsdom": "^26.0.0",
     "typescript": "^5.7.3",
     "vite": "^5.4.14",
-    "vitest": "^2.1.8",
-    "jsdom": "^26.0.0"
+    "vitest": "^2.1.8"
   }
 }

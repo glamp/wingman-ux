@@ -1,6 +1,36 @@
 import type { WingmanAnnotation } from '@wingman/shared';
+import { getEnvironmentConfig, shouldShowLogs } from '../utils/config';
 
-console.log('[Wingman Background] Service worker started - Hot reload enabled!');
+// Global config reference
+let extensionConfig: EnvironmentConfig | null = null;
+
+// Initialize extension with environment-specific settings
+async function initializeExtension() {
+  try {
+    extensionConfig = getEnvironmentConfig();
+    
+    // Set up environment badge
+    if (extensionConfig.badge.text) {
+      await chrome.action.setBadgeText({ text: extensionConfig.badge.text });
+      await chrome.action.setBadgeBackgroundColor({ color: extensionConfig.badge.color });
+    } else {
+      // Clear badge for production
+      await chrome.action.setBadgeText({ text: '' });
+    }
+    
+    // Log initialization
+    if (shouldShowLogs(extensionConfig)) {
+      console.log(`[Wingman Background] Service worker started - ${extensionConfig.environmentName} mode`);
+      console.log('[Wingman Background] Config:', extensionConfig);
+    }
+    
+  } catch (error) {
+    console.error('[Wingman Background] Failed to initialize:', error);
+  }
+}
+
+// Call initialization
+initializeExtension();
 
 interface MessageRequest {
   type: 'CAPTURE_SCREENSHOT' | 'SUBMIT_ANNOTATION' | 'ACTIVATE_WINGMAN';
@@ -8,13 +38,19 @@ interface MessageRequest {
 }
 
 chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendResponse) => {
-  console.log('[Wingman Background] Message received:', request.type);
+  if (extensionConfig && shouldShowLogs(extensionConfig)) {
+    console.log('[Wingman Background] Message received:', request.type);
+  }
 
   if (request.type === 'CAPTURE_SCREENSHOT') {
-    console.log('[Wingman Background] Capturing screenshot...');
+    if (extensionConfig && shouldShowLogs(extensionConfig)) {
+      console.log('[Wingman Background] Capturing screenshot...');
+    }
     captureScreenshot()
       .then((dataUrl) => {
-        console.log('[Wingman Background] Screenshot captured');
+        if (extensionConfig && shouldShowLogs(extensionConfig)) {
+          console.log('[Wingman Background] Screenshot captured');
+        }
         sendResponse(dataUrl);
       })
       .catch((error) => {
@@ -25,10 +61,14 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
   }
 
   if (request.type === 'SUBMIT_ANNOTATION') {
-    console.log('[Wingman Background] Submitting annotation...');
+    if (extensionConfig && shouldShowLogs(extensionConfig)) {
+      console.log('[Wingman Background] Submitting annotation...');
+    }
     submitAnnotation(request.payload)
       .then((result) => {
-        console.log('[Wingman Background] Annotation submitted:', result);
+        if (extensionConfig && shouldShowLogs(extensionConfig)) {
+          console.log('[Wingman Background] Annotation submitted:', result);
+        }
         sendResponse(result);
       })
       .catch((error) => {
@@ -40,9 +80,13 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
 });
 
 chrome.action.onClicked.addListener((tab) => {
-  console.log('[Wingman Background] Extension icon clicked');
+  if (extensionConfig && shouldShowLogs(extensionConfig)) {
+    console.log('[Wingman Background] Extension icon clicked');
+  }
   if (tab.id) {
-    console.log('[Wingman Background] Sending activate message to tab:', tab.id);
+    if (extensionConfig && shouldShowLogs(extensionConfig)) {
+      console.log('[Wingman Background] Sending activate message to tab:', tab.id);
+    }
     chrome.tabs
       .sendMessage(tab.id, { type: 'ACTIVATE_OVERLAY' })
       .catch((error) => console.error('[Wingman Background] Failed to send message:', error));
@@ -50,11 +94,15 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 chrome.commands.onCommand.addListener((command) => {
-  console.log('[Wingman Background] Keyboard shortcut pressed:', command);
+  if (extensionConfig && shouldShowLogs(extensionConfig)) {
+    console.log('[Wingman Background] Keyboard shortcut pressed:', command);
+  }
   if (command === '_execute_action') {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (tab?.id) {
-        console.log('[Wingman Background] Sending activate message via shortcut to tab:', tab.id);
+        if (extensionConfig && shouldShowLogs(extensionConfig)) {
+          console.log('[Wingman Background] Sending activate message via shortcut to tab:', tab.id);
+        }
         chrome.tabs
           .sendMessage(tab.id, { type: 'ACTIVATE_OVERLAY' })
           .catch((error) => console.error('[Wingman Background] Failed to send message:', error));
@@ -75,7 +123,12 @@ async function captureScreenshot(): Promise<string> {
 
 async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   try {
-    const { relayUrl = 'http://localhost:8787' } = await chrome.storage.local.get('relayUrl');
+    // Get relay URL from config first, then fall back to storage, then default
+    let relayUrl = extensionConfig?.relayUrl || 'http://localhost:8787';
+    const { relayUrl: storedRelayUrl } = await chrome.storage.local.get('relayUrl');
+    if (storedRelayUrl) {
+      relayUrl = storedRelayUrl;
+    }
 
     const response = await fetch(`${relayUrl}/annotations`, {
       method: 'POST',
