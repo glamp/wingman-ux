@@ -9,15 +9,15 @@ interface MessageRequest {
 
 chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendResponse) => {
   console.log('[Wingman Background] Message received:', request.type);
-  
+
   if (request.type === 'CAPTURE_SCREENSHOT') {
     console.log('[Wingman Background] Capturing screenshot...');
     captureScreenshot()
-      .then(dataUrl => {
+      .then((dataUrl) => {
         console.log('[Wingman Background] Screenshot captured');
         sendResponse(dataUrl);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('[Wingman Background] Screenshot failed:', error);
         sendResponse(null);
       });
@@ -27,11 +27,11 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
   if (request.type === 'SUBMIT_ANNOTATION') {
     console.log('[Wingman Background] Submitting annotation...');
     submitAnnotation(request.payload)
-      .then(result => {
+      .then((result) => {
         console.log('[Wingman Background] Annotation submitted:', result);
         sendResponse(result);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('[Wingman Background] Submission failed:', error);
         sendResponse({ error: error.message });
       });
@@ -43,8 +43,9 @@ chrome.action.onClicked.addListener((tab) => {
   console.log('[Wingman Background] Extension icon clicked');
   if (tab.id) {
     console.log('[Wingman Background] Sending activate message to tab:', tab.id);
-    chrome.tabs.sendMessage(tab.id, { type: 'ACTIVATE_OVERLAY' })
-      .catch(error => console.error('[Wingman Background] Failed to send message:', error));
+    chrome.tabs
+      .sendMessage(tab.id, { type: 'ACTIVATE_OVERLAY' })
+      .catch((error) => console.error('[Wingman Background] Failed to send message:', error));
   }
 });
 
@@ -54,8 +55,9 @@ chrome.commands.onCommand.addListener((command) => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (tab?.id) {
         console.log('[Wingman Background] Sending activate message via shortcut to tab:', tab.id);
-        chrome.tabs.sendMessage(tab.id, { type: 'ACTIVATE_OVERLAY' })
-          .catch(error => console.error('[Wingman Background] Failed to send message:', error));
+        chrome.tabs
+          .sendMessage(tab.id, { type: 'ACTIVATE_OVERLAY' })
+          .catch((error) => console.error('[Wingman Background] Failed to send message:', error));
       }
     });
   }
@@ -74,7 +76,7 @@ async function captureScreenshot(): Promise<string> {
 async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   try {
     const { relayUrl = 'http://localhost:8787' } = await chrome.storage.local.get('relayUrl');
-    
+
     const response = await fetch(`${relayUrl}/annotations`, {
       method: 'POST',
       headers: {

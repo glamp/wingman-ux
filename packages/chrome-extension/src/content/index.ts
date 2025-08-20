@@ -32,51 +32,51 @@ function activateOverlay() {
     overlayActive = true;
     console.log('[Wingman] Creating overlay UI...');
     const overlay = createOverlay({
-    onSubmit: async (note: string, target: any, element?: HTMLElement) => {
-      try {
-        const screenshot = await captureScreenshot();
-        
-        // Get React data if element is provided
-        let reactData = undefined;
-        if (element) {
-          console.log('[Wingman] Extracting React data for element...');
-          reactData = await sdkBridge.getReactData(element);
-          
-          // Also try to get a robust selector from SDK
-          const robustSelector = await sdkBridge.getRobustSelector(element);
-          if (robustSelector) {
-            target.selector = robustSelector;
-          }
-        }
-        
-        const annotation = buildAnnotation(note, target, screenshot, reactData);
-        
-        // Log the annotation payload (with truncated screenshot)
-        const logPayload = {
-          ...annotation,
-          media: {
-            ...annotation.media,
-            screenshot: {
-              ...annotation.media.screenshot,
-              dataUrl: annotation.media.screenshot.dataUrl.substring(0, 100) + '...[truncated]'
+      onSubmit: async (note: string, target: any, element?: HTMLElement) => {
+        try {
+          const screenshot = await captureScreenshot();
+
+          // Get React data if element is provided
+          let reactData = undefined;
+          if (element) {
+            console.log('[Wingman] Extracting React data for element...');
+            reactData = await sdkBridge.getReactData(element);
+
+            // Also try to get a robust selector from SDK
+            const robustSelector = await sdkBridge.getRobustSelector(element);
+            if (robustSelector) {
+              target.selector = robustSelector;
             }
           }
-        };
-        console.log('[Wingman] Sending annotation payload:', logPayload);
-        
-        const result = await submitAnnotation(annotation);
-        console.log('[Wingman] Annotation submitted successfully:', result);
+
+          const annotation = buildAnnotation(note, target, screenshot, reactData);
+
+          // Log the annotation payload (with truncated screenshot)
+          const logPayload = {
+            ...annotation,
+            media: {
+              ...annotation.media,
+              screenshot: {
+                ...annotation.media.screenshot,
+                dataUrl: annotation.media.screenshot.dataUrl.substring(0, 100) + '...[truncated]',
+              },
+            },
+          };
+          console.log('[Wingman] Sending annotation payload:', logPayload);
+
+          const result = await submitAnnotation(annotation);
+          console.log('[Wingman] Annotation submitted successfully:', result);
+          overlayActive = false;
+        } catch (error) {
+          console.error('[Wingman] Failed to submit feedback:', error);
+          overlayActive = false;
+        }
+      },
+      onCancel: () => {
+        console.log('[Wingman] Overlay cancelled');
         overlayActive = false;
-      } catch (error) {
-        console.error('[Wingman] Failed to submit feedback:', error);
-        overlayActive = false;
-      }
-    },
-    onCancel: () => {
-      console.log('[Wingman] Overlay cancelled');
-      overlayActive = false;
-    },
-  });
+      },
+    });
     console.log('[Wingman] Overlay created successfully');
   } catch (error) {
     console.error('[Wingman] Failed to create overlay:', error);
@@ -86,31 +86,25 @@ function activateOverlay() {
 
 async function captureScreenshot(): Promise<string> {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
-      { type: 'CAPTURE_SCREENSHOT' },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(response);
-        }
+    chrome.runtime.sendMessage({ type: 'CAPTURE_SCREENSHOT' }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else {
+        resolve(response);
       }
-    );
+    });
   });
 }
 
 async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
-      { type: 'SUBMIT_ANNOTATION', payload: annotation },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(response);
-        }
+    chrome.runtime.sendMessage({ type: 'SUBMIT_ANNOTATION', payload: annotation }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else {
+        resolve(response);
       }
-    );
+    });
   });
 }
 
