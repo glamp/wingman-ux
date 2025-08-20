@@ -16,3 +16,4 @@ wingman/annotations/
 coverage/
 .nyc_output/
 *.lcov
+packages/relay-server/wingman/
