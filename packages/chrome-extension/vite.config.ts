@@ -41,7 +41,11 @@ function mergeManifests() {
   return { ...baseManifest, ...envManifest };
 }
 
-export default defineConfig({
+export default defineConfig(async () => {
+  // Dynamically import React plugin to avoid ESM issues
+  const { default: react } = await import('@vitejs/plugin-react');
+  
+  return {
   build: {
     outDir: `dist/${environment}`,
     emptyOutDir: true,
@@ -66,6 +70,8 @@ export default defineConfig({
     '__WINGMAN_CONFIG__': JSON.stringify(envConfig),
   },
   plugins: [
+    // React plugin for JSX support
+    react(),
     // Hot reload plugin only in development
     ...(isDev && envConfig.features?.hotReload ? [hotReloadExtension({
       log: true,
@@ -136,4 +142,5 @@ export default defineConfig({
       },
     },
   ],
+  };
 });

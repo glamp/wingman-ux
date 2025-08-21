@@ -42,7 +42,7 @@ export class ConsoleCapture {
 
   private addEntry(level: 'log' | 'info' | 'warn' | 'error', args: any[]) {
     // Ignore Wingman logs if removeWingmanLogs is enabled
-    if (this.removeWingmanLogs && args?.[0].startsWith('[Wingman')) {
+    if (this.removeWingmanLogs && typeof args?.[0] === 'string' && args[0].startsWith('[Wingman')) {
       return;
     }
     this.entries.push({

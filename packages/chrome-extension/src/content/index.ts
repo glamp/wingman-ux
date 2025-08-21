@@ -2,8 +2,9 @@ import type { RelayResponse, WingmanAnnotation } from '@wingman/shared';
 import { ulid } from 'ulid';
 import { ConsoleCapture } from './console-capture';
 import { NetworkCapture } from './network-capture';
-import { createOverlay, createSuccessNotification } from './overlay';
 import { SDKBridge } from './sdk-bridge';
+// Import React components directly
+import { mountReactOverlay, mountSuccessNotification } from '../content-ui/index';
 
 console.log('[Wingman] Content script loaded on:', window.location.href);
 
@@ -11,8 +12,9 @@ const consoleCapture = new ConsoleCapture();
 const networkCapture = new NetworkCapture();
 const sdkBridge = new SDKBridge({ debug: true });
 let overlayActive = false;
+let overlayCleanup: (() => void) | null = null;
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+export function handleMessage(request: any, sender: any, sendResponse: any) {
   console.log('[Wingman] Message received:', request);
   if (request.type === 'ACTIVATE_OVERLAY') {
     if (!overlayActive) {
@@ -25,13 +27,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     return true; // Keep message channel open for async response
   }
-});
+}
 
-function activateOverlay() {
+// Set up listener if not imported by wrapper
+if (typeof chrome !== 'undefined' && chrome.runtime) {
+  chrome.runtime.onMessage.addListener(handleMessage);
+}
+
+export function deactivateOverlay() {
+  overlayActive = false;
+  if (overlayCleanup) {
+    overlayCleanup();
+    overlayCleanup = null;
+  }
+  console.log('[Wingman] Overlay deactivated');
+}
+
+export function activateOverlay() {
   try {
+    // Clean up any existing overlay first
+    if (overlayCleanup) {
+      console.log('[Wingman] Cleaning up existing overlay...');
+      overlayCleanup();
+      overlayCleanup = null;
+    }
+    
     overlayActive = true;
-    console.log('[Wingman] Creating overlay UI...');
-    const overlay = createOverlay({
+    console.log('[Wingman] Creating React overlay...');
+    
+    overlayCleanup = mountReactOverlay({
       onSubmit: async (note: string, target: any, element?: HTMLElement) => {
         try {
           const screenshot = await captureScreenshot();
@@ -67,43 +91,53 @@ function activateOverlay() {
           const result = await submitAnnotation(annotation);
           console.log('[Wingman] Annotation submitted successfully:', result);
           overlayActive = false;
+          overlayCleanup = null;  // Reset cleanup reference since overlay unmounts itself
 
           // Show appropriate success notification
           const { showPreviewUrl = true } = await chrome.storage.local.get('showPreviewUrl');
           
           if (result.message === 'Copied to clipboard') {
             // Clipboard mode - always show copy notification
-            createSuccessNotification({
-              mode: 'clipboard',
-              annotation,  // Pass the annotation data
-              onClose: () => {
-                console.log('[Wingman] Success notification closed');
-              },
-            });
+            if (mountSuccessNotification) {
+              mountSuccessNotification({
+                mode: 'clipboard',
+                annotation,
+                onClose: () => {
+                  console.log('[Wingman] Success notification closed');
+                },
+              });
+            }
           } else if (showPreviewUrl && result.previewUrl) {
             // Server mode - show preview URL if enabled
-            createSuccessNotification({
-              previewUrl: result.previewUrl,
-              annotation,  // Pass the annotation data
-              onClose: () => {
-                console.log('[Wingman] Success notification closed');
-              },
-            });
+            if (mountSuccessNotification) {
+              mountSuccessNotification({
+                previewUrl: result.previewUrl,
+                annotation,
+                mode: 'server',
+                onClose: () => {
+                  console.log('[Wingman] Success notification closed');
+                },
+              });
+            }
           }
         } catch (error) {
           console.error('[Wingman] Failed to submit feedback:', error);
           overlayActive = false;
+          overlayCleanup = null;  // Reset cleanup reference
         }
       },
       onCancel: () => {
         console.log('[Wingman] Overlay cancelled');
         overlayActive = false;
+        overlayCleanup = null;  // Reset cleanup reference since it's already been called
       },
     });
+    
     console.log('[Wingman] Overlay created successfully');
   } catch (error) {
     console.error('[Wingman] Failed to create overlay:', error);
     overlayActive = false;
+    overlayCleanup = null;
   }
 }
 
@@ -112,8 +146,10 @@ async function captureScreenshot(): Promise<string> {
     chrome.runtime.sendMessage({ type: 'CAPTURE_SCREENSHOT' }, (response) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
-      } else {
+      } else if (response) {
         resolve(response);
+      } else {
+        reject(new Error('Failed to capture screenshot'));
       }
     });
   });
@@ -124,6 +160,8 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<RelayRes
     chrome.runtime.sendMessage({ type: 'SUBMIT_ANNOTATION', payload: annotation }, (response) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError);
+      } else if (response.error) {
+        reject(new Error(response.error));
       } else {
         resolve(response);
       }
@@ -137,10 +175,11 @@ function buildAnnotation(
   screenshot: string,
   reactData?: any
 ): WingmanAnnotation {
-  return {
-    id: generateId(),
+  const annotation: WingmanAnnotation = {
+    id: ulid(),
     createdAt: new Date().toISOString(),
     note,
+    target,
     page: {
       url: window.location.href,
       title: document.title,
@@ -148,23 +187,36 @@ function buildAnnotation(
       viewport: {
         w: window.innerWidth,
         h: window.innerHeight,
-        dpr: window.devicePixelRatio || 1,
+        dpr: window.devicePixelRatio,
       },
     },
-    target,
     media: {
       screenshot: {
-        mime: 'image/png',
         dataUrl: screenshot,
+        timestamp: new Date().toISOString(),
       },
     },
     console: consoleCapture.getEntries(),
-    errors: consoleCapture.getErrors(),
     network: networkCapture.getEntries(),
-    react: reactData,
+    errors: [],
   };
+
+  if (reactData) {
+    annotation.react = reactData;
+  }
+
+  return annotation;
 }
 
-function generateId(): string {
-  return ulid();
-}
+// Listen for keyboard shortcut from webpage
+document.addEventListener('keydown', (e) => {
+  // Option+W (Mac) or Alt+W (Windows/Linux)
+  if ((e.altKey || e.metaKey) && e.key.toLowerCase() === 'w') {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('[Wingman] Keyboard shortcut activated');
+    if (!overlayActive) {
+      activateOverlay();
+    }
+  }
+});
