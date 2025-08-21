@@ -1,5 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { RelayError } from '@wingman/shared';
+import { createLogger } from '@wingman/shared';
+
+const logger = createLogger('Wingman:ErrorHandler');
 
 export function errorHandler(
   err: any,
@@ -7,7 +10,7 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  console.error('Error:', err);
+  logger.error('Error:', err);
 
   if (res.headersSent) {
     return next(err);

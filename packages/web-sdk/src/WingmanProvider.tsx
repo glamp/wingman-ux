@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import type { WingmanConfig } from './types';
 import { setupMessageHandler } from './message-handler';
 import { ReactIntrospector } from './react-introspector';
-import { WingmanAnnotation } from '@wingman/shared';
+import { WingmanAnnotation, createLogger } from '@wingman/shared';
 
 interface WingmanContextValue {
   config: WingmanConfig;
@@ -21,6 +21,8 @@ interface FeedbackData {
 }
 
 const WingmanContext = createContext<WingmanContextValue | null>(null);
+
+const logger = createLogger('Wingman:Provider');
 
 export interface WingmanProviderProps {
   config?: WingmanConfig;
@@ -43,7 +45,7 @@ export function WingmanProvider({
     if (!enabled) return;
 
     if (debug) {
-      console.log('[Wingman] Initializing Web SDK');
+      logger.info('Initializing Web SDK');
     }
 
     // Initialize React introspector
@@ -54,7 +56,7 @@ export function WingmanProvider({
 
     return () => {
       if (debug) {
-        console.log('[Wingman] Cleaning up Web SDK');
+        logger.debug('Cleaning up Web SDK');
       }
       cleanup();
       introspectorRef.current = null;
@@ -64,14 +66,14 @@ export function WingmanProvider({
   const activate = useCallback(() => {
     setIsActive(true);
     if (debug) {
-      console.log('[Wingman] Activated');
+      logger.debug('Activated');
     }
   }, [debug]);
 
   const deactivate = useCallback(() => {
     setIsActive(false);
     if (debug) {
-      console.log('[Wingman] Deactivated');
+      logger.debug('Deactivated');
     }
   }, [debug]);
 
@@ -143,7 +145,7 @@ export function WingmanProvider({
 
       if (!response.ok) {
         if (debug) {
-          console.error('[Wingman] Failed to send feedback:', response.status, response.statusText);
+          logger.error('Failed to send feedback:', response.status, response.statusText);
         }
         return null;
       }
@@ -151,7 +153,7 @@ export function WingmanProvider({
       return await response.json();
     } catch (error) {
       if (debug) {
-        console.error('[Wingman] Error sending feedback:', error);
+        logger.error('Error sending feedback:', error);
       }
       return null;
     }

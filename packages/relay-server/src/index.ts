@@ -8,12 +8,15 @@ import { errorHandler } from './middleware/error-handler';
 import { annotationsRouter } from './routes/annotations';
 import { healthRouter } from './routes/health';
 import { StorageService } from './services/storage';
+import { createLogger } from '@wingman/shared';
 
 export interface ServerOptions {
   port?: number;
   host?: string;
   storagePath?: string;
 }
+
+const logger = createLogger('Wingman:RelayServer');
 
 export function createServer(options: ServerOptions = {}) {
   const app = express();
@@ -40,12 +43,12 @@ export function createServer(options: ServerOptions = {}) {
   app.use('/health', healthRouter);
   app.use('/annotations', annotationsRouter(storage));
 
-  console.log('NODE_ENV:', process.env.NODE_ENV);
+  logger.debug('NODE_ENV:', process.env.NODE_ENV);
 
   // Serve preview UI - proxy to dev server in development, static files in production
   // Skip preview UI setup during testing to avoid proxy issues
   if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV === 'development') {
-    console.log('Using development mode - proxying to preview UI dev server');
+    logger.info('Using development mode - proxying to preview UI dev server');
     // In development, proxy to the preview UI dev server
     app.use(
       '/preview',
@@ -59,7 +62,7 @@ export function createServer(options: ServerOptions = {}) {
         logger: console,
         on: {
           proxyReq: (proxyReq, req) => {
-            console.log('Proxying:', req.method, req.url, '->', proxyReq.path);
+            logger.debug('Proxying:', req.method, req.url, '->', proxyReq.path);
           },
         },
       })
@@ -92,9 +95,9 @@ export function createServer(options: ServerOptions = {}) {
           const address = server.address();
           const actualPort =
             typeof address === 'string' ? parseInt(address) : address?.port || port;
-          console.log(`Wingman Relay Server running on http://${host}:${actualPort}`);
-          console.log(`Health check: http://${host}:${actualPort}/health`);
-          console.log(`Annotations endpoint: http://${host}:${actualPort}/annotations`);
+          logger.info(`Wingman Relay Server running on http://${host}:${actualPort}`);
+          logger.info(`Health check: http://${host}:${actualPort}/health`);
+          logger.info(`Annotations endpoint: http://${host}:${actualPort}/annotations`);
           resolve(server);
         })
         .on('error', reject);
@@ -113,16 +116,16 @@ if (require.main === module) {
 
   // Graceful shutdown handlers
   const shutdown = async (signal: string) => {
-    console.log(`\n${signal} received, shutting down gracefully...`);
+    logger.info(`${signal} received, shutting down gracefully...`);
     if (server) {
       server.close(() => {
-        console.log('Server closed');
+        logger.info('Server closed');
         process.exit(0);
       });
       
       // Force exit after 5 seconds
       setTimeout(() => {
-        console.error('Could not close connections in time, forcefully shutting down');
+        logger.error('Could not close connections in time, forcefully shutting down');
         process.exit(1);
       }, 5000);
     } else {
@@ -140,7 +143,7 @@ if (require.main === module) {
       server = s;
     })
     .catch((error) => {
-      console.error('Failed to start server:', error);
+      logger.error('Failed to start server:', error);
       process.exit(1);
     });
 }

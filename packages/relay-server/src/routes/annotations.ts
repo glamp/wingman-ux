@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { WingmanAnnotation, RelayResponse } from '@wingman/shared';
+import { createLogger } from '@wingman/shared';
 import type { StorageService } from '../services/storage';
 import { SearchService } from '../services/search';
 import { ImageProcessor } from '../services/image-processor';
@@ -8,6 +9,7 @@ export function annotationsRouter(storage: StorageService): Router {
   const router = Router();
   const searchService = new SearchService();
   const imageProcessor = new ImageProcessor();
+  const logger = createLogger('Wingman:AnnotationsRoute');
 
   // POST /annotations - Create new annotation
   router.post('/', async (req, res, next) => {
@@ -93,7 +95,7 @@ export function annotationsRouter(storage: StorageService): Router {
         return res.status(400).json({ error: error.message });
       }
       
-      console.error('Error searching annotations:', error);
+      logger.error('Error searching annotations:', error);
       res.status(500).json({ 
         error: 'Failed to search annotations',
         code: 'SEARCH_ERROR'
@@ -201,7 +203,7 @@ export function annotationsRouter(storage: StorageService): Router {
 
       res.json(stats);
     } catch (error) {
-      console.error('Error getting annotation stats:', error);
+      logger.error('Error getting annotation stats:', error);
       res.status(500).json({ 
         error: 'Failed to retrieve annotation statistics',
         code: 'STATS_ERROR'
@@ -306,7 +308,7 @@ export function annotationsRouter(storage: StorageService): Router {
       // Send the image
       res.send(imageBuffer);
     } catch (error) {
-      console.error('Error generating screenshot:', error);
+      logger.error('Error generating screenshot:', error);
       next(error);
     }
   });

@@ -1,9 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 import type { WingmanAnnotation, StoredAnnotation } from '@wingman/shared';
+import { createLogger } from '@wingman/shared';
 
 export class StorageService {
   private _initialized = false;
+  private logger = createLogger('Wingman:Storage');
 
   constructor(private basePath: string) {
     // Don't call async method in constructor
@@ -16,7 +18,7 @@ export class StorageService {
       await fs.mkdir(this.basePath, { recursive: true });
       this._initialized = true;
     } catch (error) {
-      console.error('Failed to create storage directory:', error);
+      this.logger.error('Failed to create storage directory:', error);
       throw error;
     }
   }
@@ -34,7 +36,7 @@ export class StorageService {
     const filePath = path.join(this.basePath, `${annotation.id}.json`);
     await fs.writeFile(filePath, JSON.stringify(stored, null, 2));
     
-    console.log(`Saved annotation ${annotation.id} to ${filePath}`);
+    this.logger.debug(`Saved annotation ${annotation.id} to ${filePath}`);
     return stored;
   }
 
@@ -84,7 +86,7 @@ export class StorageService {
       );
       return JSON.parse(content);
     } catch (error) {
-      console.error('Failed to get last annotation:', error);
+      this.logger.error('Failed to get last annotation:', error);
       return null;
     }
   }
@@ -130,7 +132,7 @@ export class StorageService {
 
       return annotations;
     } catch (error) {
-      console.error('Failed to list annotations:', error);
+      this.logger.error('Failed to list annotations:', error);
       return [];
     }
   }
@@ -167,7 +169,7 @@ export class StorageService {
 
       return annotations;
     } catch (error) {
-      console.error('Failed to get all annotations:', error);
+      this.logger.error('Failed to get all annotations:', error);
       return [];
     }
   }

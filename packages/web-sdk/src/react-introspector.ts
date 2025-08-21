@@ -1,3 +1,5 @@
+import { createLogger } from '@wingman/shared';
+
 interface ReactDevToolsHook {
   renderers?: Map<number, any>;
   onCommitFiberRoot?: any;
@@ -16,6 +18,7 @@ export class ReactIntrospector {
   private fiberRoot: any = null;
   private renderCounts = new WeakMap<any, number>();
   private renderTimings = new WeakMap<any, number>();
+  private logger = createLogger('Wingman:Introspector');
 
   constructor(debug = false) {
     this.debug = debug;
@@ -28,7 +31,7 @@ export class ReactIntrospector {
       this.hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
       
       if (this.debug) {
-        console.log('[Wingman] React DevTools hook detected');
+        this.logger.debug('React DevTools hook detected');
       }
 
       // Try to get fiber root from existing renderers
@@ -49,7 +52,7 @@ export class ReactIntrospector {
         }
       };
     } else if (this.debug) {
-      console.log('[Wingman] React DevTools hook not found');
+      this.logger.debug('React DevTools hook not found');
     }
   }
 
@@ -63,7 +66,7 @@ export class ReactIntrospector {
       }
     } catch (error) {
       if (this.debug) {
-        console.warn('[Wingman] Failed to get fiber roots:', error);
+        this.logger.warn('Failed to get fiber roots:', error);
       }
     }
   }
@@ -90,7 +93,7 @@ export class ReactIntrospector {
       };
     } catch (error) {
       if (this.debug) {
-        console.warn('[Wingman] Failed to get React data:', error);
+        this.logger.warn('Failed to get React data:', error);
       }
       return { obtainedVia: 'none' };
     }
@@ -106,7 +109,7 @@ export class ReactIntrospector {
     // Log React-related keys for debugging
     const reactKeys = keys.filter(k => k.includes('react') || k.includes('React'));
     if (reactKeys.length > 0 && this.debug) {
-      console.log('[Wingman Introspector] React keys on element:', reactKeys);
+      this.logger.debug('React keys on element:', reactKeys);
     }
     
     const key = keys.find(
@@ -119,7 +122,7 @@ export class ReactIntrospector {
     
     if (key) {
       if (this.debug) {
-        console.log('[Wingman Introspector] Found React fiber with key:', key);
+        this.logger.debug('Found React fiber with key:', key);
       }
       return (element as any)[key];
     }

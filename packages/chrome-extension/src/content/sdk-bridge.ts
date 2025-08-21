@@ -4,6 +4,7 @@
  */
 
 import { generateUniqueSelector, cleanupTempAttributes } from './selector-generator';
+import { createLogger } from '../utils/logger';
 
 export interface SDKBridgeOptions {
   debug?: boolean;
@@ -20,6 +21,7 @@ export class SDKBridge {
     reject: (reason: any) => void;
     timeoutId: number;
   }>();
+  private logger = createLogger('Wingman:SDKBridge');
 
   constructor(options: SDKBridgeOptions = {}) {
     this.debug = options.debug || false;
@@ -44,9 +46,7 @@ export class SDKBridge {
     switch (type) {
       case 'WINGMAN_SDK_READY':
         this.sdkReady = true;
-        if (this.debug) {
-          console.log('[Wingman Bridge] SDK is ready');
-        }
+        this.logger.debug('SDK is ready');
         break;
 
       case 'WINGMAN_REACT_DATA_RESPONSE':
@@ -76,14 +76,14 @@ export class SDKBridge {
     
     const tryPing = () => {
       if (this.sdkReady || attempts >= maxAttempts) {
-        if (!this.sdkReady && this.debug) {
-          console.log('[Wingman Bridge] SDK not detected after', attempts, 'attempts');
+        if (!this.sdkReady) {
+          this.logger.debug('SDK not detected after', attempts, 'attempts');
         }
         return;
       }
       
       attempts++;
-      console.log('[Wingman Bridge] Sending PING to check SDK (attempt', attempts, ')');
+      this.logger.debug('Sending PING to check SDK (attempt', attempts, ')');
       window.postMessage({ type: 'WINGMAN_PING' }, '*');
       
       // Retry with exponential backoff
@@ -121,9 +121,7 @@ export class SDKBridge {
         ...payload,
       }, '*');
 
-      if (this.debug) {
-        console.log(`[Wingman Bridge] Sent request: ${type}`, payload);
-      }
+      this.logger.debug(`Sent request: ${type}`, payload);
     });
   }
 
@@ -138,46 +136,40 @@ export class SDKBridge {
    * Get React data for an element
    */
   async getReactData(element: HTMLElement): Promise<any> {
-    console.log('[Wingman Bridge] Getting React data for element:', element);
+    this.logger.debug('Getting React data for element:', element);
     
     // Wait a bit for SDK to be ready if it's not yet
     if (!this.sdkReady) {
-      console.log('[Wingman Bridge] SDK not ready, waiting 500ms...');
+      this.logger.debug('SDK not ready, waiting 500ms...');
       await new Promise(resolve => setTimeout(resolve, 500));
     }
     
     if (!this.sdkReady) {
-      if (this.debug) {
-        console.log('[Wingman Bridge] SDK still not ready after wait, attempting direct extraction');
-      }
+      this.logger.debug('SDK still not ready after wait, attempting direct extraction');
       // Try direct extraction as fallback
       const directData = this.extractReactDataDirectly(element);
-      console.log('[Wingman Bridge] Direct extraction result:', directData);
+      this.logger.debug('Direct extraction result:', directData);
       return directData;
     }
 
     try {
       // Generate unique selector for the element
       const selector = generateUniqueSelector(element);
-      console.log('[Wingman Bridge] Generated selector for element:', selector);
+      this.logger.debug('Generated selector for element:', selector);
       
-      console.log('[Wingman Bridge] Sending request to SDK for React data');
+      this.logger.debug('Sending request to SDK for React data');
       const data = await this.sendRequest<any>('WINGMAN_GET_REACT_DATA', { selector });
       
       // Clean up any temporary attributes we may have added
       cleanupTempAttributes();
       
-      if (this.debug) {
-        console.log('[Wingman Bridge] Received React data from SDK:', data);
-      }
+      this.logger.debug('Received React data from SDK:', data);
       return data || { obtainedVia: 'none' };
     } catch (error) {
-      if (this.debug) {
-        console.warn('[Wingman Bridge] Failed to get React data from SDK:', error);
-      }
+      this.logger.warn('Failed to get React data from SDK:', error);
       // Fallback to direct extraction
       const directData = this.extractReactDataDirectly(element);
-      console.log('[Wingman Bridge] Fallback direct extraction result:', directData);
+      this.logger.debug('Fallback direct extraction result:', directData);
       
       // Clean up any temporary attributes
       cleanupTempAttributes();
@@ -194,15 +186,11 @@ export class SDKBridge {
     // No need to go through SDK for this
     try {
       const selector = generateUniqueSelector(element);
-      if (this.debug) {
-        console.log('[Wingman Bridge] Generated robust selector:', selector);
-      }
+      this.logger.debug('Generated robust selector:', selector);
       cleanupTempAttributes();
       return selector;
     } catch (error) {
-      if (this.debug) {
-        console.warn('[Wingman Bridge] Failed to generate selector:', error);
-      }
+      this.logger.warn('Failed to generate selector:', error);
       return this.generateBasicSelector(element);
     }
   }
@@ -216,7 +204,7 @@ export class SDKBridge {
       // React 16-17: __reactFiber, __reactInternalInstance
       // React 18-19: __reactFiber$[hash], __reactProps$[hash]
       const keys = Object.keys(element);
-      console.log('[Wingman Bridge] Element keys:', keys.filter(k => k.includes('react') || k.includes('React')));
+      this.logger.debug('Element keys:', keys.filter(k => k.includes('react') || k.includes('React')));
       
       const key = keys.find(
         key => key.startsWith('__reactInternalInstance') || 
@@ -227,11 +215,11 @@ export class SDKBridge {
       );
       
       if (!key) {
-        console.log('[Wingman Bridge] No React fiber key found on element');
+        this.logger.debug('No React fiber key found on element');
         return { obtainedVia: 'none' };
       }
       
-      console.log('[Wingman Bridge] Found React fiber key:', key);
+      this.logger.debug('Found React fiber key:', key);
 
       const fiber = (element as any)[key];
       if (!fiber) {
@@ -299,9 +287,7 @@ export class SDKBridge {
 
       return data;
     } catch (error) {
-      if (this.debug) {
-        console.warn('[Wingman Bridge] Direct React extraction failed:', error);
-      }
+      this.logger.warn('Direct React extraction failed:', error);
       return { obtainedVia: 'none' };
     }
   }

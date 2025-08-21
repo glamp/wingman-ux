@@ -5,24 +5,26 @@ import { NetworkCapture } from './network-capture';
 import { SDKBridge } from './sdk-bridge';
 // Import React components directly
 import { mountReactOverlay, mountSuccessNotification } from '../content-ui/index';
+import { createLogger } from '../utils/logger';
 
-console.log('[Wingman] Content script loaded on:', window.location.href);
+const logger = createLogger('Wingman:Content');
+logger.info('Content script loaded on:', window.location.href);
 
 const consoleCapture = new ConsoleCapture();
 const networkCapture = new NetworkCapture();
-const sdkBridge = new SDKBridge({ debug: true });
+const sdkBridge = new SDKBridge({ debug: false }); // Use logger instead of debug flag
 let overlayActive = false;
 let overlayCleanup: (() => void) | null = null;
 
 function handleMessage(request: any, sender: any, sendResponse: any) {
-  console.log('[Wingman] Message received:', request);
+  logger.debug('Message received:', request);
   if (request.type === 'ACTIVATE_OVERLAY') {
     if (!overlayActive) {
-      console.log('[Wingman] Activating overlay...');
+      logger.debug('Activating overlay...');
       activateOverlay();
       sendResponse({ success: true });
     } else {
-      console.log('[Wingman] Overlay already active');
+      logger.debug('Overlay already active');
       sendResponse({ success: false, reason: 'already_active' });
     }
     return true; // Keep message channel open for async response
@@ -40,20 +42,20 @@ function deactivateOverlay() {
     overlayCleanup();
     overlayCleanup = null;
   }
-  console.log('[Wingman] Overlay deactivated');
+  logger.debug('Overlay deactivated');
 }
 
 function activateOverlay() {
   try {
     // Clean up any existing overlay first
     if (overlayCleanup) {
-      console.log('[Wingman] Cleaning up existing overlay...');
+      logger.debug('Cleaning up existing overlay...');
       overlayCleanup();
       overlayCleanup = null;
     }
     
     overlayActive = true;
-    console.log('[Wingman] Creating React overlay...');
+    logger.debug('Creating React overlay...');
     
     overlayCleanup = mountReactOverlay({
       onSubmit: async (note: string, target: any, element?: HTMLElement) => {
@@ -63,7 +65,7 @@ function activateOverlay() {
           // Get React data if element is provided
           let reactData = undefined;
           if (element) {
-            console.log('[Wingman] Extracting React data for element...');
+            logger.debug('Extracting React data for element...');
             reactData = await sdkBridge.getReactData(element);
 
             // Also try to get a robust selector from SDK
@@ -86,10 +88,10 @@ function activateOverlay() {
               },
             },
           };
-          console.log('[Wingman] Sending annotation payload:', logPayload);
+          logger.debug('Sending annotation payload:', logPayload);
 
           const result = await submitAnnotation(annotation);
-          console.log('[Wingman] Annotation submitted successfully:', result);
+          logger.info('Annotation submitted successfully:', result);
           overlayActive = false;
           overlayCleanup = null;  // Reset cleanup reference since overlay unmounts itself
 
@@ -111,10 +113,10 @@ function activateOverlay() {
             try {
               const successful = document.execCommand('copy');
               if (!successful) {
-                console.error('[Wingman] Copy command returned false');
+                logger.error('Copy command returned false');
               }
             } catch (err) {
-              console.error('[Wingman] Failed to copy to clipboard:', err);
+              logger.error('Failed to copy to clipboard:', err);
             }
             
             document.body.removeChild(textArea);
@@ -127,7 +129,7 @@ function activateOverlay() {
                 mode: 'clipboard',
                 annotation,
                 onClose: () => {
-                  console.log('[Wingman] Success notification closed');
+                  logger.debug('Success notification closed');
                 },
               });
             }
@@ -139,27 +141,27 @@ function activateOverlay() {
                 annotation,
                 mode: 'server',
                 onClose: () => {
-                  console.log('[Wingman] Success notification closed');
+                  logger.debug('Success notification closed');
                 },
               });
             }
           }
         } catch (error) {
-          console.error('[Wingman] Failed to submit feedback:', error);
+          logger.error('Failed to submit feedback:', error);
           overlayActive = false;
           overlayCleanup = null;  // Reset cleanup reference
         }
       },
       onCancel: () => {
-        console.log('[Wingman] Overlay cancelled');
+        logger.debug('Overlay cancelled');
         overlayActive = false;
         overlayCleanup = null;  // Reset cleanup reference since it's already been called
       },
     });
     
-    console.log('[Wingman] Overlay created successfully');
+    logger.debug('Overlay created successfully');
   } catch (error) {
-    console.error('[Wingman] Failed to create overlay:', error);
+    logger.error('Failed to create overlay:', error);
     overlayActive = false;
     overlayCleanup = null;
   }

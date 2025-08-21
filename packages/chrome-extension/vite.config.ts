@@ -49,8 +49,14 @@ export default defineConfig(async () => {
   build: {
     outDir: `dist/${environment}`,
     emptyOutDir: true,
-    minify: isProd,
+    minify: isProd ? 'terser' : false,
     sourcemap: !isProd,
+    terserOptions: isProd ? {
+      compress: {
+        drop_console: false, // Keep console.error
+        pure_funcs: ['console.log', 'console.debug', 'console.info', 'console.warn'], // Remove these
+      },
+    } : undefined,
     rollupOptions: {
       input: {
         background: resolve(__dirname, 'src/background/index.ts'),

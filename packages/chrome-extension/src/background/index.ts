@@ -10,12 +10,15 @@ import type { WingmanAnnotation } from '@wingman/shared';
  * - packages/shared/src/format-claude.ts (canonical version)
  * - packages/chrome-extension/src/utils/format-claude.ts (content script copy)
  */
-import { formatAnnotationForClaude } from '@wingman/shared';
-import { getEnvironmentConfig, shouldShowLogs } from '../utils/config';
+import { formatAnnotationForClaude, createLogger } from '@wingman/shared';
+import { getEnvironmentConfig } from '../utils/config';
 import type { EnvironmentConfig } from '../types/env';
 
 // Global config reference
 let extensionConfig: EnvironmentConfig | null = null;
+
+// Create logger instance for background script
+const logger = createLogger('Wingman:Background');
 
 // Initialize extension with environment-specific settings
 async function initializeExtension() {
@@ -31,14 +34,17 @@ async function initializeExtension() {
       await chrome.action.setBadgeText({ text: '' });
     }
     
-    // Log initialization
-    if (shouldShowLogs(extensionConfig)) {
-      console.log(`[Wingman Background] Service worker started - ${extensionConfig.environmentName} mode`);
-      console.log('[Wingman Background] Config:', extensionConfig);
+    // Configure logger based on environment
+    if (extensionConfig.features.verboseLogging) {
+      logger.setLevel('debug');
     }
     
+    // Log initialization
+    logger.info(`Service worker started - ${extensionConfig.environmentName} mode`);
+    logger.debug('Config:', extensionConfig);
+    
   } catch (error) {
-    console.error('[Wingman Background] Failed to initialize:', error);
+    logger.error('Failed to initialize:', error);
   }
 }
 
@@ -51,41 +57,31 @@ interface MessageRequest {
 }
 
 chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendResponse) => {
-  if (extensionConfig && shouldShowLogs(extensionConfig)) {
-    console.log('[Wingman Background] Message received:', request.type);
-  }
+  logger.debug('Message received:', request.type);
 
   if (request.type === 'CAPTURE_SCREENSHOT') {
-    if (extensionConfig && shouldShowLogs(extensionConfig)) {
-      console.log('[Wingman Background] Capturing screenshot...');
-    }
+    logger.debug('Capturing screenshot...');
     captureScreenshot()
       .then((dataUrl) => {
-        if (extensionConfig && shouldShowLogs(extensionConfig)) {
-          console.log('[Wingman Background] Screenshot captured');
-        }
+        logger.debug('Screenshot captured');
         sendResponse(dataUrl);
       })
       .catch((error) => {
-        console.error('[Wingman Background] Screenshot failed:', error);
+        logger.error('Screenshot failed:', error);
         sendResponse(null);
       });
     return true; // Will respond asynchronously
   }
 
   if (request.type === 'SUBMIT_ANNOTATION') {
-    if (extensionConfig && shouldShowLogs(extensionConfig)) {
-      console.log('[Wingman Background] Submitting annotation...');
-    }
+    logger.debug('Submitting annotation...');
     submitAnnotation(request.payload)
       .then((result) => {
-        if (extensionConfig && shouldShowLogs(extensionConfig)) {
-          console.log('[Wingman Background] Annotation submitted:', result);
-        }
+        logger.debug('Annotation submitted:', result);
         sendResponse(result);
       })
       .catch((error) => {
-        console.error('[Wingman Background] Submission failed:', error);
+        logger.error('Submission failed:', error);
         sendResponse({ error: error.message });
       });
     return true;
@@ -93,32 +89,24 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
 });
 
 chrome.action.onClicked.addListener((tab) => {
-  if (extensionConfig && shouldShowLogs(extensionConfig)) {
-    console.log('[Wingman Background] Extension icon clicked');
-  }
+  logger.debug('Extension icon clicked');
   if (tab.id) {
-    if (extensionConfig && shouldShowLogs(extensionConfig)) {
-      console.log('[Wingman Background] Sending activate message to tab:', tab.id);
-    }
+    logger.debug('Sending activate message to tab:', tab.id);
     chrome.tabs
       .sendMessage(tab.id, { type: 'ACTIVATE_OVERLAY' })
-      .catch((error) => console.error('[Wingman Background] Failed to send message:', error));
+      .catch((error) => logger.error('Failed to send message:', error));
   }
 });
 
 chrome.commands.onCommand.addListener((command) => {
-  if (extensionConfig && shouldShowLogs(extensionConfig)) {
-    console.log('[Wingman Background] Keyboard shortcut pressed:', command);
-  }
+  logger.debug('Keyboard shortcut pressed:', command);
   if (command === 'activate-overlay') {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (tab?.id) {
-        if (extensionConfig && shouldShowLogs(extensionConfig)) {
-          console.log('[Wingman Background] Sending activate message via shortcut to tab:', tab.id);
-        }
+        logger.debug('Sending activate message via shortcut to tab:', tab.id);
         chrome.tabs
           .sendMessage(tab.id, { type: 'ACTIVATE_OVERLAY' })
-          .catch((error) => console.error('[Wingman Background] Failed to send message:', error));
+          .catch((error) => logger.error('Failed to send message:', error));
       }
     });
   }
@@ -129,7 +117,7 @@ async function captureScreenshot(): Promise<string> {
     const dataUrl = await chrome.tabs.captureVisibleTab({ format: 'png' });
     return dataUrl;
   } catch (error) {
-    console.error('Failed to capture screenshot:', error);
+    logger.error('Failed to capture screenshot:', error);
     throw error;
   }
 }
@@ -169,7 +157,7 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
 
     return await response.json();
   } catch (error) {
-    console.error('Failed to submit annotation:', error);
+    logger.error('Failed to submit annotation:', error);
     throw error;
   }
 }
