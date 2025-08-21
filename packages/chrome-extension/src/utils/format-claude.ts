@@ -1,16 +1,20 @@
 import type { WingmanAnnotation } from './types';
 
 /**
+ * IMPORTANT: This is a duplicate of packages/shared/src/format-claude.ts
+ * 
+ * This duplication is INTENTIONAL and NECESSARY because:
+ * - Chrome content scripts cannot use ES modules (no import/export)
+ * - Content scripts must be self-contained bundles without external imports
+ * - This file is used by content script components (SuccessNotification)
+ * 
+ * If you modify this function, you MUST also update:
+ * - packages/shared/src/format-claude.ts (the canonical version)
+ * 
+ * Background scripts CAN and SHOULD use the shared version directly
+ * via: import { formatAnnotationForClaude } from '@wingman/shared'
+ * 
  * Formats a Wingman annotation as markdown for Claude Code
- * This is shared between the Chrome extension and preview UI
- * 
- * NOTE: There is a duplicate of this function in:
- * - packages/chrome-extension/src/utils/format-claude.ts
- * 
- * The duplicate exists because Chrome content scripts cannot use ES modules.
- * If you modify this function, please also update the duplicate.
- * 
- * Background scripts and non-extension code should use this version.
  */
 export function formatAnnotationForClaude(annotation: WingmanAnnotation): string {
   let output = `# Wingman Annotation\n\n`;

@@ -18,6 +18,16 @@ const BtnCode = createButton('Code', '</>', () => {
 
 // Enhanced WYSIWYG CSS - 25% larger and cleaner
 const WYSIWYG_CSS = `
+/* Global font override for all WYSIWYG elements */
+.rsw-editor,
+.rsw-editor *,
+.rsw-ce,
+.rsw-ce *,
+.rsw-ce[contenteditable="true"],
+.rsw-ce[contenteditable="true"] * {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
 .rsw-editor {
   border: 1px solid #ddd;
   border-radius: 6px;
@@ -33,6 +43,12 @@ const WYSIWYG_CSS = `
   padding: 12px;
   font-size: 14px;
   line-height: 1.5;
+}
+
+/* Override any default contenteditable styles */
+[contenteditable="true"],
+[contenteditable="true"] * {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .rsw-ce:focus {
@@ -51,6 +67,7 @@ const WYSIWYG_CSS = `
   border: 0;
   color: #333;
   cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-size: 14px;
   font-weight: 500;
   height: 30px;
@@ -135,21 +152,40 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
       },
     }));
 
-    // Inject CSS into shadow DOM
+    // Inject CSS into shadow DOM - do it immediately and on mount
     useEffect(() => {
-      const shadowHost = document.getElementById('wingman-overlay-host');
-      if (shadowHost && shadowHost.shadowRoot) {
-        // Check if styles are already injected
-        if (!shadowHost.shadowRoot.querySelector('#wysiwyg-styles')) {
+      const injectStyles = () => {
+        const shadowHost = document.getElementById('wingman-overlay-host');
+        if (shadowHost && shadowHost.shadowRoot) {
+          // Remove old styles if they exist
+          const oldStyle = shadowHost.shadowRoot.querySelector('#wysiwyg-styles');
+          if (oldStyle) {
+            oldStyle.remove();
+          }
+          
+          // Inject fresh styles
           const style = document.createElement('style');
           style.id = 'wysiwyg-styles';
           style.textContent = WYSIWYG_CSS;
-          shadowHost.shadowRoot.appendChild(style);
+          // Insert at the beginning to ensure it loads before other styles
+          shadowHost.shadowRoot.insertBefore(style, shadowHost.shadowRoot.firstChild);
           console.log('[Wingman] Injected WYSIWYG styles into shadow DOM');
+          
+          // Force a re-render of contenteditable with !important
+          setTimeout(() => {
+            const editable = shadowHost.shadowRoot.querySelector('.rsw-ce');
+            if (editable instanceof HTMLElement) {
+              editable.style.setProperty('font-family', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', 'important');
+            }
+          }, 0);
+        } else {
+          console.warn('[Wingman] Could not find shadow host to inject WYSIWYG styles');
         }
-      } else {
-        console.warn('[Wingman] Could not find shadow host to inject WYSIWYG styles');
-      }
+      };
+      
+      injectStyles();
+      // Also inject after a small delay to ensure DOM is ready
+      setTimeout(injectStyles, 100);
     }, []);
 
     function onChange(e: any) {

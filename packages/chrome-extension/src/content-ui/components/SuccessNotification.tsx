@@ -20,7 +20,8 @@ import {
   Code as CodeIcon,
 } from '@mui/icons-material';
 import type { WingmanAnnotation } from '@wingman/shared';
-import { formatAnnotationForClaude } from '@wingman/shared';
+import { formatAnnotationForClaude } from '../../utils/format-claude';
+import { copyToClipboard } from '../../utils/clipboard';
 
 export interface SuccessNotificationProps {
   previewUrl?: string;
@@ -75,44 +76,20 @@ const SuccessNotification: React.FC<SuccessNotificationProps> = ({
   const handleCopyUrl = async () => {
     if (!previewUrl) return;
     
-    try {
-      await navigator.clipboard.writeText(previewUrl);
-      setUrlCopied(true);
-      setTimeout(() => setUrlCopied(false), 2000);
-    } catch (err) {
-      // Fallback for older browsers
-      const input = document.createElement('input');
-      input.value = previewUrl;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand('copy');
-      document.body.removeChild(input);
+    const success = await copyToClipboard(previewUrl);
+    if (success) {
       setUrlCopied(true);
       setTimeout(() => setUrlCopied(false), 2000);
     }
   };
 
   const handleCopyForClaude = async () => {
-    try {
-      const textToCopy = annotation 
-        ? formatAnnotationForClaude(annotation)
-        : previewUrl || '';
-      
-      await navigator.clipboard.writeText(textToCopy);
-      setClaudeCopied(true);
-      setTimeout(() => setClaudeCopied(false), 2000);
-    } catch (err) {
-      // Fallback
-      const tempTextArea = document.createElement('textarea');
-      tempTextArea.value = annotation 
-        ? formatAnnotationForClaude(annotation)
-        : previewUrl || '';
-      tempTextArea.style.position = 'fixed';
-      tempTextArea.style.left = '-999999px';
-      document.body.appendChild(tempTextArea);
-      tempTextArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(tempTextArea);
+    const textToCopy = annotation 
+      ? formatAnnotationForClaude(annotation)
+      : previewUrl || '';
+    
+    const success = await copyToClipboard(textToCopy);
+    if (success) {
       setClaudeCopied(true);
       setTimeout(() => setClaudeCopied(false), 2000);
     }

@@ -14,7 +14,7 @@ const sdkBridge = new SDKBridge({ debug: true });
 let overlayActive = false;
 let overlayCleanup: (() => void) | null = null;
 
-export function handleMessage(request: any, sender: any, sendResponse: any) {
+function handleMessage(request: any, sender: any, sendResponse: any) {
   console.log('[Wingman] Message received:', request);
   if (request.type === 'ACTIVATE_OVERLAY') {
     if (!overlayActive) {
@@ -34,7 +34,7 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
   chrome.runtime.onMessage.addListener(handleMessage);
 }
 
-export function deactivateOverlay() {
+function deactivateOverlay() {
   overlayActive = false;
   if (overlayCleanup) {
     overlayCleanup();
@@ -43,7 +43,7 @@ export function deactivateOverlay() {
   console.log('[Wingman] Overlay deactivated');
 }
 
-export function activateOverlay() {
+function activateOverlay() {
   try {
     // Clean up any existing overlay first
     if (overlayCleanup) {
@@ -95,6 +95,30 @@ export function activateOverlay() {
 
           // Show appropriate success notification
           const { showPreviewUrl = true } = await chrome.storage.local.get('showPreviewUrl');
+          
+          // Handle clipboard mode - copy to clipboard in content script context
+          if (result.message === 'Copied to clipboard' && result.clipboardContent) {
+            // Use the more reliable textarea method as primary approach
+            const textArea = document.createElement('textarea');
+            textArea.value = result.clipboardContent;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+              const successful = document.execCommand('copy');
+              if (!successful) {
+                console.error('[Wingman] Copy command returned false');
+              }
+            } catch (err) {
+              console.error('[Wingman] Failed to copy to clipboard:', err);
+            }
+            
+            document.body.removeChild(textArea);
+          }
           
           if (result.message === 'Copied to clipboard') {
             // Clipboard mode - always show copy notification

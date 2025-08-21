@@ -14,10 +14,10 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "WINGMAN_ENV=production vite build",
-    "build:dev": "WINGMAN_ENV=development vite build",
-    "build:staging": "WINGMAN_ENV=staging vite build",
-    "build:prod": "WINGMAN_ENV=production vite build",
+    "build": "WINGMAN_ENV=production vite build && WINGMAN_ENV=production vite build --config vite.content.config.ts",
+    "build:dev": "WINGMAN_ENV=development vite build && WINGMAN_ENV=development vite build --config vite.content.config.ts",
+    "build:staging": "WINGMAN_ENV=staging vite build && WINGMAN_ENV=staging vite build --config vite.content.config.ts",
+    "build:prod": "WINGMAN_ENV=production vite build && WINGMAN_ENV=production vite build --config vite.content.config.ts",
     "dev": "WINGMAN_ENV=development vite build --watch",
     "dev:icons": "node scripts/create-dev-icons.js",
     "clean": "rm -rf dist",
