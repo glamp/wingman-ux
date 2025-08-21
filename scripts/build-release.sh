@@ -206,6 +206,21 @@ main() {
     create_chrome_zip "production"
     create_release_readme
     
+    # Validate the CLI works
+    log "Validating CLI..."
+    if [ -x "$RELEASE_DIR/cli/dist/index.js" ]; then
+        "$RELEASE_DIR/cli/dist/index.js" --version >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            success "CLI validation passed"
+        else
+            error "CLI validation failed - cannot run"
+            exit 1
+        fi
+    else
+        error "CLI not executable"
+        exit 1
+    fi
+    
     echo -e "\n${GREEN}✅ Build complete!${NC} Release artifacts are in the ${BLUE}release/${NC} directory"
     echo -e "${YELLOW}📦 Next steps:${NC}"
     echo "  - Chrome Extension: Upload release/chrome-extension/wingman-chrome-extension.zip to Chrome Web Store"

@@ -22,9 +22,6 @@ async function build() {
       'bufferutil',
       'utf-8-validate'
     ],
-    banner: {
-      js: '#!/usr/bin/env node\n'
-    },
     define: {
       'process.env.NODE_ENV': '"production"'
     },

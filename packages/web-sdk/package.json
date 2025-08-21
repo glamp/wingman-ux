@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wingman/wingman.git",
+    "url": "https://github.com/glamp/wingman-attempt-4.git",
     "directory": "packages/web-sdk"
   },
   "publishConfig": {
