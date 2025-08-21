@@ -90,15 +90,18 @@ package_web_sdk() {
     cp -r "$sdk_dir/dist" "$release_sdk/"
     cp "$sdk_dir/package.json" "$release_sdk/"
     
-    # Copy README if it exists
+    # Copy README and LICENSE
     if [ -f "$sdk_dir/README.md" ]; then
         cp "$sdk_dir/README.md" "$release_sdk/"
+    fi
+    if [ -f "$ROOT_DIR/LICENSE" ]; then
+        cp "$ROOT_DIR/LICENSE" "$release_sdk/"
     fi
     
     success "Web SDK prepared in release/web-sdk/"
 }
 
-# Function to package CLI with embedded dependencies
+# Function to package CLI (now self-contained with esbuild)
 package_cli() {
     log "Packaging CLI for release..."
     local cli_dir="$ROOT_DIR/packages/cli"
@@ -110,23 +113,15 @@ package_cli() {
     cp -r "$cli_dir/dist" "$release_cli/"
     cp "$cli_dir/package.json" "$release_cli/"
     
-    # Create node_modules structure for embedded packages
-    ensure_dir "$release_cli/node_modules/@wingman/relay-server"
-    ensure_dir "$release_cli/node_modules/@wingman/shared"
-    
-    # Copy relay-server (with embedded preview-ui)
-    cp -r "$ROOT_DIR/packages/relay-server/dist" "$release_cli/node_modules/@wingman/relay-server/"
-    cp "$ROOT_DIR/packages/relay-server/package.json" "$release_cli/node_modules/@wingman/relay-server/"
-    
-    # Copy shared
-    cp -r "$ROOT_DIR/packages/shared/dist" "$release_cli/node_modules/@wingman/shared/"
-    cp "$ROOT_DIR/packages/shared/package.json" "$release_cli/node_modules/@wingman/shared/"
-    
-    # Copy README if it exists
+    # Copy README and LICENSE
     if [ -f "$cli_dir/README.md" ]; then
         cp "$cli_dir/README.md" "$release_cli/"
     fi
+    if [ -f "$ROOT_DIR/LICENSE" ]; then
+        cp "$ROOT_DIR/LICENSE" "$release_cli/"
+    fi
     
+    # The CLI is now self-contained thanks to esbuild bundling
     success "CLI prepared in release/cli/"
 }
 
@@ -155,12 +150,12 @@ create_release_readme() {
 
 ### CLI Package (\`cli/\`)
 - Ready for npm publishing with \`npm publish\`
-- Includes embedded relay server and preview UI
-- Install globally with \`npm install -g @wingman/cli\`
+- Self-contained with all dependencies bundled
+- Install globally with \`npm install -g wingman-cli\`
 
 ### Web SDK (\`web-sdk/\`)
 - Ready for npm publishing with \`npm publish\`
-- Install in React projects with \`npm install @wingman/sdk\`
+- Install in React projects with \`npm install wingman-sdk\`
 
 ## Publishing Instructions
 

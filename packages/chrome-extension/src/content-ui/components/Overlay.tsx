@@ -88,10 +88,12 @@ const Overlay: React.FC<OverlayProps> = ({ onSubmit, onCancel }) => {
             top: selectedRect.top,
             width: selectedRect.width,
             height: selectedRect.height,
-            border: '2px solid #0084ff',
-            backgroundColor: 'rgba(0, 132, 255, 0.1)',
+            border: '2px solid #00d4ff',
+            backgroundColor: 'rgba(0, 212, 255, 0.08)',
+            boxShadow: '0 0 20px rgba(0, 212, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1)',
             pointerEvents: 'none',
             zIndex: 2147483645,
+            borderRadius: '4px',
           }}
         />
       )}
