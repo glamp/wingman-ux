@@ -50,7 +50,16 @@ function TabbedInterface({ annotation }: TabbedInterfaceProps) {
         onChange={handleChange}
         variant="scrollable"
         scrollButtons="auto"
-        sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}
+        sx={{ 
+          borderBottom: 1, 
+          borderColor: 'divider', 
+          flexShrink: 0,
+          '& .MuiTab-root': {
+            fontSize: '1rem',
+            minHeight: 56,
+            padding: '12px 16px'
+          }
+        }}
       >
         <Tab label="Metadata" />
         <Tab 
