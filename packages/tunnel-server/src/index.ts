@@ -5,6 +5,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { SessionManager } from './session-manager.js';
+import { ConnectionManager } from './connection-manager.js';
+import { ProxyHandler } from './proxy-handler.js';
 import { createSessionsRouter } from './routes/sessions.js';
 import { createStaticRouter } from './routes/static.js';
 
@@ -21,8 +23,10 @@ const server = createServer(app);
 // Initialize WebSocket server
 const wss = new WebSocketServer({ server, path: '/ws' });
 
-// Initialize session manager
+// Initialize managers
 const sessionManager = new SessionManager();
+const connectionManager = new ConnectionManager();
+const proxyHandler = new ProxyHandler(connectionManager, sessionManager);
 
 // Middleware
 app.use(cors());
@@ -42,6 +46,9 @@ app.use('/api', createSessionsRouter(sessionManager));
 
 // Static file serving for CSS/JS
 app.use('/static', express.static(path.join(__dirname, 'static')));
+
+// Proxy routes for tunneled requests (must come before static routes)
+app.use('/tunnel/:sessionId/*', proxyHandler.handleRequest.bind(proxyHandler));
 
 // Session pages
 app.use('/', createStaticRouter(sessionManager));
@@ -67,6 +74,16 @@ app.use((req, res) => {
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Server error:', err);
+  
+  // Handle JSON parsing errors
+  if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+    return res.status(400).json({
+      error: 'Invalid JSON',
+      code: 'INVALID_JSON'
+    });
+  }
+  
+  // Default error handler
   res.status(500).json({
     error: 'Internal server error',
     code: 'INTERNAL_ERROR'
@@ -76,6 +93,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // WebSocket connection handling
 wss.on('connection', (ws, request) => {
   console.log('WebSocket connection established');
+  let registeredSessionId: string | null = null;
+  let isDeveloper = false;
 
   ws.on('message', (data) => {
     try {
@@ -83,8 +102,36 @@ wss.on('connection', (ws, request) => {
       console.log('WebSocket message received:', message);
 
       switch (message.type) {
+        case 'register':
+          // Developer registration
+          if (message.role === 'developer' && message.sessionId) {
+            const session = sessionManager.getSession(message.sessionId);
+            if (session) {
+              connectionManager.registerDeveloper(message.sessionId, ws);
+              registeredSessionId = message.sessionId;
+              isDeveloper = true;
+              ws.send(JSON.stringify({ 
+                type: 'registered', 
+                sessionId: message.sessionId,
+                role: 'developer'
+              }));
+            } else {
+              ws.send(JSON.stringify({ 
+                type: 'error', 
+                error: 'Session not found' 
+              }));
+            }
+          }
+          break;
         case 'register_session':
+          // PM registration (existing code)
           handleSessionRegistration(ws, message.sessionId);
+          break;
+        case 'response':
+          // Developer sending response to a forwarded request
+          if (isDeveloper && registeredSessionId) {
+            connectionManager.handleResponse(registeredSessionId, message);
+          }
           break;
         case 'ping':
           ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
@@ -99,10 +146,16 @@ wss.on('connection', (ws, request) => {
 
   ws.on('close', () => {
     console.log('WebSocket connection closed');
+    if (isDeveloper && registeredSessionId) {
+      connectionManager.handleDisconnection(registeredSessionId);
+    }
   });
 
   ws.on('error', (error) => {
     console.error('WebSocket error:', error);
+    if (isDeveloper && registeredSessionId) {
+      connectionManager.handleDisconnection(registeredSessionId);
+    }
   });
 
   // Send initial connection confirmation
@@ -171,4 +224,4 @@ process.on('SIGINT', () => {
   });
 });
 
-export { app, server, sessionManager };
+export { app, server, sessionManager, connectionManager };
