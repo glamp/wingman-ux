@@ -290,7 +290,7 @@ function buildAnnotation(
     },
     console: consoleCapture?.getEntries() || [],
     network: networkCapture?.getEntries() || [],
-    errors: [],
+    errors: consoleCapture?.getErrors() || [],
   };
 
   if (reactData) {
