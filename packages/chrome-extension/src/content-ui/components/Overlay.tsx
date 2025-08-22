@@ -14,7 +14,6 @@ const Overlay: React.FC<OverlayProps> = ({ onSubmit, onCancel }) => {
   const [notePanelVisible, setNotePanelVisible] = useState(false);
   const [selectedElement, setSelectedElement] = useState<HTMLElement | null>(null);
   const [selectedRect, setSelectedRect] = useState<DOMRect | null>(null);
-  const [mode] = useState<'element' | 'region'>('element'); // For now, only element mode
 
   const handleElementSelect = useCallback((element: HTMLElement, rect: DOMRect) => {
     setSelectedElement(element);
@@ -27,7 +26,7 @@ const Overlay: React.FC<OverlayProps> = ({ onSubmit, onCancel }) => {
     if (!selectedElement || !selectedRect) return;
     
     const target = {
-      mode,
+      mode: 'element' as const,
       rect: {
         x: selectedRect.left,
         y: selectedRect.top,
@@ -38,7 +37,7 @@ const Overlay: React.FC<OverlayProps> = ({ onSubmit, onCancel }) => {
     };
     
     onSubmit(note, target, selectedElement);
-  }, [selectedElement, selectedRect, mode, onSubmit]);
+  }, [selectedElement, selectedRect, onSubmit]);
 
   const handleCancel = useCallback(() => {
     onCancel();
@@ -72,14 +71,16 @@ const Overlay: React.FC<OverlayProps> = ({ onSubmit, onCancel }) => {
         left: 0,
         width: '100vw',
         height: '100vh',
-        pointerEvents: selectorActive ? 'all' : 'none',
+        pointerEvents: selectorActive ? 'all' : 'none'
       }}
     >
+      {/* Element selector */}
       <ElementSelector
         active={selectorActive}
         onSelect={handleElementSelect}
       />
       
+      {/* Selected element highlight */}
       {selectedRect && (
         <Box
           sx={{

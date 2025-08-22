@@ -125,6 +125,12 @@ export default defineConfig(async () => {
           resolve(distDir, 'content.css')
         );
         
+        // Copy page-console-injector.js for web accessible resource
+        fs.copyFileSync(
+          resolve(__dirname, 'src/content/page-console-injector.js'),
+          resolve(distDir, 'page-console-injector.js')
+        );
+        
         // Copy icons directory - use dev icons for development
         const iconsSourceDir = isDev ? 'public/icons-dev' : 'public/icons';
         const iconsSource = resolve(__dirname, iconsSourceDir);

@@ -3,16 +3,35 @@ import { ulid } from 'ulid';
 import { ConsoleCapture } from './console-capture';
 import { NetworkCapture } from './network-capture';
 import { SDKBridge } from './sdk-bridge';
-// Import React components directly
-import { mountReactOverlay, mountSuccessNotification } from '../content-ui/index';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('Wingman:Content');
 logger.info('Content script loaded on:', window.location.href);
 
-const consoleCapture = new ConsoleCapture();
-const networkCapture = new NetworkCapture();
-const sdkBridge = new SDKBridge({ debug: false }); // Use logger instead of debug flag
+let consoleCapture: ConsoleCapture | null = null;
+let networkCapture: NetworkCapture | null = null;
+let sdkBridge: SDKBridge | null = null;
+
+try {
+  consoleCapture = new ConsoleCapture();
+  logger.debug('ConsoleCapture initialized successfully');
+} catch (error) {
+  logger.error('Failed to initialize ConsoleCapture:', error);
+}
+
+try {
+  networkCapture = new NetworkCapture();
+  logger.debug('NetworkCapture initialized successfully');
+} catch (error) {
+  logger.error('Failed to initialize NetworkCapture:', error);
+}
+
+try {
+  sdkBridge = new SDKBridge({ debug: false }); // Use logger instead of debug flag
+  logger.debug('SDKBridge initialized successfully');
+} catch (error) {
+  logger.error('Failed to initialize SDKBridge:', error);
+}
 let overlayActive = false;
 let overlayCleanup: (() => void) | null = null;
 
@@ -45,7 +64,7 @@ function deactivateOverlay() {
   logger.debug('Overlay deactivated');
 }
 
-function activateOverlay() {
+async function activateOverlay() {
   try {
     // Clean up any existing overlay first
     if (overlayCleanup) {
@@ -53,28 +72,70 @@ function activateOverlay() {
       overlayCleanup();
       overlayCleanup = null;
     }
-    
+
     overlayActive = true;
     logger.debug('Creating React overlay...');
-    
+
+    // Dynamically import React components only when needed
+    const { mountReactOverlay } = await import('../content-ui/index');
     overlayCleanup = mountReactOverlay({
       onSubmit: async (note: string, target: any, element?: HTMLElement) => {
         try {
-          const screenshot = await captureScreenshot();
-
-          // Get React data if element is provided
+          // STEP 1: Extract all data while DOM is stable
+          logger.debug('Extracting element data before unmounting...');
           let reactData = undefined;
-          if (element) {
-            logger.debug('Extracting React data for element...');
-            reactData = await sdkBridge.getReactData(element);
+          let robustSelector = undefined;
 
-            // Also try to get a robust selector from SDK
-            const robustSelector = await sdkBridge.getRobustSelector(element);
+          if (element) {
+            // Get React data from the element
+            logger.debug('Extracting React data for element...');
+            reactData = sdkBridge ? await sdkBridge.getReactData(element) : null;
+
+            // Get robust selector from SDK
+            robustSelector = sdkBridge ? await sdkBridge.getRobustSelector(element) : null;
             if (robustSelector) {
               target.selector = robustSelector;
             }
           }
 
+          // STEP 2: Remove overlay completely from DOM
+          logger.debug('Removing overlay from DOM...');
+
+          // Unmount the React component and remove host element
+          if (overlayCleanup) {
+            overlayCleanup();
+            overlayCleanup = null;
+            overlayActive = false;
+          }
+
+          // Remove any other Wingman elements
+          const overlayHost = document.getElementById('wingman-overlay-host');
+          if (overlayHost) {
+            overlayHost.remove();
+          }
+
+          const successHost = document.getElementById('wingman-success-host');
+          if (successHost) {
+            successHost.remove();
+          }
+
+          // STEP 3: Force reflow and wait for DOM to settle
+          document.body.offsetHeight; // Force synchronous reflow
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          // Verify overlay is actually gone
+          const checkHost = document.getElementById('wingman-overlay-host');
+          if (checkHost) {
+            logger.warn('Overlay host still present after removal, forcing removal...');
+            checkHost.remove();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+
+          // STEP 4: Capture clean screenshot
+          logger.debug('Capturing screenshot with clean DOM...');
+          const screenshot = await captureScreenshot();
+
+          // STEP 5: Build annotation with pre-extracted data
           const annotation = buildAnnotation(note, target, screenshot, reactData);
 
           // Log the annotation payload (with truncated screenshot)
@@ -92,12 +153,11 @@ function activateOverlay() {
 
           const result = await submitAnnotation(annotation);
           logger.info('Annotation submitted successfully:', result);
-          overlayActive = false;
-          overlayCleanup = null;  // Reset cleanup reference since overlay unmounts itself
+          // Overlay already unmounted before screenshot, no need to clean up again
 
           // Show appropriate success notification
           const { showPreviewUrl = true } = await chrome.storage.local.get('showPreviewUrl');
-          
+
           // Handle clipboard mode - copy to clipboard in content script context
           if (result.message === 'Copied to clipboard' && result.clipboardContent) {
             // Use the more reliable textarea method as primary approach
@@ -109,7 +169,7 @@ function activateOverlay() {
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
-            
+
             try {
               const successful = document.execCommand('copy');
               if (!successful) {
@@ -118,12 +178,13 @@ function activateOverlay() {
             } catch (err) {
               logger.error('Failed to copy to clipboard:', err);
             }
-            
+
             document.body.removeChild(textArea);
           }
-          
+
           if (result.message === 'Copied to clipboard') {
             // Clipboard mode - always show copy notification
+            const { mountSuccessNotification } = await import('../content-ui/index');
             if (mountSuccessNotification) {
               mountSuccessNotification({
                 mode: 'clipboard',
@@ -135,6 +196,7 @@ function activateOverlay() {
             }
           } else if (showPreviewUrl && result.previewUrl) {
             // Server mode - show preview URL if enabled
+            const { mountSuccessNotification } = await import('../content-ui/index');
             if (mountSuccessNotification) {
               mountSuccessNotification({
                 previewUrl: result.previewUrl,
@@ -148,17 +210,21 @@ function activateOverlay() {
           }
         } catch (error) {
           logger.error('Failed to submit feedback:', error);
+          // Clean up if not already done
+          if (overlayCleanup) {
+            overlayCleanup();
+            overlayCleanup = null;
+          }
           overlayActive = false;
-          overlayCleanup = null;  // Reset cleanup reference
         }
       },
       onCancel: () => {
         logger.debug('Overlay cancelled');
         overlayActive = false;
-        overlayCleanup = null;  // Reset cleanup reference since it's already been called
+        overlayCleanup = null; // Reset cleanup reference since it's already been called
       },
     });
-    
+
     logger.debug('Overlay created successfully');
   } catch (error) {
     logger.error('Failed to create overlay:', error);
@@ -222,8 +288,8 @@ function buildAnnotation(
         timestamp: new Date().toISOString(),
       },
     },
-    console: consoleCapture.getEntries(),
-    network: networkCapture.getEntries(),
+    console: consoleCapture?.getEntries() || [],
+    network: networkCapture?.getEntries() || [],
     errors: [],
   };
 

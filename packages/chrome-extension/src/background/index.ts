@@ -51,6 +51,32 @@ async function initializeExtension() {
 // Call initialization
 initializeExtension();
 
+// Inject console wrapper early on tab navigation
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  // Inject when navigation starts (earliest possible moment)
+  if (changeInfo.status === 'loading' && tab.url) {
+    // Skip chrome:// and extension pages
+    if (tab.url.startsWith('chrome://') || 
+        tab.url.startsWith('chrome-extension://') ||
+        tab.url.startsWith('https://chrome.google.com/webstore')) {
+      return;
+    }
+    
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['page-console-injector.js'],
+        world: 'MAIN' as chrome.scripting.ExecutionWorld,
+        injectImmediately: true
+      });
+      logger.debug(`Injected console wrapper into tab ${tabId} at ${tab.url}`);
+    } catch (error) {
+      // This is expected for restricted pages
+      logger.debug(`Could not inject console wrapper into tab ${tabId}:`, error);
+    }
+  }
+});
+
 interface MessageRequest {
   type: 'CAPTURE_SCREENSHOT' | 'SUBMIT_ANNOTATION' | 'ACTIVATE_WINGMAN';
   payload?: any;

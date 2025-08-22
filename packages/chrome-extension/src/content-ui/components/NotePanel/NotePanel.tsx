@@ -58,7 +58,7 @@ const NotePanel: React.FC<NotePanelProps> = ({
         width: 360,
         p: 2,
         zIndex: 2147483648,
-        pointerEvents: 'all',
+        pointerEvents: 'all'
       }}
     >
       <RichTextEditor

@@ -44,6 +44,12 @@ export function mountReactInShadow({
     z-index: 2147483647;
     pointer-events: none;
   `;
+  
+  // Ensure document.body exists before appending
+  if (!document.body) {
+    throw new Error('[Wingman] document.body not available yet');
+  }
+  
   document.body.appendChild(host);
 
   // Create shadow root

@@ -38,6 +38,8 @@ export default defineConfig(async () => {
     },
     define: {
       'process.env.WINGMAN_ENV': JSON.stringify(environment),
+      'process.env.NODE_ENV': JSON.stringify(environment),
+      'process.env': JSON.stringify({ WINGMAN_ENV: environment, NODE_ENV: environment }),
     },
     plugins: [
       // React plugin for JSX support

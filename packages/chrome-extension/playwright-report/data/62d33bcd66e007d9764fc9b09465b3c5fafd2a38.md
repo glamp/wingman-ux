@@ -1,0 +1,57 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - heading "Wingman Demo App" [level=1] [ref=e5]
+    - button "🌙" [ref=e6] [cursor=pointer]
+  - main [ref=e7]:
+    - generic [ref=e8]:
+      - heading "Counter Section" [level=2] [ref=e9]
+      - generic [ref=e10]:
+        - button "-" [ref=e11] [cursor=pointer]
+        - generic [ref=e12]: "0"
+        - button "+" [ref=e13] [cursor=pointer]
+      - button "Reset Counter" [ref=e14] [cursor=pointer]
+    - generic [ref=e15]:
+      - heading "Input Form" [level=2] [ref=e16]
+      - generic [ref=e17]:
+        - textbox "Type something..." [ref=e18]
+        - button "Submit" [ref=e19] [cursor=pointer]
+    - generic [ref=e20]:
+      - heading "Todo List" [level=2] [ref=e21]
+      - list [ref=e22]:
+        - listitem [ref=e23] [cursor=pointer]:
+          - checkbox [ref=e24] [cursor=pointer]
+          - generic [ref=e25] [cursor=pointer]: Buy groceries
+        - listitem [ref=e26] [cursor=pointer]:
+          - checkbox [checked] [ref=e27] [cursor=pointer]
+          - generic [ref=e28] [cursor=pointer]: Walk the dog
+        - listitem [ref=e29] [cursor=pointer]:
+          - checkbox [ref=e30] [cursor=pointer]
+          - generic [ref=e31] [cursor=pointer]: Write code
+    - generic [ref=e32]:
+      - heading "Error Testing" [level=2] [ref=e33]
+      - button "Trigger Error" [ref=e34] [cursor=pointer]
+    - generic [ref=e35]:
+      - heading "Information Panel" [level=2] [ref=e36]
+      - generic [ref=e37]:
+        - heading "About This Demo" [level=3] [ref=e38]
+        - paragraph [ref=e39]: This is a simple demo app for testing the Wingman browser extension.
+        - paragraph [ref=e40]: It includes various UI elements like buttons, forms, and lists to test element selection and screenshot capture.
+      - generic [ref=e41]:
+        - heading "Highlighted Section" [level=3] [ref=e42]
+        - paragraph [ref=e43]: This section has a different background to test region selection.
+        - button "Log Info Message" [ref=e44] [cursor=pointer]
+    - generic [ref=e45]:
+      - heading "React Context & Hooks Test" [level=2] [ref=e46]
+      - generic [ref=e47]:
+        - 'button "Toggle Theme (Current: light)" [ref=e48] [cursor=pointer]'
+        - generic [ref=e49]:
+          - heading "React Context Test Component" [level=2] [ref=e50]
+          - generic [ref=e51]:
+            - button "Expand Details" [ref=e52] [cursor=pointer]
+            - generic [ref=e53]: Click me to test React capture!
+  - contentinfo [ref=e54]:
+    - paragraph [ref=e55]: © 2025 Wingman Demo - Testing Only
+```

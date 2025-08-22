@@ -35,11 +35,7 @@ export function mountReactOverlay(options: MountOverlayOptions): () => void {
     props: {
       mode: 'overlay',
       onSubmit: (note: string, target: any, element?: HTMLElement) => {
-        // Clean up the overlay
-        if (currentMount) {
-          currentMount.unmount();
-          currentMount = null;
-        }
+        // Don't unmount here - let the handler do it after screenshot
         // Call the original handler
         options.onSubmit(note, target, element);
       },

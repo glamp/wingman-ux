@@ -11,6 +11,12 @@
     "http://localhost:*/*",
     "https://*/*"
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page-console-injector.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
