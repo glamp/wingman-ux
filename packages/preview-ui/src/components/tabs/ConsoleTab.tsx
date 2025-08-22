@@ -1,8 +1,5 @@
 import {
-  Error as ErrorIcon,
-  Info as InfoIcon,
-  BugReport as LogIcon,
-  Warning as WarningIcon,
+  ContentCopy as CopyIcon,
 } from '@mui/icons-material';
 import {
   Box,
@@ -14,9 +11,13 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
+  IconButton,
+  Tooltip,
+  Snackbar,
 } from '@mui/material';
 import type { WingmanAnnotation } from '@wingman/shared';
 import React, { useState } from 'react';
+import { Inspector } from 'react-inspector';
 
 type LogLevel = 'all' | 'log' | 'info' | 'warn' | 'error';
 
@@ -26,6 +27,8 @@ interface ConsoleTabProps {
 
 function ConsoleTab({ logs }: ConsoleTabProps) {
   const [filter, setFilter] = useState<LogLevel>('all');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const handleFilterChange = (
     _event: React.MouseEvent<HTMLElement>,
@@ -36,21 +39,28 @@ function ConsoleTab({ logs }: ConsoleTabProps) {
     }
   };
 
-  const filteredLogs = logs.filter((log) => filter === 'all' || log.level === filter);
-
-  const getLogIcon = (level: string) => {
-    switch (level) {
-      case 'error':
-        return <ErrorIcon sx={{ fontSize: '16px', color: 'error.main' }} />;
-      case 'warn':
-        return <WarningIcon sx={{ fontSize: '16px', color: 'warning.main' }} />;
-      case 'info':
-        return <InfoIcon sx={{ fontSize: '16px', color: 'info.main' }} />;
-      case 'log':
-      default:
-        return <LogIcon sx={{ fontSize: '16px', color: 'text.secondary' }} />;
+  const handleCopyJson = async (args: any[]) => {
+    try {
+      const jsonStr = JSON.stringify(args.length === 1 ? args[0] : args, null, 2);
+      await navigator.clipboard.writeText(jsonStr);
+      setSnackbarMessage('JSON copied to clipboard');
+      setSnackbarOpen(true);
+    } catch (err) {
+      setSnackbarMessage('Failed to copy JSON');
+      setSnackbarOpen(true);
     }
   };
+
+  const hasJsonContent = (args: any[]) => {
+    return args.some(arg => 
+      typeof arg === 'object' && 
+      arg !== null && 
+      !(arg instanceof Date)
+    );
+  };
+
+  const filteredLogs = logs.filter((log) => filter === 'all' || log.level === filter);
+
 
   const getLogColor = (level: string) => {
     switch (level) {
@@ -66,15 +76,42 @@ function ConsoleTab({ logs }: ConsoleTabProps) {
     }
   };
 
-  const formatLogArgs = (args: any[]) => {
-    return args
-      .map((arg) => {
-        if (typeof arg === 'object') {
-          return JSON.stringify(arg, null, 2);
-        }
-        return String(arg);
-      })
-      .join(' ');
+  const renderLogArg = (arg: any, index: number, args: any[]) => {
+    // For primitive values, just render as text
+    if (
+      typeof arg === 'string' ||
+      typeof arg === 'number' ||
+      typeof arg === 'boolean' ||
+      arg === null ||
+      arg === undefined
+    ) {
+      return (
+        <Typography
+          key={index}
+          component="span"
+          sx={{
+            fontFamily: 'monospace',
+            fontSize: '0.875rem',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}
+        >
+          {String(arg)}
+          {index < args.length - 1 ? ' ' : ''}
+        </Typography>
+      );
+    }
+    
+    // For objects and arrays, use the Inspector
+    return (
+      <Box key={index} sx={{ my: 0.5 }}>
+        <Inspector
+          data={arg}
+          theme="chromeLight"
+          expandLevel={1}
+        />
+      </Box>
+    );
   };
 
   const formatTimestamp = (ts: number) => {
@@ -123,12 +160,15 @@ function ConsoleTab({ logs }: ConsoleTabProps) {
                   borderColor: 'divider',
                   alignItems: 'flex-start',
                   py: 1.5,
+                  backgroundColor: index % 2 === 0 ? 'transparent' : 'rgba(0, 0, 0, 0.02)',
+                  borderLeft: 4,
+                  borderLeftColor: getLogColor(log.level),
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                  },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%', gap: 1 }}>
-                  {/* Level Icon */}
-                  <Box sx={{ mt: 0.5, flexShrink: 0 }}>{getLogIcon(log.level)}</Box>
-
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
                   {/* Log Content */}
                   <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -150,22 +190,32 @@ function ConsoleTab({ logs }: ConsoleTabProps) {
                       >
                         {formatTimestamp(log.ts)}
                       </Typography>
+                      {hasJsonContent(log.args) && (
+                        <Tooltip title="Copy as JSON">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleCopyJson(log.args)}
+                            sx={{
+                              ml: 'auto',
+                              opacity: 0.7,
+                              '&:hover': { opacity: 1 },
+                            }}
+                          >
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
 
-                    <Paper
+                    <Box
                       sx={{
                         p: 1,
-                        backgroundColor: 'action.hover',
-                        fontFamily: 'monospace',
-                        fontSize: '0.875rem',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
+                        backgroundColor: 'transparent',
                         color: getLogColor(log.level),
                       }}
-                      elevation={0}
                     >
-                      {formatLogArgs(log.args)}
-                    </Paper>
+                      {log.args.map((arg, argIndex) => renderLogArg(arg, argIndex, log.args))}
+                    </Box>
                   </Box>
                 </Box>
               </ListItem>
@@ -173,6 +223,15 @@ function ConsoleTab({ logs }: ConsoleTabProps) {
           </List>
         )}
       </Box>
+      
+      {/* Snackbar for copy feedback */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={2000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }

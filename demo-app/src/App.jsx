@@ -20,10 +20,43 @@ function App() {
     { id: 3, text: 'Write code', done: false },
   ]);
 
+  // Test various console log types for react-inspector
+  console.log('Simple string log');
   console.log('Count:', count);
   console.log('Text:', text);
   console.log('Dark mode:', darkMode);
   console.log('Todos:', todos);
+  
+  // Complex nested object for testing
+  console.log('Complex nested data:', {
+    user: {
+      name: 'John Doe',
+      age: 30,
+      email: 'john@example.com',
+      preferences: {
+        theme: 'dark',
+        notifications: true,
+        languages: ['JavaScript', 'TypeScript', 'Python']
+      }
+    },
+    metadata: {
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      debug: true
+    },
+    stats: [
+      { name: 'views', value: 1234 },
+      { name: 'clicks', value: 567 },
+      { name: 'conversions', value: 89 }
+    ]
+  });
+  
+  // Test multiple arguments in one log
+  console.log('Multiple args:', 'string', 123, true, { key: 'value' }, [1, 2, 3]);
+  
+  // Test console.info and console.warn
+  console.info('This is an info message with object:', { info: 'data', nested: { value: 42 } });
+  console.warn('Warning: Large array detected', new Array(10).fill(null).map((_, i) => ({ index: i, value: Math.random() })));
 
   const handleIncrement = () => {
     console.log('Counter incremented from', count, 'to', count + 1);
