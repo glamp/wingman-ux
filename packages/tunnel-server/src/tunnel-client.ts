@@ -233,12 +233,18 @@ export class TunnelClient extends EventEmitter {
         reject(new Error('Request timeout'));
       }, this.options.requestTimeout);
 
+      // Remove content-length if present, we'll set it correctly
+      const headers = { ...request.headers };
+      if (request.body) {
+        headers['content-length'] = Buffer.byteLength(request.body).toString();
+      }
+
       const options = {
         hostname: 'localhost',
         port: this.localPort,
         path: request.path,
         method: request.method,
-        headers: request.headers
+        headers
       };
 
       const req = http.request(options, (res) => {

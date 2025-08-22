@@ -65,8 +65,8 @@ export class ProxyHandler {
         body: null
       };
       
-      // Add body if present
-      if (req.body) {
+      // Add body if present (but not for GET/HEAD/DELETE typically)
+      if (req.body && ['POST', 'PUT', 'PATCH'].includes(req.method)) {
         if (typeof req.body === 'object') {
           proxiedRequest.body = JSON.stringify(req.body);
         } else {
