@@ -193,6 +193,9 @@ export class TunnelClient extends EventEmitter {
   private async handleRequest(message: any): Promise<void> {
     const { requestId, request } = message;
     
+    // Emit request event for monitoring
+    this.emit('request', request);
+    
     try {
       const response = await this.forwardToLocal(request);
       
