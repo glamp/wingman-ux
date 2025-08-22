@@ -169,7 +169,6 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
           style.textContent = WYSIWYG_CSS;
           // Insert at the beginning to ensure it loads before other styles
           shadowHost.shadowRoot.insertBefore(style, shadowHost.shadowRoot.firstChild);
-          console.log('[Wingman] Injected WYSIWYG styles into shadow DOM');
           
           // Force a re-render of contenteditable with !important
           setTimeout(() => {
