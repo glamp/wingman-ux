@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -43,13 +43,13 @@
             width: 120px;
             height: 120px;
             margin: 0 auto 30px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 20px;
         }
 
@@ -74,12 +74,12 @@
         }
 
         .status-card {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
             margin-bottom: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .status-indicator {
@@ -87,7 +87,7 @@
             align-items: center;
             gap: 10px;
             padding: 12px 24px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 100px;
             font-size: 1.1em;
             margin-bottom: 20px;
@@ -145,7 +145,7 @@
             gap: 10px;
             padding: 14px 28px;
             background: white;
-            color: #764ba2;
+            color: #1a1a1a;
             text-decoration: none;
             border-radius: 100px;
             font-weight: 600;
@@ -160,9 +160,10 @@
         }
 
         .button.secondary {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             color: white;
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .footer {
@@ -191,11 +192,11 @@
 
         .callsign {
             padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             font-family: 'Courier New', monospace;
             font-size: 0.9em;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
@@ -241,7 +242,7 @@
             </a>
         </div>
 
-        <div style="margin-top: 40px; padding: 25px; background: rgba(255, 255, 255, 0.1); border-radius: 15px; backdrop-filter: blur(10px);">
+        <div style="margin-top: 40px; padding: 25px; background: rgba(255, 255, 255, 0.05); border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
             <h3 style="margin-bottom: 15px; font-size: 1.3em;">Example Session URLs</h3>
             <div class="callsign-examples">
                 <div class="callsign">ghost-whiskey.wingmanux.com</div>
@@ -252,8 +253,7 @@
         </div>
 
         <div class="footer">
-            <p>Part of the <a href="https://wingmanux.com">Wingman UX</a> feedback platform</p>
-            <p style="margin-top: 10px; opacity: 0.8;">Powered by Fly.io • Let's Encrypt SSL</p>
+            <p>© 2025 Wingman</p>
         </div>
     </div>
 

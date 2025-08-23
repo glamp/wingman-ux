@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { z } from 'zod';
 import type { StorageService } from '../services/storage';
@@ -8,41 +8,21 @@ import type { WingmanAnnotation } from '@wingman/shared';
 
 const logger = createLogger('Wingman:MCP');
 
-// Schema for tool inputs
-const DeleteAnnotationSchema = z.object({
-  id: z.string().describe('The annotation ID to delete'),
-});
-
-const ReviewAnnotationSchema = z.object({
-  id: z.string().optional().describe('Optional annotation ID, uses latest if not provided'),
-});
-
 export function mcpRouter(storage: StorageService): Router {
   const router = Router();
 
   // Create MCP server instance
-  const mcpServer = new Server(
-    {
-      name: 'wingman',
-      version: '1.0.0',
-    },
-    {
-      capabilities: {
-        tools: {},
-        prompts: {},
-      },
-    }
-  );
+  const mcpServer = new McpServer({
+    name: 'wingman',
+    version: '1.0.0',
+  });
 
   // Register tool: wingman_list
-  mcpServer.addTool({
-    name: 'wingman_list',
-    description: 'List all UI feedback annotations from Wingman',
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
-    handler: async () => {
+  mcpServer.tool(
+    'wingman_list',
+    'List all UI feedback annotations from Wingman',
+    {},
+    async () => {
       try {
         const annotations = await storage.list({ limit: 100 });
         
@@ -72,33 +52,25 @@ export function mcpRouter(storage: StorageService): Router {
               text: `Error listing annotations: ${error instanceof Error ? error.message : 'Unknown error'}`,
             },
           ],
-          isError: true,
         };
       }
-    },
-  });
+    }
+  );
 
   // Register tool: wingman_review
-  mcpServer.addTool({
-    name: 'wingman_review',
-    description: 'Get the latest or specific annotation with full details for review',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'Optional annotation ID, uses latest if not provided',
-        },
-      },
+  mcpServer.tool(
+    'wingman_review',
+    'Get the latest or specific annotation with full details for review',
+    {
+      id: z.string().optional().describe('Optional annotation ID, uses latest if not provided'),
     },
-    handler: async (args) => {
+    async ({ id }) => {
       try {
         let annotation;
         
-        const params = args as { id?: string };
-        if (params?.id) {
+        if (id) {
           // Get specific annotation
-          annotation = await storage.get(params.id);
+          annotation = await storage.get(id);
         } else {
           // Get latest annotation
           annotation = await storage.getLast();
@@ -151,40 +123,30 @@ export function mcpRouter(storage: StorageService): Router {
               text: `Error reviewing annotation: ${error instanceof Error ? error.message : 'Unknown error'}`,
             },
           ],
-          isError: true,
         };
       }
-    },
-  });
+    }
+  );
 
   // Register tool: wingman_delete
-  mcpServer.addTool({
-    name: 'wingman_delete',
-    description: 'Delete a processed annotation after fixing the issue',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'The annotation ID to delete',
-        },
-      },
-      required: ['id'],
+  mcpServer.tool(
+    'wingman_delete',
+    'Delete a processed annotation after fixing the issue',
+    {
+      id: z.string().describe('The annotation ID to delete'),
     },
-    handler: async (args) => {
+    async ({ id }) => {
       try {
-        const validatedArgs = DeleteAnnotationSchema.parse(args);
-        const deleted = await storage.delete(validatedArgs.id);
+        const deleted = await storage.delete(id);
 
         if (!deleted) {
           return {
             content: [
               {
                 type: 'text',
-                text: `Annotation ${validatedArgs.id} not found`,
+                text: `Annotation ${id} not found`,
               },
             ],
-            isError: true,
           };
         }
 
@@ -192,7 +154,7 @@ export function mcpRouter(storage: StorageService): Router {
           content: [
             {
               type: 'text',
-              text: `Successfully deleted annotation ${validatedArgs.id}`,
+              text: `Successfully deleted annotation ${id}`,
             },
           ],
         };
@@ -205,30 +167,24 @@ export function mcpRouter(storage: StorageService): Router {
               text: `Error deleting annotation: ${error instanceof Error ? error.message : 'Unknown error'}`,
             },
           ],
-          isError: true,
         };
       }
-    },
-  });
+    }
+  );
 
   // Register prompt: wingman_fix_ui
-  mcpServer.addPrompt({
-    name: 'wingman_fix_ui',
-    description: '🪶 Fix UI issues reported via Wingman feedback',
-    arguments: [
-      {
-        name: 'annotation_id',
-        description: 'Optional annotation ID, uses latest if not provided',
-        required: false,
-      },
-    ],
-    handler: async (args) => {
+  mcpServer.prompt(
+    'wingman_fix_ui',
+    '🪶 Fix UI issues reported via Wingman feedback',
+    {
+      annotation_id: z.string().optional().describe('Optional annotation ID, uses latest if not provided'),
+    },
+    async ({ annotation_id }) => {
       try {
         let annotation;
         
-        const params = args as { annotation_id?: string };
-        if (params?.annotation_id) {
-          annotation = await storage.get(params.annotation_id);
+        if (annotation_id) {
+          annotation = await storage.get(annotation_id);
         } else {
           annotation = await storage.getLast();
         }
@@ -237,9 +193,9 @@ export function mcpRouter(storage: StorageService): Router {
           return {
             messages: [
               {
-                role: 'user',
+                role: 'user' as const,
                 content: {
-                  type: 'text',
+                  type: 'text' as const,
                   text: 'No Wingman annotations found. Please ensure feedback has been submitted via the Chrome extension.',
                 },
               },
@@ -295,9 +251,9 @@ After fixing, we can delete this annotation using: wingman_delete("${annotation.
         return {
           messages: [
             {
-              role: 'user',
+              role: 'user' as const,
               content: {
-                type: 'text',
+                type: 'text' as const,
                 text: promptContent,
               },
             },
@@ -308,17 +264,17 @@ After fixing, we can delete this annotation using: wingman_delete("${annotation.
         return {
           messages: [
             {
-              role: 'user',
+              role: 'user' as const,
               content: {
-                type: 'text',
+                type: 'text' as const,
                 text: `Error generating fix prompt: ${error instanceof Error ? error.message : 'Unknown error'}`,
               },
             },
           ],
         };
       }
-    },
-  });
+    }
+  );
 
   // MCP endpoint handler
   router.post('/', async (req, res) => {
