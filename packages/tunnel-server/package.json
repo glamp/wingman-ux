@@ -6,7 +6,7 @@
   "description": "Tunnel server for Wingman P2P connections",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/static dist/",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest",

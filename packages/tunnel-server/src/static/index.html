@@ -120,6 +120,80 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
 
+        .uptime-section {
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .uptime-label {
+            font-size: 0.95em;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .uptime-display {
+            font-size: 1.8em;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .uptime-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 100px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .uptime-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--purple-accent));
+            border-radius: 100px;
+            position: relative;
+            animation: shimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                opacity: 0.9;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.9;
+            }
+        }
+
+        .session-count {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .session-count-label {
+            font-size: 0.9em;
+            color: var(--text-muted);
+        }
+
+        .session-count-value {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
         .status-indicator {
             display: inline-flex;
             align-items: center;
@@ -276,19 +350,17 @@
                 <span id="status-text">Server Operational</span>
             </div>
             
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">API Endpoint</div>
-                    <div class="info-value">/api/sessions</div>
+            <div class="uptime-section">
+                <div class="uptime-label">Uptime</div>
+                <div class="uptime-display" id="uptime-display">Calculating...</div>
+                <div class="uptime-bar">
+                    <div class="uptime-bar-fill" id="uptime-bar-fill" style="width: 0%"></div>
                 </div>
-                <div class="info-item">
-                    <div class="info-label">WebSocket</div>
-                    <div class="info-value">/ws</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Health Check</div>
-                    <div class="info-value">/health</div>
-                </div>
+            </div>
+            
+            <div class="session-count" id="session-info">
+                <span class="session-count-label">Active Sessions:</span>
+                <span class="session-count-value" id="session-count">0</span>
             </div>
         </div>
 
@@ -362,49 +434,97 @@
             }
         }
         
-        // Fetch and display actual server health
-        fetch('/health')
-            .then(res => {
-                const isHealthy = res.ok;
-                const statusPulse = document.getElementById('status-pulse');
-                const statusText = document.getElementById('status-text');
-                
-                if (!isHealthy) {
-                    // Server is unhealthy
+        // Format uptime into human-readable string
+        function formatUptime(milliseconds) {
+            if (milliseconds < 1000) {
+                return 'Just started';
+            }
+            
+            const seconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (days > 0) {
+                const remainingHours = hours % 24;
+                return `${days} day${days > 1 ? 's' : ''}, ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}`;
+            } else if (hours > 0) {
+                const remainingMinutes = minutes % 60;
+                return `${hours} hour${hours > 1 ? 's' : ''}, ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}`;
+            } else if (minutes > 0) {
+                return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+            } else {
+                return `${seconds} second${seconds > 1 ? 's' : ''}`;
+            }
+        }
+        
+        // Calculate uptime bar width (cycles every 24 hours)
+        function calculateUptimeBarWidth(milliseconds) {
+            const hoursElapsed = milliseconds / (1000 * 60 * 60);
+            // Fill the bar over 24 hours, then reset
+            const fillPercentage = Math.min((hoursElapsed / 24) * 100, 100);
+            return fillPercentage;
+        }
+        
+        // Fetch and display actual server health and uptime
+        function updateServerStatus() {
+            fetch('/health')
+                .then(res => {
+                    const isHealthy = res.ok;
+                    const statusPulse = document.getElementById('status-pulse');
+                    const statusText = document.getElementById('status-text');
+                    
+                    if (!isHealthy) {
+                        // Server is unhealthy
+                        statusPulse.classList.remove('healthy');
+                        statusPulse.classList.add('unhealthy');
+                        statusText.textContent = 'Server Error';
+                    } else {
+                        // Server is healthy
+                        statusPulse.classList.add('healthy');
+                        statusPulse.classList.remove('unhealthy');
+                        statusText.textContent = 'Server Operational';
+                    }
+                    
+                    return res.json();
+                })
+                .then(data => {
+                    // Update uptime display
+                    if (data.uptime !== undefined) {
+                        const uptimeDisplay = document.getElementById('uptime-display');
+                        const uptimeBarFill = document.getElementById('uptime-bar-fill');
+                        
+                        uptimeDisplay.textContent = formatUptime(data.uptime);
+                        
+                        const barWidth = calculateUptimeBarWidth(data.uptime);
+                        uptimeBarFill.style.width = `${barWidth}%`;
+                    }
+                    
+                    // Update session count
+                    if (data.activeSessions !== undefined) {
+                        const sessionCount = document.getElementById('session-count');
+                        sessionCount.textContent = data.activeSessions;
+                    }
+                })
+                .catch(err => {
+                    console.error('Could not fetch health:', err);
+                    // Show error state
+                    const statusPulse = document.getElementById('status-pulse');
+                    const statusText = document.getElementById('status-text');
+                    const uptimeDisplay = document.getElementById('uptime-display');
+                    
                     statusPulse.classList.remove('healthy');
                     statusPulse.classList.add('unhealthy');
-                    statusText.textContent = 'Server Error';
-                } else {
-                    // Server is healthy
-                    statusPulse.classList.add('healthy');
-                    statusPulse.classList.remove('unhealthy');
-                    statusText.textContent = 'Server Operational';
-                }
-                
-                return res.json();
-            })
-            .then(data => {
-                if (data.activeSessions !== undefined) {
-                    const infoGrid = document.querySelector('.info-grid');
-                    const sessionDiv = document.createElement('div');
-                    sessionDiv.className = 'info-item';
-                    sessionDiv.innerHTML = `
-                        <div class="info-label">Active Sessions</div>
-                        <div class="info-value">${data.activeSessions}</div>
-                    `;
-                    infoGrid.appendChild(sessionDiv);
-                }
-            })
-            .catch(err => {
-                console.error('Could not fetch health:', err);
-                // Show error state
-                const statusPulse = document.getElementById('status-pulse');
-                const statusText = document.getElementById('status-text');
-                
-                statusPulse.classList.remove('healthy');
-                statusPulse.classList.add('unhealthy');
-                statusText.textContent = 'Server Unreachable';
-            });
+                    statusText.textContent = 'Server Unreachable';
+                    uptimeDisplay.textContent = 'Offline';
+                });
+        }
+        
+        // Initial status update
+        updateServerStatus();
+        
+        // Update status every 30 seconds
+        setInterval(updateServerStatus, 30000);
     </script>
 </body>
 </html>
