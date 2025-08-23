@@ -10,6 +10,13 @@ export function createStaticRouter(sessionManager: SessionManager): Router {
   const router = Router();
 
   /**
+   * GET / - Serve landing page
+   */
+  router.get('/', (req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, '..', 'static', 'index.html'));
+  });
+
+  /**
    * GET /sessions/:id - Serve PM access page
    */
   router.get('/sessions/:id', (req: Request, res: Response) => {

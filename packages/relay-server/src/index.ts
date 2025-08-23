@@ -7,6 +7,7 @@ import path from 'path';
 import { errorHandler } from './middleware/error-handler';
 import { annotationsRouter } from './routes/annotations';
 import { healthRouter } from './routes/health';
+import { mcpRouter } from './routes/mcp';
 import { StorageService } from './services/storage';
 import { createLogger } from '@wingman/shared';
 
@@ -42,6 +43,7 @@ export function createServer(options: ServerOptions = {}) {
   // Routes
   app.use('/health', healthRouter);
   app.use('/annotations', annotationsRouter(storage));
+  app.use('/mcp', mcpRouter(storage));
 
   logger.debug('NODE_ENV:', process.env.NODE_ENV);
 
@@ -95,9 +97,10 @@ export function createServer(options: ServerOptions = {}) {
           const address = server.address();
           const actualPort =
             typeof address === 'string' ? parseInt(address) : address?.port || port;
-          logger.info(`Wingman Relay Server running on http://${host}:${actualPort}`);
+          logger.info(`🪶 Wingman Relay Server running on http://${host}:${actualPort}`);
           logger.info(`Health check: http://${host}:${actualPort}/health`);
           logger.info(`Annotations endpoint: http://${host}:${actualPort}/annotations`);
+          logger.info(`🪶 MCP endpoint: http://${host}:${actualPort}/mcp (for Claude Code)`);
           resolve(server);
         })
         .on('error', reject);

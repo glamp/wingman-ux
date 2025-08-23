@@ -14,12 +14,14 @@
     "coverage": "npm run test:coverage"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.4",
     "@wingman/shared": "*",
     "canvas": "^3.2.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
-    "http-proxy-middleware": "^3.0.5"
+    "http-proxy-middleware": "^3.0.5",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

@@ -45,22 +45,27 @@ function App() {
 3. Click "Load unpacked"
 4. Select the `packages/chrome-extension/dist` folder
 
-### 4. Start the Relay Server
+### 4. Start the Wingman Server
 
 Run the Wingman server to collect feedback:
 
 ```bash
-# Using npm scripts
-npm run dev
+# Install globally
+npm install -g wingman
 
-# Or using the CLI directly
+# Start the server
+wingman serve
+
+# Or use npx (no global install)
 npx wingman serve
 
 # Custom port/host
-npx wingman serve --port 3000 --host 0.0.0.0
+wingman serve --port 3000 --host 0.0.0.0
 ```
 
-The server will start on `http://localhost:8787` by default.
+The server provides:
+- **HTTP API** on port 8787 for Chrome extension
+- **MCP tools** via HTTP for Claude Code integration
 
 ### 5. Capture Feedback
 
@@ -85,6 +90,74 @@ curl http://localhost:8787/annotations/last
 - React component metadata (when available)
 - Your feedback notes
 
+## 🪶 Claude Code Integration
+
+Wingman provides MCP (Model Context Protocol) tools for Claude Code to review and fix UI issues.
+
+### Setup Claude Code
+
+Add Wingman to your Claude Code settings:
+
+1. Open Claude Code settings
+2. Navigate to MCP Servers section
+3. Add the following configuration:
+
+```json
+{
+  "wingman": {
+    "transport": "sse",
+    "url": "http://localhost:8787/mcp"
+  }
+}
+```
+
+Or add it manually to your MCP configuration file:
+
+```json
+{
+  "mcpServers": {
+    "wingman": {
+      "transport": "sse",
+      "url": "http://localhost:8787/mcp"
+    }
+  }
+}
+```
+
+### Available MCP Tools
+
+Once configured, Claude Code has access to:
+
+- **`wingman_list()`** - List all UI feedback annotations
+- **`wingman_review()`** - Get the latest annotation with full details
+- **`wingman_delete(id)`** - Remove processed annotation
+
+### Slash Commands
+
+Use these commands in Claude Code:
+- `/wingman` - Show all Wingman options
+- `/wingman:list` - List all annotations
+- `/wingman:review` - Review latest issue
+- `/wingman:fix` - Fix UI issue with guided approach
+
+### Example Workflow
+
+1. **Start server**: `wingman serve`
+2. **User reports issue** via Chrome extension
+3. **In Claude Code**: "Use wingman to check for feedback"
+4. **Claude** uses MCP tools to review annotations
+5. **Claude** fixes the code and cleans up
+
+### The Wingman Fix Flow
+
+When using the `wingman_fix_ui` prompt, Claude will:
+- 🔍 Analyze the screenshot and target element
+- 🎯 Identify the specific UI issue
+- 📝 Review React/HTML context
+- 🔧 Generate and apply the fix
+- ✅ Validate the changes
+- 🗑️ Clean up the processed annotation
+
 ## Development
 
 ```bash
@@ -97,6 +170,21 @@ npm run dev:status
 # Stop all services
 npm run dev:stop
 ```
+
+## Server Architecture
+
+The Wingman server (`wingman serve`) provides a unified HTTP server with multiple endpoints:
+
+```
+http://localhost:8787/
+├── /annotations       # Chrome extension posts feedback here
+├── /annotations/last  # Get most recent annotation
+├── /mcp              # Claude Code MCP endpoint (SSE)
+├── /preview          # Preview UI for viewing feedback
+└── /health           # Health check endpoint
+```
+
+All endpoints share the same storage (`./wingman/annotations/`), ensuring consistency between Chrome extension feedback and Claude Code tools.
 
 ## License
 
