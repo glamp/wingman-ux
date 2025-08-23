@@ -54,6 +54,8 @@
             text-align: center;
             max-width: 800px;
             animation: fadeIn 0.8s ease-out;
+            position: relative;
+            z-index: 1;
         }
 
         @keyframes fadeIn {
@@ -92,22 +94,27 @@
             margin-bottom: 20px;
             font-weight: 700;
             letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .tagline {
             font-size: 1.4em;
             margin-bottom: 40px;
-            opacity: 0.95;
+            color: var(--text-secondary);
             font-weight: 300;
         }
 
         .status-card {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
             margin-bottom: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
 
         .status-indicator {
@@ -115,7 +122,8 @@
             align-items: center;
             gap: 10px;
             padding: 12px 24px;
-            background: rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
+            color: white;
             border-radius: 100px;
             font-size: 1.1em;
             margin-bottom: 20px;
@@ -124,17 +132,17 @@
         .pulse {
             width: 12px;
             height: 12px;
-            background: #4ade80;
+            background: white;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
             0%, 100% {
-                box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
             }
             50% {
-                box-shadow: 0 0 0 10px rgba(74, 222, 128, 0);
+                box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
             }
         }
 
@@ -151,13 +159,14 @@
 
         .info-label {
             font-size: 0.9em;
-            opacity: 0.7;
+            color: var(--text-muted);
             margin-bottom: 5px;
         }
 
         .info-value {
             font-size: 1.2em;
             font-weight: 600;
+            color: var(--text-primary);
         }
 
         .actions {
@@ -172,42 +181,43 @@
             align-items: center;
             gap: 10px;
             padding: 14px 28px;
-            background: white;
-            color: #1a1a1a;
+            background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
+            color: white;
             text-decoration: none;
             border-radius: 100px;
             font-weight: 600;
             font-size: 1.1em;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 132, 255, 0.2);
+            border: none;
+            cursor: pointer;
         }
 
         .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 132, 255, 0.4);
         }
 
         .button.secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
         }
 
         .footer {
             margin-top: 60px;
-            opacity: 0.7;
+            color: var(--text-muted);
             font-size: 0.95em;
         }
 
         .footer a {
-            color: white;
+            color: var(--primary-color);
             text-decoration: none;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            border-bottom: 1px solid transparent;
         }
 
         .footer a:hover {
-            border-bottom-color: white;
+            border-bottom-color: var(--primary-color);
         }
 
         .callsign-examples {
@@ -220,11 +230,12 @@
 
         .callsign {
             padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--bg-secondary);
             border-radius: 8px;
             font-family: 'Courier New', monospace;
             font-size: 0.9em;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
         }
     </style>
 </head>
@@ -261,13 +272,13 @@
 
         <!-- Chrome Extension Section -->
         <div style="margin: 60px auto 50px; max-width: 700px;">
-            <h2 style="font-size: 2em; margin-bottom: 12px; font-weight: 600; text-align: center;">Chrome Extension</h2>
-            <p style="font-size: 1.1em; margin-bottom: 35px; opacity: 0.8; text-align: center;">
+            <h2 style="font-size: 2em; margin-bottom: 12px; font-weight: 600; text-align: center; background: linear-gradient(135deg, #0084ff, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Chrome Extension</h2>
+            <p style="font-size: 1.1em; margin-bottom: 35px; color: #64748b; text-align: center;">
                 Capture and annotate UI issues directly in your browser
             </p>
             
             <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 35px;">
-                <a href="/static/wingman-chrome-extension.zip" download class="button" style="background: white; color: #1a1a1a; font-size: 1.1em; padding: 14px 28px;">
+                <a href="/static/wingman-chrome-extension.zip" download class="button" style="font-size: 1.1em; padding: 14px 28px;">
                     Download Extension
                 </a>
                 <button onclick="toggleInstructions()" class="button secondary" style="font-size: 1.1em; padding: 14px 28px;">
@@ -275,27 +286,27 @@
                 </button>
             </div>
             
-            <div id="installation-instructions" style="display: none; background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 30px; border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div id="installation-instructions" style="display: none; background: rgba(255, 255, 255, 0.8); border-radius: 12px; padding: 30px; border: 1px solid #e2e8f0;">
                 <div style="display: grid; gap: 20px;">
                     <div style="display: flex; gap: 15px;">
-                        <span style="color: rgba(255, 255, 255, 0.4); font-size: 0.95em; min-width: 20px;">1.</span>
-                        <span style="font-size: 0.95em;">Download the extension ZIP file</span>
+                        <span style="color: #94a3b8; font-size: 0.95em; min-width: 20px;">1.</span>
+                        <span style="font-size: 0.95em; color: #1e293b;">Download the extension ZIP file</span>
                     </div>
                     <div style="display: flex; gap: 15px;">
-                        <span style="color: rgba(255, 255, 255, 0.4); font-size: 0.95em; min-width: 20px;">2.</span>
-                        <span style="font-size: 0.95em;">Open <code style="background: rgba(255, 255, 255, 0.08); padding: 2px 6px; border-radius: 3px; font-size: 0.9em;">chrome://extensions</code></span>
+                        <span style="color: #94a3b8; font-size: 0.95em; min-width: 20px;">2.</span>
+                        <span style="font-size: 0.95em; color: #1e293b;">Open <code style="background: #f8fafc; padding: 2px 6px; border-radius: 3px; font-size: 0.9em;">chrome://extensions</code></span>
                     </div>
                     <div style="display: flex; gap: 15px;">
-                        <span style="color: rgba(255, 255, 255, 0.4); font-size: 0.95em; min-width: 20px;">3.</span>
-                        <span style="font-size: 0.95em;">Enable Developer Mode</span>
+                        <span style="color: #94a3b8; font-size: 0.95em; min-width: 20px;">3.</span>
+                        <span style="font-size: 0.95em; color: #1e293b;">Enable Developer Mode</span>
                     </div>
                     <div style="display: flex; gap: 15px;">
-                        <span style="color: rgba(255, 255, 255, 0.4); font-size: 0.95em; min-width: 20px;">4.</span>
-                        <span style="font-size: 0.95em;">Drag the ZIP file onto the page</span>
+                        <span style="color: #94a3b8; font-size: 0.95em; min-width: 20px;">4.</span>
+                        <span style="font-size: 0.95em; color: #1e293b;">Drag the ZIP file onto the page</span>
                     </div>
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
-                        <span style="opacity: 0.6; font-size: 0.9em;">Keyboard shortcut: </span>
-                        <code style="background: rgba(255, 255, 255, 0.08); padding: 3px 8px; border-radius: 3px; font-size: 0.9em;">Alt+Shift+W</code>
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                        <span style="color: #64748b; font-size: 0.9em;">Keyboard shortcut: </span>
+                        <code style="background: #f8fafc; padding: 3px 8px; border-radius: 3px; font-size: 0.9em; color: #1e293b;">Alt+Shift+W</code>
                     </div>
                 </div>
             </div>
@@ -312,8 +323,8 @@
             </a>
         </div>
 
-        <div style="margin-top: 40px; padding: 25px; background: rgba(255, 255, 255, 0.05); border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
-            <h3 style="margin-bottom: 15px; font-size: 1.3em;">Example Session URLs</h3>
+        <div style="margin-top: 40px; padding: 25px; background: rgba(255, 255, 255, 0.8); border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid #e2e8f0;">
+            <h3 style="margin-bottom: 15px; font-size: 1.3em; color: #1e293b;">Example Session URLs</h3>
             <div class="callsign-examples">
                 <div class="callsign">ghost-whiskey.wingmanux.com</div>
                 <div class="callsign">maverick-alpha.wingmanux.com</div>
