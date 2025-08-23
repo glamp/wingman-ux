@@ -110,88 +110,23 @@
             font-weight: 300;
         }
 
+        .status-row {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
         .status-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
             border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 40px;
+            padding: 25px 35px;
             border: 1px solid var(--border-color);
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-
-        .uptime-section {
-            margin-top: 25px;
-            text-align: center;
-        }
-
-        .uptime-label {
-            font-size: 0.95em;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .uptime-display {
-            font-size: 1.8em;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 15px;
-        }
-
-        .uptime-bar {
-            width: 100%;
-            height: 8px;
-            background: var(--bg-secondary);
-            border-radius: 100px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .uptime-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary-color), var(--purple-accent));
-            border-radius: 100px;
-            position: relative;
-            animation: shimmer 2s ease-in-out infinite;
-        }
-
-        @keyframes shimmer {
-            0% {
-                opacity: 0.9;
-            }
-            50% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0.9;
-            }
-        }
-
-        .session-count {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .session-count-label {
-            font-size: 0.9em;
-            color: var(--text-muted);
-        }
-
-        .session-count-value {
-            font-size: 1.1em;
-            font-weight: 600;
-            color: var(--text-primary);
+            gap: 20px;
         }
 
         .status-indicator {
@@ -203,24 +138,23 @@
             color: white;
             border-radius: 100px;
             font-size: 1.1em;
-            margin-bottom: 20px;
         }
 
         .pulse {
             width: 12px;
             height: 12px;
-            background: #10b981; /* Default green for healthy */
+            background: #10b981;
             border-radius: 50%;
             animation: pulse-healthy 2s infinite;
         }
 
         .pulse.healthy {
-            background: #10b981; /* Green */
+            background: #10b981;
             animation: pulse-healthy 2s infinite;
         }
 
         .pulse.unhealthy {
-            background: #ef4444; /* Red */
+            background: #ef4444;
             animation: pulse-unhealthy 2s infinite;
         }
 
@@ -242,62 +176,27 @@
             }
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+        .session-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
         }
 
-        .info-item {
-            text-align: left;
-        }
-
-        .info-label {
+        .session-label {
             font-size: 0.9em;
             color: var(--text-muted);
-            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .info-value {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .actions {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .button {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 28px;
+        .session-count {
+            font-size: 2em;
+            font-weight: 700;
             background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
-            color: white;
-            text-decoration: none;
-            border-radius: 100px;
-            font-weight: 600;
-            font-size: 1.1em;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 132, 255, 0.2);
-            border: none;
-            cursor: pointer;
-        }
-
-        .button:hover {
-            transform: translateY(-2px) scale(1.02);
-            box-shadow: 0 8px 25px rgba(0, 132, 255, 0.4);
-        }
-
-        .button.secondary {
-            background: white;
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .footer {
@@ -333,6 +232,132 @@
             border: 1px solid var(--border-color);
             color: var(--text-primary);
         }
+
+        /* Chrome Extension Section */
+        .extension-section {
+            margin: 60px auto 50px;
+            max-width: 700px;
+        }
+
+        .extension-section h2 {
+            font-size: 2em;
+            margin-bottom: 12px;
+            font-weight: 600;
+            text-align: center;
+            background: linear-gradient(135deg, #0084ff, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .extension-section p {
+            font-size: 1.1em;
+            margin-bottom: 35px;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .extension-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 35px;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
+            color: white;
+            text-decoration: none;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 132, 255, 0.2);
+            border: none;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 132, 255, 0.4);
+        }
+
+        .button.secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        #installation-instructions {
+            display: none;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .instruction-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .instruction-item {
+            display: flex;
+            gap: 15px;
+        }
+
+        .instruction-number {
+            color: #94a3b8;
+            font-size: 0.95em;
+            min-width: 20px;
+        }
+
+        .instruction-text {
+            font-size: 0.95em;
+            color: #1e293b;
+        }
+
+        .instruction-divider {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        code {
+            background: #f8fafc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .examples-section {
+            margin-top: 40px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid #e2e8f0;
+        }
+
+        .examples-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            color: #1e293b;
+        }
+
+        @media (max-width: 640px) {
+            .status-row {
+                flex-direction: column;
+            }
+            
+            .status-card {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -344,70 +369,64 @@
         <h1>Wingman Tunnel</h1>
         <p class="tagline">Secure P2P tunnels with aviation-themed callsigns</p>
         
-        <div class="status-card">
-            <div class="status-indicator" id="status-indicator">
-                <div class="pulse" id="status-pulse"></div>
-                <span id="status-text">Server Operational</span>
-            </div>
-            
-            <div class="uptime-section">
-                <div class="uptime-label">Uptime</div>
-                <div class="uptime-display" id="uptime-display">Calculating...</div>
-                <div class="uptime-bar">
-                    <div class="uptime-bar-fill" id="uptime-bar-fill" style="width: 0%"></div>
+        <div class="status-row">
+            <div class="status-card">
+                <div class="session-info">
+                    <div class="session-label">Active Sessions</div>
+                    <div class="session-count" id="session-count">0</div>
                 </div>
             </div>
             
-            <div class="session-count" id="session-info">
-                <span class="session-count-label">Active Sessions:</span>
-                <span class="session-count-value" id="session-count">0</span>
+            <div class="status-card">
+                <div class="status-indicator" id="status-indicator">
+                    <div class="pulse" id="status-pulse"></div>
+                    <span id="status-text">Server Operational</span>
+                </div>
             </div>
         </div>
 
         <!-- Chrome Extension Section -->
-        <div style="margin: 60px auto 50px; max-width: 700px;">
-            <h2 style="font-size: 2em; margin-bottom: 12px; font-weight: 600; text-align: center; background: linear-gradient(135deg, #0084ff, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Chrome Extension</h2>
-            <p style="font-size: 1.1em; margin-bottom: 35px; color: #64748b; text-align: center;">
-                Capture and annotate UI issues directly in your browser
-            </p>
+        <div class="extension-section">
+            <h2>Chrome Extension</h2>
+            <p>Capture and annotate UI issues directly in your browser</p>
             
-            <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 35px;">
-                <a href="/static/wingman-chrome-extension.zip" download class="button" style="font-size: 1.1em; padding: 14px 28px;">
+            <div class="extension-buttons">
+                <a href="/static/wingman-chrome-extension.zip" download class="button">
                     Download Extension
                 </a>
-                <button onclick="toggleInstructions()" class="button secondary" style="font-size: 1.1em; padding: 14px 28px;">
+                <button onclick="toggleInstructions()" class="button secondary">
                     Install Guide
                 </button>
             </div>
             
-            <div id="installation-instructions" style="display: none; background: rgba(255, 255, 255, 0.8); border-radius: 12px; padding: 30px; border: 1px solid #e2e8f0;">
-                <div style="display: grid; gap: 20px;">
-                    <div style="display: flex; gap: 15px;">
-                        <span style="color: #94a3b8; font-size: 0.95em; min-width: 20px;">1.</span>
-                        <span style="font-size: 0.95em; color: #1e293b;">Download the extension ZIP file</span>
+            <div id="installation-instructions">
+                <div class="instruction-list">
+                    <div class="instruction-item">
+                        <span class="instruction-number">1.</span>
+                        <span class="instruction-text">Download the extension ZIP file</span>
                     </div>
-                    <div style="display: flex; gap: 15px;">
-                        <span style="color: #94a3b8; font-size: 0.95em; min-width: 20px;">2.</span>
-                        <span style="font-size: 0.95em; color: #1e293b;">Open <code style="background: #f8fafc; padding: 2px 6px; border-radius: 3px; font-size: 0.9em;">chrome://extensions</code></span>
+                    <div class="instruction-item">
+                        <span class="instruction-number">2.</span>
+                        <span class="instruction-text">Open <code>chrome://extensions</code></span>
                     </div>
-                    <div style="display: flex; gap: 15px;">
-                        <span style="color: #94a3b8; font-size: 0.95em; min-width: 20px;">3.</span>
-                        <span style="font-size: 0.95em; color: #1e293b;">Enable Developer Mode</span>
+                    <div class="instruction-item">
+                        <span class="instruction-number">3.</span>
+                        <span class="instruction-text">Enable Developer Mode</span>
                     </div>
-                    <div style="display: flex; gap: 15px;">
-                        <span style="color: #94a3b8; font-size: 0.95em; min-width: 20px;">4.</span>
-                        <span style="font-size: 0.95em; color: #1e293b;">Drag the ZIP file onto the page</span>
+                    <div class="instruction-item">
+                        <span class="instruction-number">4.</span>
+                        <span class="instruction-text">Drag the ZIP file onto the page</span>
                     </div>
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                    <div class="instruction-divider">
                         <span style="color: #64748b; font-size: 0.9em;">Keyboard shortcut: </span>
-                        <code style="background: #f8fafc; padding: 3px 8px; border-radius: 3px; font-size: 0.9em; color: #1e293b;">Alt+Shift+W</code>
+                        <code style="color: #1e293b;">Alt+Shift+W</code>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div style="margin-top: 40px; padding: 25px; background: rgba(255, 255, 255, 0.8); border-radius: 15px; backdrop-filter: blur(10px); border: 1px solid #e2e8f0;">
-            <h3 style="margin-bottom: 15px; font-size: 1.3em; color: #1e293b;">Example Session URLs</h3>
+        <div class="examples-section">
+            <h3>Example Session URLs</h3>
             <div class="callsign-examples">
                 <div class="callsign">ghost-whiskey.wingmanux.com</div>
                 <div class="callsign">maverick-alpha.wingmanux.com</div>
@@ -434,39 +453,7 @@
             }
         }
         
-        // Format uptime into human-readable string
-        function formatUptime(milliseconds) {
-            if (milliseconds < 1000) {
-                return 'Just started';
-            }
-            
-            const seconds = Math.floor(milliseconds / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const hours = Math.floor(minutes / 60);
-            const days = Math.floor(hours / 24);
-            
-            if (days > 0) {
-                const remainingHours = hours % 24;
-                return `${days} day${days > 1 ? 's' : ''}, ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}`;
-            } else if (hours > 0) {
-                const remainingMinutes = minutes % 60;
-                return `${hours} hour${hours > 1 ? 's' : ''}, ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}`;
-            } else if (minutes > 0) {
-                return `${minutes} minute${minutes > 1 ? 's' : ''}`;
-            } else {
-                return `${seconds} second${seconds > 1 ? 's' : ''}`;
-            }
-        }
-        
-        // Calculate uptime bar width (cycles every 24 hours)
-        function calculateUptimeBarWidth(milliseconds) {
-            const hoursElapsed = milliseconds / (1000 * 60 * 60);
-            // Fill the bar over 24 hours, then reset
-            const fillPercentage = Math.min((hoursElapsed / 24) * 100, 100);
-            return fillPercentage;
-        }
-        
-        // Fetch and display actual server health and uptime
+        // Fetch and display server health
         function updateServerStatus() {
             fetch('/health')
                 .then(res => {
@@ -489,17 +476,6 @@
                     return res.json();
                 })
                 .then(data => {
-                    // Update uptime display
-                    if (data.uptime !== undefined) {
-                        const uptimeDisplay = document.getElementById('uptime-display');
-                        const uptimeBarFill = document.getElementById('uptime-bar-fill');
-                        
-                        uptimeDisplay.textContent = formatUptime(data.uptime);
-                        
-                        const barWidth = calculateUptimeBarWidth(data.uptime);
-                        uptimeBarFill.style.width = `${barWidth}%`;
-                    }
-                    
                     // Update session count
                     if (data.activeSessions !== undefined) {
                         const sessionCount = document.getElementById('session-count');
@@ -511,12 +487,12 @@
                     // Show error state
                     const statusPulse = document.getElementById('status-pulse');
                     const statusText = document.getElementById('status-text');
-                    const uptimeDisplay = document.getElementById('uptime-display');
+                    const sessionCount = document.getElementById('session-count');
                     
                     statusPulse.classList.remove('healthy');
                     statusPulse.classList.add('unhealthy');
                     statusText.textContent = 'Server Unreachable';
-                    uptimeDisplay.textContent = 'Offline';
+                    sessionCount.textContent = '-';
                 });
         }
         

@@ -16,9 +16,6 @@ const __dirname = path.dirname(__filename);
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Track server start time for uptime calculation
-let serverStartTime: Date | null = null;
-
 /**
  * Create the Express app with all middleware and routes configured
  * Exported for testing purposes
@@ -59,19 +56,10 @@ export function createApp() {
 
   // Health check endpoint
   app.get('/health', (req, res) => {
-    const now = new Date();
-    let uptimeMs = 0;
-    
-    if (serverStartTime) {
-      uptimeMs = now.getTime() - serverStartTime.getTime();
-    }
-    
     res.json({
       status: 'healthy',
-      timestamp: now.toISOString(),
-      activeSessions: sessionManager.getActiveSessions().length,
-      uptime: uptimeMs,
-      startTime: serverStartTime ? serverStartTime.toISOString() : null
+      timestamp: new Date().toISOString(),
+      activeSessions: sessionManager.getActiveSessions().length
     });
   });
 
@@ -279,11 +267,9 @@ function startServer() {
 
   // Start server
   server.listen(PORT, () => {
-    serverStartTime = new Date();
     console.log(`🪂 Wingman Tunnel Server running on port ${PORT}`);
     console.log(`Environment: ${NODE_ENV}`);
     console.log(`Health check: http://localhost:${PORT}/health`);
-    console.log(`Server started at: ${serverStartTime.toISOString()}`);
     
     if (NODE_ENV === 'development') {
       console.log(`Test session creation: curl -X POST http://localhost:${PORT}/api/sessions -H "Content-Type: application/json" -d '{"developerId":"test","targetPort":3000}'`);
