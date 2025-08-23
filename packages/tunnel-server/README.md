@@ -112,40 +112,81 @@ npm test -- --coverage
 
 ### Test Suites
 
-The tunnel server includes comprehensive test coverage with both local unit tests and production integration tests:
+The tunnel server includes comprehensive test coverage at multiple levels:
 
-#### Local Tests
-- **Unit tests**: Session manager CRUD operations
-- **API Integration tests**: Express endpoints and WebSocket connections  
-- **Static file tests**: CSS/JS serving verification
+#### Unit & Integration Tests (90 tests)
+- **Session Manager**: CRUD operations, ID generation, expiry
+- **Connection Manager**: WebSocket management, request forwarding
+- **Proxy Handler**: HTTP request/response forwarding
+- **Tunnel Client**: Local server communication
+- **API Endpoints**: REST API functionality
+- **Static Files**: CSS/JS serving verification
 
-#### Production Tests
-- **Health checks**: Server availability and monitoring
-- **Session persistence**: Cross-request session storage
-- **WebSocket connectivity**: Real-time connection testing
-- **Error handling**: Malformed requests and edge cases
-- **Performance benchmarks**: Response time validation
+#### End-to-End Tests (10 tests)
+- **Session Creation**: Aviation-themed ID generation
+- **Tunnel Connection**: WebSocket establishment
+- **HTTP Methods**: GET, POST, PUT, DELETE
+- **Request Features**: Query params, headers, large payloads
+- **Error Handling**: 404s, timeouts, disconnections
 
 ### Running Tests
 
 ```bash
-# Run ALL tests (local + production)
+# Run all unit and integration tests
 npm test
+
+# Run tests in watch mode during development
+npm run test:watch
 
 # Run ONLY local unit tests (fast, no network)
 npm run test:local
 
-# Run ONLY production integration tests (requires deployed server)
+# Run ONLY production integration tests
 npm run test:production
 
-# Run tests in watch mode during development
-npm run test:watch
+# Run End-to-End tests against production server
+npm run test:e2e
+
+# Run E2E tests with verbose output for debugging
+npm run test:e2e:verbose
+
+# Run COMPLETE test suite (unit + integration + E2E)
+npm run test:all
 
 # Run a specific test file
 npx vitest src/__tests__/api.test.ts --run
 
 # Run tests with coverage report
 npm test -- --coverage
+```
+
+### E2E Test Output
+
+When running `npm run test:e2e`, you'll see:
+
+```
+🚀 Starting Automated Production Tests
+📡 Server: https://wingman-tunnel.fly.dev
+🔌 WebSocket: wss://wingman-tunnel.fly.dev/ws
+
+==================================================
+📊 TEST RESULTS
+==================================================
+✅ Session Creation
+✅ Tunnel Connection
+✅ GET Request
+✅ POST Request with JSON
+✅ PUT Request
+✅ DELETE Request
+✅ Query Parameters
+✅ Custom Headers
+✅ Large Payload
+✅ 404 Response
+==================================================
+Total: 10 tests
+Passed: 10 ✅
+Failed: 0 ❌
+==================================================
 ```
 
 ### Test Configuration
@@ -169,17 +210,21 @@ TEST_URL=https://your-server.com npm run test:production
 ### Test Results
 
 Current test status (as of 2025-08-22):
-- **Local tests**: 25/25 passing ✅
-- **Production tests**: 25/25 passing ✅
-- **Total tests**: 50/50 passing ✅
+- **Unit & Integration tests**: 90/90 passing ✅
+- **End-to-End tests**: 10/10 passing ✅
+- **Total tests**: 100/100 passing ✅
 - **Test coverage**: ~96% of critical paths
 
-All tests include:
+Test coverage includes:
 - Session CRUD operations
+- Connection management
+- HTTP proxy functionality
 - WebSocket connectivity
-- Error handling (including malformed JSON)
+- All HTTP methods (GET, POST, PUT, DELETE)
+- Request forwarding with headers and body
+- Error handling and timeouts
 - Static file serving
-- Performance benchmarks
+- Large payload handling (10KB+)
 
 ### CI/CD Integration
 
@@ -207,6 +252,58 @@ To run tests in CI/CD pipelines:
 │ created     │    │ connection  │    │ PM can view │    │ automatic   │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 ```
+
+## 🚇 Using the Tunnel Client
+
+### Quick Start
+
+```javascript
+import { TunnelClient } from '@wingman/tunnel-server/dist/tunnel-client.js';
+
+// Create a session first
+const response = await fetch('https://wingman-tunnel.fly.dev/api/sessions', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    developerId: 'my-dev-id',
+    targetPort: 3000
+  })
+});
+
+const { sessionId } = await response.json();
+
+// Connect your local server
+const client = new TunnelClient(sessionId, 3000);
+
+client.on('connected', () => {
+  console.log(`Tunnel ready at: https://wingman-tunnel.fly.dev/tunnel/${sessionId}/`);
+});
+
+client.on('request', (req) => {
+  console.log(`Incoming: ${req.method} ${req.path}`);
+});
+
+await client.connect('wss://wingman-tunnel.fly.dev/ws');
+```
+
+### Client Options
+
+```javascript
+const client = new TunnelClient(sessionId, localPort, {
+  reconnect: true,              // Auto-reconnect on disconnect
+  reconnectDelay: 1000,         // Delay between reconnection attempts (ms)
+  maxReconnectAttempts: 10,     // Maximum reconnection attempts
+  requestTimeout: 30000         // Request timeout (ms)
+});
+```
+
+### Events
+
+- `connected` - Tunnel connection established
+- `registered` - Successfully registered with server
+- `request` - Incoming HTTP request
+- `error` - Connection or request error
+- `disconnected` - Connection closed
 
 ## 🏗️ Architecture
 
