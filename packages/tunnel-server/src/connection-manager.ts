@@ -20,13 +20,23 @@ interface PendingRequest {
   timeout: NodeJS.Timeout;
 }
 
+// P2P WebRTC signaling types
+export interface P2PSignalingMessage {
+  type: 'p2p:offer' | 'p2p:answer' | 'p2p:ice-candidate' | 'p2p:ready' | 'p2p:failed';
+  sessionId: string;
+  from: 'developer' | 'pm';
+  data?: any;
+}
+
 /**
  * Manages WebSocket connections from developers and handles request forwarding
  */
 export class ConnectionManager {
   private connections = new Map<string, WebSocket>();
+  private pmConnections = new Map<string, WebSocket>(); // PM WebSocket connections
   private pendingRequests = new Map<string, PendingRequest>();
   private requestTimeout = 30000; // 30 seconds default
+  private p2pEnabled = true; // Feature flag for P2P
 
   /**
    * Register a developer connection for a session
@@ -72,6 +82,31 @@ export class ConnectionManager {
     if (ws) {
       ws.removeAllListeners();
       this.connections.delete(sessionId);
+    }
+  }
+
+  /**
+   * Register a PM connection for a session
+   */
+  registerPM(sessionId: string, ws: WebSocket): void {
+    // Close existing PM connection if any
+    const existing = this.pmConnections.get(sessionId);
+    if (existing) {
+      existing.close();
+    }
+
+    this.pmConnections.set(sessionId, ws);
+    console.log(`PM registered for session ${sessionId}`);
+  }
+
+  /**
+   * Remove a PM connection
+   */
+  unregisterPM(sessionId: string): void {
+    const ws = this.pmConnections.get(sessionId);
+    if (ws) {
+      ws.removeAllListeners();
+      this.pmConnections.delete(sessionId);
     }
   }
 
@@ -199,6 +234,81 @@ export class ConnectionManager {
       activeSessions: this.getActiveSessions(),
       pendingRequests: this.pendingRequests.size
     };
+  }
+
+  /**
+   * Handle P2P signaling message relay
+   */
+  handleP2PSignaling(message: P2PSignalingMessage): void {
+    const { sessionId, from } = message;
+    
+    // Relay message to the appropriate recipient
+    if (from === 'developer') {
+      // Forward to PM
+      const pmWs = this.pmConnections.get(sessionId);
+      if (pmWs && pmWs.readyState === 1) {
+        pmWs.send(JSON.stringify(message));
+        console.log(`Relayed P2P signaling from developer to PM for session ${sessionId}`);
+      } else {
+        console.log(`PM not connected for session ${sessionId}`);
+      }
+    } else if (from === 'pm') {
+      // Forward to developer
+      const devWs = this.connections.get(sessionId);
+      if (devWs && devWs.readyState === 1) {
+        devWs.send(JSON.stringify(message));
+        console.log(`Relayed P2P signaling from PM to developer for session ${sessionId}`);
+      } else {
+        console.log(`Developer not connected for session ${sessionId}`);
+      }
+    }
+  }
+
+  /**
+   * Check if P2P is available for a session
+   */
+  isP2PAvailable(sessionId: string): boolean {
+    if (!this.p2pEnabled) {
+      return false;
+    }
+    
+    const devConnected = this.isConnected(sessionId);
+    const pmWs = this.pmConnections.get(sessionId);
+    const pmConnected = pmWs !== undefined && pmWs.readyState === 1;
+    
+    return devConnected && pmConnected;
+  }
+
+  /**
+   * Initiate P2P connection for a session
+   */
+  initiateP2P(sessionId: string): void {
+    if (!this.isP2PAvailable(sessionId)) {
+      console.log(`P2P not available for session ${sessionId}`);
+      return;
+    }
+
+    // Notify both parties to start P2P negotiation
+    const devWs = this.connections.get(sessionId);
+    const pmWs = this.pmConnections.get(sessionId);
+
+    if (devWs && devWs.readyState === 1) {
+      devWs.send(JSON.stringify({
+        type: 'p2p:initiate',
+        sessionId,
+        role: 'developer'
+      }));
+    }
+
+    if (pmWs && pmWs.readyState === 1) {
+      pmWs.send(JSON.stringify({
+        type: 'p2p:initiate',
+        sessionId,
+        role: 'pm'
+      }));
+    }
+
+    console.log(`Initiated P2P connection for session ${sessionId}`);
   }
 
   /**

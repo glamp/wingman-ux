@@ -31,6 +31,9 @@ export class ImageProcessor {
     
     // Get target rectangle and apply scaling
     const { rect } = annotation.target;
+    if (!rect) {
+      throw new Error('No target rectangle in annotation');
+    }
     const scaledRect = {
       x: rect.x * scale,
       y: rect.y * scale,

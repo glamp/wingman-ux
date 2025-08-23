@@ -5,7 +5,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { SessionManager } from './session-manager.js';
-import { ConnectionManager } from './connection-manager.js';
+import { ConnectionManager, type P2PSignalingMessage } from './connection-manager.js';
 import { ProxyHandler } from './proxy-handler.js';
 import { createSessionsRouter } from './routes/sessions.js';
 import { createStaticRouter } from './routes/static.js';
@@ -115,11 +115,37 @@ wss.on('connection', (ws, request) => {
                 sessionId: message.sessionId,
                 role: 'developer'
               }));
+              
+              // Check if P2P can be initiated
+              if (connectionManager.isP2PAvailable(message.sessionId)) {
+                setTimeout(() => {
+                  connectionManager.initiateP2P(message.sessionId);
+                }, 1000); // Give PM time to set up
+              }
             } else {
               ws.send(JSON.stringify({ 
                 type: 'error', 
                 error: 'Session not found' 
               }));
+            }
+          } else if (message.role === 'pm' && message.sessionId) {
+            // PM registration for P2P
+            const session = sessionManager.getSession(message.sessionId);
+            if (session) {
+              connectionManager.registerPM(message.sessionId, ws);
+              registeredSessionId = message.sessionId;
+              ws.send(JSON.stringify({ 
+                type: 'registered', 
+                sessionId: message.sessionId,
+                role: 'pm'
+              }));
+              
+              // Check if P2P can be initiated
+              if (connectionManager.isP2PAvailable(message.sessionId)) {
+                setTimeout(() => {
+                  connectionManager.initiateP2P(message.sessionId);
+                }, 1000); // Give developer time if just connected
+              }
             }
           }
           break;
@@ -131,6 +157,22 @@ wss.on('connection', (ws, request) => {
           // Developer sending response to a forwarded request
           if (isDeveloper && registeredSessionId) {
             connectionManager.handleResponse(registeredSessionId, message);
+          }
+          break;
+        case 'p2p:offer':
+        case 'p2p:answer':
+        case 'p2p:ice-candidate':
+        case 'p2p:ready':
+        case 'p2p:failed':
+          // Handle P2P signaling messages
+          if (registeredSessionId) {
+            const signalingMessage: P2PSignalingMessage = {
+              type: message.type,
+              sessionId: registeredSessionId,
+              from: isDeveloper ? 'developer' : 'pm',
+              data: message.data
+            };
+            connectionManager.handleP2PSignaling(signalingMessage);
           }
           break;
         case 'ping':
@@ -146,15 +188,25 @@ wss.on('connection', (ws, request) => {
 
   ws.on('close', () => {
     console.log('WebSocket connection closed');
-    if (isDeveloper && registeredSessionId) {
-      connectionManager.handleDisconnection(registeredSessionId);
+    if (registeredSessionId) {
+      if (isDeveloper) {
+        connectionManager.handleDisconnection(registeredSessionId);
+      } else {
+        // PM disconnected
+        connectionManager.unregisterPM(registeredSessionId);
+      }
     }
   });
 
   ws.on('error', (error) => {
     console.error('WebSocket error:', error);
-    if (isDeveloper && registeredSessionId) {
-      connectionManager.handleDisconnection(registeredSessionId);
+    if (registeredSessionId) {
+      if (isDeveloper) {
+        connectionManager.handleDisconnection(registeredSessionId);
+      } else {
+        // PM error
+        connectionManager.unregisterPM(registeredSessionId);
+      }
     }
   });
 

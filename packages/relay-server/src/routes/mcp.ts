@@ -18,10 +18,13 @@ export function mcpRouter(storage: StorageService): Router {
   });
 
   // Register tool: wingman_list
-  mcpServer.tool(
+  mcpServer.registerTool(
     'wingman_list',
-    'List all UI feedback annotations from Wingman',
-    {},
+    {
+      title: 'List Wingman Annotations',
+      description: 'List all UI feedback annotations from Wingman',
+      inputSchema: {}
+    },
     async () => {
       try {
         const annotations = await storage.list({ limit: 100 });
@@ -58,11 +61,14 @@ export function mcpRouter(storage: StorageService): Router {
   );
 
   // Register tool: wingman_review
-  mcpServer.tool(
+  mcpServer.registerTool(
     'wingman_review',
-    'Get the latest or specific annotation with full details for review',
     {
-      id: z.string().optional().describe('Optional annotation ID, uses latest if not provided'),
+      title: 'Review Wingman Annotation',
+      description: 'Get the latest or specific annotation with full details for review',
+      inputSchema: {
+        id: z.string().optional().describe('Optional annotation ID, uses latest if not provided'),
+      }
     },
     async ({ id }) => {
       try {
@@ -129,11 +135,14 @@ export function mcpRouter(storage: StorageService): Router {
   );
 
   // Register tool: wingman_delete
-  mcpServer.tool(
+  mcpServer.registerTool(
     'wingman_delete',
-    'Delete a processed annotation after fixing the issue',
     {
-      id: z.string().describe('The annotation ID to delete'),
+      title: 'Delete Wingman Annotation',
+      description: 'Delete a processed annotation after fixing the issue',
+      inputSchema: {
+        id: z.string().describe('The annotation ID to delete'),
+      }
     },
     async ({ id }) => {
       try {
@@ -173,11 +182,14 @@ export function mcpRouter(storage: StorageService): Router {
   );
 
   // Register prompt: wingman_fix_ui
-  mcpServer.prompt(
+  mcpServer.registerPrompt(
     'wingman_fix_ui',
-    '🪶 Fix UI issues reported via Wingman feedback',
     {
-      annotation_id: z.string().optional().describe('Optional annotation ID, uses latest if not provided'),
+      title: '🪶 Fix UI Issues',
+      description: 'Fix UI issues reported via Wingman feedback',
+      argsSchema: {
+        annotation_id: z.string().optional().describe('Optional annotation ID, uses latest if not provided'),
+      }
     },
     async ({ annotation_id }) => {
       try {
