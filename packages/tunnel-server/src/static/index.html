@@ -110,34 +110,42 @@
             font-weight: 300;
         }
 
-        .status-row {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-bottom: 40px;
-        }
-
         .status-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 25px 35px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 
+                0 10px 40px -10px rgba(0, 132, 255, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.5) inset;
             display: flex;
             align-items: center;
-            gap: 20px;
+            justify-content: space-between;
+            gap: 40px;
+            margin: 0 auto 40px;
+            max-width: 500px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-color), var(--purple-accent));
+            opacity: 0.8;
         }
 
         .status-indicator {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 12px 24px;
-            background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
-            color: white;
-            border-radius: 100px;
-            font-size: 1.1em;
+            font-size: 1em;
+            color: var(--text-secondary);
         }
 
         .pulse {
@@ -178,25 +186,30 @@
 
         .session-info {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 5px;
-        }
-
-        .session-label {
-            font-size: 0.9em;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            align-items: center;
+            gap: 12px;
         }
 
         .session-count {
-            font-size: 2em;
+            font-size: 1.8em;
             font-weight: 700;
             background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+
+        .session-label {
+            font-size: 0.95em;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .divider {
+            width: 1px;
+            height: 40px;
+            background: var(--border-color);
+            opacity: 0.5;
         }
 
         .footer {
@@ -350,12 +363,20 @@
         }
 
         @media (max-width: 640px) {
-            .status-row {
+            .status-card {
                 flex-direction: column;
+                gap: 20px;
+                padding: 24px;
             }
             
-            .status-card {
-                width: 100%;
+            .divider {
+                width: 100px;
+                height: 1px;
+            }
+            
+            .session-info {
+                flex-direction: column;
+                gap: 8px;
             }
         }
     </style>
@@ -367,21 +388,19 @@
         </div>
         
         <h1>Wingman Tunnel</h1>
-        <p class="tagline">Secure P2P tunnels with aviation-themed callsigns</p>
+        <p class="tagline">Share live previews and gather feedback across your team</p>
         
-        <div class="status-row">
-            <div class="status-card">
-                <div class="session-info">
-                    <div class="session-label">Active Sessions</div>
-                    <div class="session-count" id="session-count">0</div>
-                </div>
+        <div class="status-card">
+            <div class="session-info">
+                <div class="session-count" id="session-count">0</div>
+                <div class="session-label">Active Sessions</div>
             </div>
             
-            <div class="status-card">
-                <div class="status-indicator" id="status-indicator">
-                    <div class="pulse" id="status-pulse"></div>
-                    <span id="status-text">Server Operational</span>
-                </div>
+            <div class="divider"></div>
+            
+            <div class="status-indicator" id="status-indicator">
+                <div class="pulse" id="status-pulse"></div>
+                <span id="status-text">Server Operational</span>
             </div>
         </div>
 
