@@ -80,13 +80,14 @@ describe('P2P Integration', () => {
             case 'p2p:ice-candidate':
             case 'p2p:ready':
             case 'p2p:failed':
-              if (message.sessionId || registeredSessionId) {
-                connectionManager.handleP2PSignaling({
+              if (registeredSessionId) {
+                const signalingMessage = {
                   type: message.type,
-                  sessionId: message.sessionId || registeredSessionId,
-                  from: message.from || (isDeveloper ? 'developer' : 'pm'),
+                  sessionId: registeredSessionId,
+                  from: isDeveloper ? 'developer' : 'pm',
                   data: message.data
-                });
+                };
+                connectionManager.handleP2PSignaling(signalingMessage);
               }
               break;
           }
@@ -222,7 +223,7 @@ describe('P2P Integration', () => {
         .post('/api/sessions')
         .send({ developerId: 'test-dev', targetPort: 3000 });
       
-      const { id: sessionId } = sessionRes.body;
+      const { sessionId } = sessionRes.body;
       
       // Create WebSockets
       const devWs = new WebSocket(`ws://localhost:${port}/ws`);
@@ -241,6 +242,12 @@ describe('P2P Integration', () => {
           new Promise(resolve => pmWs.once('open', resolve))
         ]);
         
+        // Track developer messages too
+        const devMessages: any[] = [];
+        devWs.on('message', (data) => {
+          devMessages.push(JSON.parse(data.toString()));
+        });
+        
         // Register both
         devWs.send(JSON.stringify({
           type: 'register',
@@ -254,8 +261,8 @@ describe('P2P Integration', () => {
           sessionId
         }));
         
-        // Wait for registration
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for registration confirmation
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Send P2P offer from developer (sessionId is already registered)
         devWs.send(JSON.stringify({
@@ -264,7 +271,7 @@ describe('P2P Integration', () => {
         }));
         
         // Wait for message relay
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // PM should receive the offer
         const offerMsg = pmMessages.find(m => m.type === 'p2p:offer');

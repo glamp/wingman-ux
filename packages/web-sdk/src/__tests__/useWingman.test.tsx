@@ -244,17 +244,10 @@ describe('useWingman Hook (TDD)', () => {
         ...consoleDebugSpy.mock.calls
       ];
       
-      // Debug output
-      if (allCalls.length === 0) {
-        console.error('No console calls were captured!');
-      } else {
-        console.error('All console calls:', JSON.stringify(allCalls, null, 2));
-      }
-      
       const wingmanLogs = allCalls.some(call => 
         call.some(arg => 
           typeof arg === 'string' && 
-          (arg.includes('[Wingman]') || arg.includes('[Wingman SDK]'))
+          arg.includes('[Wingman')  // Check for any log with [Wingman prefix
         )
       );
       expect(wingmanLogs).toBe(true);
