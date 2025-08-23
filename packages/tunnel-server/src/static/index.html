@@ -125,11 +125,16 @@
             align-items: center;
             gap: 10px;
             padding: 12px 24px;
-            background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
+            background: #10b981; /* Green for healthy */
             color: white;
             border-radius: 100px;
             font-size: 1.1em;
             margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .status-indicator.unhealthy {
+            background: #ef4444; /* Red for unhealthy */
         }
 
         .pulse {
@@ -140,12 +145,32 @@
             animation: pulse 2s infinite;
         }
 
+        .pulse.healthy {
+            background: #10b981; /* Green */
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+
+        .pulse.unhealthy {
+            background: #ef4444; /* Red */
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-error 2s infinite;
+        }
+
         @keyframes pulse {
             0%, 100% {
                 box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
             }
             50% {
                 box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+            }
+        }
+
+        @keyframes pulse-error {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
             }
         }
 
@@ -252,9 +277,9 @@
         <p class="tagline">Secure P2P tunnels with aviation-themed callsigns</p>
         
         <div class="status-card">
-            <div class="status-indicator">
-                <div class="pulse"></div>
-                <span>Server Operational</span>
+            <div class="status-indicator" id="status-indicator">
+                <div class="pulse" id="status-pulse"></div>
+                <span id="status-text">Server Operational</span>
             </div>
             
             <div class="info-grid">
