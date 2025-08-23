@@ -124,13 +124,92 @@ The project uses a monorepo structure with shared TypeScript types across all pa
 - TypeScript: Use strictest possible settings for Rust-like compile-time error catching
 
 ### Chrome Extension Development
+
+#### Automated Extension Loading (Recommended)
+
+**For Personal Chrome Development (macOS)**:
+```bash
+cd packages/chrome-extension
+
+# Quick start: Build and launch Chrome with extension loaded
+npm run dev:chrome:personal
+
+# Development with auto-reload on file changes  
+npm run dev:chrome:watch
+
+# Use fresh Chrome profile (no personal data)
+npm run dev:chrome:fresh
+```
+
+**For Advanced Testing with Playwright MCP**:
+```bash
+cd packages/chrome-extension
+
+# One-time setup: Install Playwright MCP dependencies
+npm run dev:playwright:setup
+
+# Run extension tests through Playwright
+npm run dev:playwright:test
+
+# Interactive test development
+npm run dev:playwright:test:ui
+```
+
+#### Manual Loading (Fallback)
 - Load unpacked extension from `packages/chrome-extension/dist` in Chrome
 - Use `npm run dev` in chrome-extension package for development
+
+#### Development Features
 - **Hot Reload**: The extension automatically reloads when you make changes
   - The development build includes hot-reload-extension-vite plugin
   - Changes to source files trigger automatic extension reload
   - No need to manually reload the extension in Chrome
   - Requires NODE_ENV=development (automatically set by wingit)
+
+#### Chrome Extension Auto-Loading
+
+**Personal Chrome Workflow (Recommended for daily development)**:
+- Uses your personal Chrome profile with existing bookmarks and login sessions
+- Automatically builds extension and launches Chrome with `--load-extension` flag
+- Supports file watching for automatic rebuilds
+- Handles Chrome process management gracefully
+
+**Available Scripts**:
+- `npm run dev:chrome:personal` - Build and launch personal Chrome with extension
+- `npm run dev:chrome:watch` - Enable file watching for auto-reload
+- `npm run dev:chrome:fresh` - Use temporary profile (clean slate)
+- `npm run dev:full` - Start both build watcher and Chrome launcher
+
+**Playwright MCP Integration (Advanced testing)**:
+- Provides programmatic browser automation through Claude Code
+- Uses Microsoft's official `@playwright/test` and `@microsoft/playwright-mcp`
+- Enables automated testing, screenshot capture, and network monitoring
+- Perfect for regression testing and complex user flow validation
+
+**MCP Configuration for Claude Code**:
+Add to your Claude Code settings:
+```json
+{
+  "mcpServers": {
+    "wingman-playwright": {
+      "command": "node",
+      "args": [".mcp/server.js"],
+      "cwd": "packages/chrome-extension"
+    }
+  }
+}
+```
+
+**When to Use Each Approach**:
+- **Personal Chrome**: Daily development, UI iteration, manual testing
+- **Playwright MCP**: Automated testing, screenshot comparison, API integration testing
+- **Manual Loading**: Fallback when automated approaches fail
+
+**Troubleshooting**:
+- If Chrome fails to start: Check that all Chrome processes are closed first
+- Extension not loading: Verify `packages/chrome-extension/dist/development` exists
+- File watching not working: Ensure `chokidar` dependency is installed
+- MCP setup issues: Run `npm run dev:playwright:setup` to reinstall dependencies
 
 ## Code Search and Navigation
 

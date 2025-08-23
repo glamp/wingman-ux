@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { SessionManager } from '../session-manager.js';
+import { ConnectionManager } from '../connection-manager.js';
 import { createSessionsRouter } from '../routes/sessions.js';
 import { createStaticRouter } from '../routes/static.js';
 import cors from 'cors';
@@ -14,11 +15,13 @@ const __dirname = path.dirname(__filename);
 describe('Tunnel Server API', () => {
   let app: express.Application;
   let sessionManager: SessionManager;
+  let connectionManager: ConnectionManager;
 
   beforeEach(() => {
     // Create a fresh app and session manager for each test
     app = express();
     sessionManager = new SessionManager();
+    connectionManager = new ConnectionManager();
 
     // Set up middleware
     app.use(cors());
@@ -28,7 +31,7 @@ describe('Tunnel Server API', () => {
     // Set up routes
     app.use('/api', createSessionsRouter(sessionManager));
     app.use('/static', express.static(path.join(__dirname, '../static')));
-    app.use('/', createStaticRouter(sessionManager));
+    app.use('/', createStaticRouter(sessionManager, connectionManager));
 
     // Health check
     app.get('/health', (req, res) => {

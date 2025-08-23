@@ -8,6 +8,7 @@ import { createCorsMiddleware, corsDebugMiddleware } from './middleware/cors';
 import { annotationsRouter } from './routes/annotations';
 import { healthRouter } from './routes/health';
 import { mcpRouter } from './routes/mcp';
+import { tunnelRouter } from './routes/tunnel';
 import { StorageService } from './services/storage';
 import { createLogger } from '@wingman/shared';
 
@@ -45,6 +46,7 @@ export function createServer(options: ServerOptions = {}) {
   app.use('/health', healthRouter);
   app.use('/annotations', annotationsRouter(storage));
   app.use('/mcp', mcpRouter(storage));
+  app.use('/tunnel', tunnelRouter());
 
   logger.debug('NODE_ENV:', process.env.NODE_ENV);
 

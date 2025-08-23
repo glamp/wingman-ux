@@ -42,9 +42,9 @@ export function WingmanProvider({
   const introspectorRef = useRef<ReactIntrospector | null>(null);
   
   // Create logger with debug flag
-  const logger = useRef(createLogger('Wingman:Provider', { 
-    level: debug ? 'debug' : undefined 
-  })).current;
+  const logger = useRef(createLogger('Wingman:Provider', debug ? { 
+    level: 'debug' 
+  } : {})).current;
 
   useEffect(() => {
     if (!enabled) return;

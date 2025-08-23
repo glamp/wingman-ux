@@ -52,7 +52,7 @@ export function createApp() {
   app.use('/tunnel/:sessionId/*', proxyHandler.handleRequest.bind(proxyHandler));
 
   // Session pages
-  app.use('/', createStaticRouter(sessionManager));
+  app.use('/', createStaticRouter(sessionManager, connectionManager));
 
   // Health check endpoint
   app.get('/health', (req, res) => {

@@ -1,4 +1,5 @@
 import { getEnvironmentConfig } from '../utils/config';
+import QRCode from 'qrcode';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const relayUrlInput = document.getElementById('relayUrl') as HTMLInputElement;
@@ -13,6 +14,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   const copyFormatOptions = document.getElementById('copyFormatOptions') as HTMLDivElement;
   const header = document.querySelector('.header') as HTMLDivElement;
   const shortcutText = document.getElementById('shortcutText') as HTMLDivElement;
+  
+  // Tunnel elements
+  const tunnelPanel = document.getElementById('tunnelPanel') as HTMLDivElement;
+  const tunnelStatus = document.getElementById('tunnelStatus') as HTMLSpanElement;
+  const detectedServer = document.getElementById('detectedServer') as HTMLDivElement;
+  const detectedPort = document.getElementById('detectedPort') as HTMLSpanElement;
+  const changePortBtn = document.getElementById('changePortBtn') as HTMLButtonElement;
+  const manualPortInput = document.getElementById('manualPortInput') as HTMLDivElement;
+  const targetPortInput = document.getElementById('targetPort') as HTMLInputElement;
+  const detectPortBtn = document.getElementById('detectPortBtn') as HTMLButtonElement;
+  const tunnelUrlDisplay = document.getElementById('tunnelUrlDisplay') as HTMLDivElement;
+  const tunnelUrlInput = document.getElementById('tunnelUrl') as HTMLInputElement;
+  const copyTunnelUrlBtn = document.getElementById('copyTunnelUrl') as HTMLButtonElement;
+  const showQRCodeBtn = document.getElementById('showQRCode') as HTMLButtonElement;
+  const tunnelActionBtn = document.getElementById('tunnelActionBtn') as HTMLButtonElement;
+  const qrModal = document.getElementById('qrModal') as HTMLDivElement;
+  const qrCodeContainer = document.getElementById('qrCodeContainer') as HTMLDivElement;
+  const qrUrlText = document.getElementById('qrUrlText') as HTMLDivElement;
+  const closeQRModalBtn = document.getElementById('closeQRModal') as HTMLButtonElement;
+  
+  let activeTunnel: { sessionId: string; tunnelUrl: string; targetPort: number } | null = null;
 
   let saveTimeout: number | null = null;
 
@@ -358,4 +380,229 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(() => {
     checkConnectionStatus();
   }, 10000);
+
+  // Initialize tunnel functionality
+  initializeTunnel();
+
+  async function initializeTunnel() {
+    // Try to detect port from current tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.url?.includes('localhost:')) {
+      const match = tab.url.match(/localhost:(\d+)/);
+      if (match) {
+        const port = match[1];
+        detectedPort.textContent = `localhost:${port}`;
+        targetPortInput.value = port;
+        detectedServer.style.display = 'block';
+      }
+    }
+
+    // Check for existing tunnel
+    checkTunnelStatus();
+
+    // Event handlers
+    changePortBtn.addEventListener('click', () => {
+      detectedServer.style.display = 'none';
+      manualPortInput.style.display = 'block';
+    });
+
+    detectPortBtn.addEventListener('click', async () => {
+      const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+      try {
+        const response = await fetch(`${relayUrl}/tunnel/detect`);
+        const data = await response.json();
+        if (data.detected && data.detected.length > 0) {
+          targetPortInput.value = data.suggested.toString();
+          detectedPort.textContent = `localhost:${data.suggested}`;
+          manualPortInput.style.display = 'none';
+          detectedServer.style.display = 'block';
+          showStatus(`Detected server on port ${data.suggested}`, 'success');
+        } else {
+          showStatus('No local servers detected', 'error');
+        }
+      } catch (error) {
+        showStatus('Failed to detect local servers', 'error');
+      }
+    });
+
+    tunnelActionBtn.addEventListener('click', async () => {
+      if (activeTunnel) {
+        // Stop tunnel
+        await stopTunnel();
+      } else {
+        // Start tunnel
+        await startTunnel();
+      }
+    });
+
+    copyTunnelUrlBtn.addEventListener('click', async () => {
+      if (tunnelUrlInput.value) {
+        await navigator.clipboard.writeText(tunnelUrlInput.value);
+        showStatus('Tunnel URL copied!', 'success');
+      }
+    });
+
+    showQRCodeBtn.addEventListener('click', async () => {
+      if (tunnelUrlInput.value) {
+        await showQRCode(tunnelUrlInput.value);
+      }
+    });
+
+    closeQRModalBtn.addEventListener('click', () => {
+      qrModal.style.display = 'none';
+    });
+
+    qrModal.addEventListener('click', (e) => {
+      if (e.target === qrModal) {
+        qrModal.style.display = 'none';
+      }
+    });
+  }
+
+  async function startTunnel() {
+    const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+    const port = parseInt(targetPortInput.value || detectedPort.textContent?.match(/\d+/)?.[0] || '3000');
+
+    tunnelActionBtn.disabled = true;
+    tunnelActionBtn.textContent = 'Starting...';
+
+    try {
+      const response = await fetch(`${relayUrl}/tunnel/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetPort: port })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create tunnel');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        activeTunnel = {
+          sessionId: data.sessionId,
+          tunnelUrl: data.tunnelUrl,
+          targetPort: data.targetPort
+        };
+
+        // Update UI
+        tunnelStatus.textContent = 'Active';
+        tunnelStatus.style.background = 'rgba(16, 185, 129, 0.1)';
+        tunnelStatus.style.color = 'var(--success-color)';
+        
+        tunnelUrlInput.value = data.tunnelUrl;
+        tunnelUrlDisplay.style.display = 'block';
+        
+        tunnelActionBtn.textContent = 'Stop Sharing';
+        tunnelActionBtn.style.background = 'var(--error-color)';
+
+        // Save tunnel state
+        await chrome.storage.local.set({ activeTunnel });
+
+        showStatus('Tunnel created successfully!', 'success');
+      }
+    } catch (error) {
+      console.error('Failed to create tunnel:', error);
+      showStatus('Failed to create tunnel', 'error');
+    } finally {
+      tunnelActionBtn.disabled = false;
+    }
+  }
+
+  async function stopTunnel() {
+    if (!activeTunnel) return;
+
+    const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+    tunnelActionBtn.disabled = true;
+    tunnelActionBtn.textContent = 'Stopping...';
+
+    try {
+      await fetch(`${relayUrl}/tunnel/stop`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: activeTunnel.sessionId })
+      });
+
+      activeTunnel = null;
+
+      // Update UI
+      tunnelStatus.textContent = 'Inactive';
+      tunnelStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+      tunnelStatus.style.color = 'var(--error-color)';
+      
+      tunnelUrlDisplay.style.display = 'none';
+      tunnelUrlInput.value = '';
+      
+      tunnelActionBtn.textContent = 'Start Live Sharing';
+      tunnelActionBtn.style.background = 'linear-gradient(135deg, var(--primary-color), #8b5cf6)';
+
+      // Clear saved tunnel state
+      await chrome.storage.local.remove('activeTunnel');
+
+      showStatus('Tunnel stopped', 'success');
+    } catch (error) {
+      console.error('Failed to stop tunnel:', error);
+      showStatus('Failed to stop tunnel', 'error');
+    } finally {
+      tunnelActionBtn.disabled = false;
+    }
+  }
+
+  async function checkTunnelStatus() {
+    const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+    
+    // Check saved tunnel state
+    const { activeTunnel: saved } = await chrome.storage.local.get('activeTunnel');
+    
+    try {
+      const response = await fetch(`${relayUrl}/tunnel/status`);
+      const data = await response.json();
+      
+      if (data.active && data.tunnels.length > 0) {
+        const tunnel = data.tunnels[0];
+        activeTunnel = {
+          sessionId: tunnel.sessionId,
+          tunnelUrl: tunnel.tunnelUrl,
+          targetPort: tunnel.targetPort
+        };
+
+        // Update UI
+        tunnelStatus.textContent = 'Active';
+        tunnelStatus.style.background = 'rgba(16, 185, 129, 0.1)';
+        tunnelStatus.style.color = 'var(--success-color)';
+        
+        tunnelUrlInput.value = tunnel.tunnelUrl;
+        tunnelUrlDisplay.style.display = 'block';
+        
+        targetPortInput.value = tunnel.targetPort.toString();
+        detectedPort.textContent = `localhost:${tunnel.targetPort}`;
+        
+        tunnelActionBtn.textContent = 'Stop Sharing';
+        tunnelActionBtn.style.background = 'var(--error-color)';
+      }
+    } catch (error) {
+      console.log('No active tunnels');
+    }
+  }
+
+  async function showQRCode(url: string) {
+    try {
+      qrCodeContainer.innerHTML = '';
+      const canvas = document.createElement('canvas');
+      await QRCode.toCanvas(canvas, url, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      qrCodeContainer.appendChild(canvas);
+      qrUrlText.textContent = url;
+      qrModal.style.display = 'flex';
+    } catch (error) {
+      console.error('Failed to generate QR code:', error);
+      showStatus('Failed to generate QR code', 'error');
+    }
+  }
 });

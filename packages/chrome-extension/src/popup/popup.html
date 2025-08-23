@@ -671,6 +671,73 @@
       </div>
 
     </div>
+
+    <!-- Tunnel Section -->
+    <div class="settings-panel" id="tunnelPanel" style="margin-top: 12px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--text-primary);">
+          🚀 Live Share
+        </h3>
+        <span id="tunnelStatus" style="font-size: 11px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); color: var(--error-color); border-radius: 12px; font-weight: 500;">
+          Inactive
+        </span>
+      </div>
+      
+      <!-- Detected Server -->
+      <div id="detectedServer" style="display: none; margin-bottom: 12px;">
+        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">Detected Local Server</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-family: monospace; font-size: 12px; padding: 6px 10px; background: rgba(0, 132, 255, 0.1); border-radius: 6px; color: var(--primary-color);">
+            <span id="detectedPort">localhost:3000</span>
+          </span>
+          <button id="changePortBtn" style="font-size: 10px; padding: 4px 8px; background: transparent; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">
+            Change
+          </button>
+        </div>
+      </div>
+      
+      <!-- Manual Port Input (hidden by default) -->
+      <div id="manualPortInput" style="display: none; margin-bottom: 12px;">
+        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">Target Port</div>
+        <div style="display: flex; gap: 8px;">
+          <input type="number" id="targetPort" min="1" max="65535" placeholder="3000" style="flex: 1; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px;">
+          <button id="detectPortBtn" style="padding: 6px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; cursor: pointer;">
+            Auto-detect
+          </button>
+        </div>
+      </div>
+      
+      <!-- Tunnel URL Display (hidden by default) -->
+      <div id="tunnelUrlDisplay" style="display: none; margin-bottom: 12px;">
+        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">Share URL</div>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="tunnelUrl" readonly style="flex: 1; padding: 6px 10px; border: 1px solid var(--success-color); border-radius: 6px; font-family: monospace; font-size: 11px; background: rgba(16, 185, 129, 0.05);">
+          <button id="copyTunnelUrl" style="padding: 6px 12px; background: var(--success-color); color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
+            📋 Copy
+          </button>
+          <button id="showQRCode" style="padding: 6px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; cursor: pointer;">
+            📱 QR
+          </button>
+        </div>
+      </div>
+      
+      <!-- Tunnel Action Button -->
+      <button id="tunnelActionBtn" style="width: 100%; padding: 10px; background: linear-gradient(135deg, var(--primary-color), #8b5cf6); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+        Start Live Sharing
+      </button>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000; align-items: center; justify-content: center;">
+      <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); text-align: center;">
+        <h3 style="margin: 0 0 16px 0; font-size: 16px;">Scan to Test on Mobile</h3>
+        <div id="qrCodeContainer" style="margin: 16px 0;"></div>
+        <div id="qrUrlText" style="font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-bottom: 16px; word-break: break-all;"></div>
+        <button id="closeQRModal" style="padding: 8px 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+          Close
+        </button>
+      </div>
+    </div>
     
     <div id="status" class="status-message"></div>
   </div>
