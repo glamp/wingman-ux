@@ -125,47 +125,41 @@
             align-items: center;
             gap: 10px;
             padding: 12px 24px;
-            background: #10b981; /* Green for healthy */
+            background: linear-gradient(135deg, var(--primary-color), var(--purple-accent));
             color: white;
             border-radius: 100px;
             font-size: 1.1em;
             margin-bottom: 20px;
-            transition: background 0.3s ease;
-        }
-
-        .status-indicator.unhealthy {
-            background: #ef4444; /* Red for unhealthy */
         }
 
         .pulse {
             width: 12px;
             height: 12px;
-            background: white;
+            background: #10b981; /* Default green for healthy */
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            animation: pulse-healthy 2s infinite;
         }
 
         .pulse.healthy {
             background: #10b981; /* Green */
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-healthy 2s infinite;
         }
 
         .pulse.unhealthy {
             background: #ef4444; /* Red */
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-            animation: pulse-error 2s infinite;
+            animation: pulse-unhealthy 2s infinite;
         }
 
-        @keyframes pulse {
+        @keyframes pulse-healthy {
             0%, 100% {
-                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
             }
             50% {
-                box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
             }
         }
 
-        @keyframes pulse-error {
+        @keyframes pulse-unhealthy {
             0%, 100% {
                 box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
             }
@@ -372,19 +366,16 @@
         fetch('/health')
             .then(res => {
                 const isHealthy = res.ok;
-                const statusIndicator = document.getElementById('status-indicator');
                 const statusPulse = document.getElementById('status-pulse');
                 const statusText = document.getElementById('status-text');
                 
                 if (!isHealthy) {
                     // Server is unhealthy
-                    statusIndicator.classList.add('unhealthy');
                     statusPulse.classList.remove('healthy');
                     statusPulse.classList.add('unhealthy');
                     statusText.textContent = 'Server Error';
                 } else {
                     // Server is healthy
-                    statusIndicator.classList.remove('unhealthy');
                     statusPulse.classList.add('healthy');
                     statusPulse.classList.remove('unhealthy');
                     statusText.textContent = 'Server Operational';
@@ -407,11 +398,9 @@
             .catch(err => {
                 console.error('Could not fetch health:', err);
                 // Show error state
-                const statusIndicator = document.getElementById('status-indicator');
                 const statusPulse = document.getElementById('status-pulse');
                 const statusText = document.getElementById('status-text');
                 
-                statusIndicator.classList.add('unhealthy');
                 statusPulse.classList.remove('healthy');
                 statusPulse.classList.add('unhealthy');
                 statusText.textContent = 'Server Unreachable';
