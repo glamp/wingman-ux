@@ -370,7 +370,28 @@
         
         // Fetch and display actual server health
         fetch('/health')
-            .then(res => res.json())
+            .then(res => {
+                const isHealthy = res.ok;
+                const statusIndicator = document.getElementById('status-indicator');
+                const statusPulse = document.getElementById('status-pulse');
+                const statusText = document.getElementById('status-text');
+                
+                if (!isHealthy) {
+                    // Server is unhealthy
+                    statusIndicator.classList.add('unhealthy');
+                    statusPulse.classList.remove('healthy');
+                    statusPulse.classList.add('unhealthy');
+                    statusText.textContent = 'Server Error';
+                } else {
+                    // Server is healthy
+                    statusIndicator.classList.remove('unhealthy');
+                    statusPulse.classList.add('healthy');
+                    statusPulse.classList.remove('unhealthy');
+                    statusText.textContent = 'Server Operational';
+                }
+                
+                return res.json();
+            })
             .then(data => {
                 if (data.activeSessions !== undefined) {
                     const infoGrid = document.querySelector('.info-grid');
@@ -383,7 +404,18 @@
                     infoGrid.appendChild(sessionDiv);
                 }
             })
-            .catch(err => console.error('Could not fetch health:', err));
+            .catch(err => {
+                console.error('Could not fetch health:', err);
+                // Show error state
+                const statusIndicator = document.getElementById('status-indicator');
+                const statusPulse = document.getElementById('status-pulse');
+                const statusText = document.getElementById('status-text');
+                
+                statusIndicator.classList.add('unhealthy');
+                statusPulse.classList.remove('healthy');
+                statusPulse.classList.add('unhealthy');
+                statusText.textContent = 'Server Unreachable';
+            });
     </script>
 </body>
 </html>
