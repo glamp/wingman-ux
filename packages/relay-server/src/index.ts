@@ -24,7 +24,7 @@ export function createServer(options: ServerOptions = {}) {
   const app = express();
   const port = options.port ?? 8787;
   const host = options.host || 'localhost';
-  const storagePath = options.storagePath || './wingman/annotations';
+  const storagePath = options.storagePath || './.wingman/annotations';
 
   // Initialize storage
   const storage = new StorageService(storagePath);

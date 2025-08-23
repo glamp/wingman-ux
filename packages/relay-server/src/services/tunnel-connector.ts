@@ -357,7 +357,7 @@ export class TunnelConnector extends EventEmitter {
       this.ws = null;
     }
     
-    this.isConnected = false;
+    this.wsConnected = false;
   }
 
   /**

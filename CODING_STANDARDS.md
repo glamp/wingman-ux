@@ -71,7 +71,7 @@ Use the strictest possible settings for compile-time error catching:
 ## Storage Patterns
 
 ### Relay Server Storage
-- Store annotations as plain JSON files: `./wingman/annotations/:id.json`
+- Store annotations as plain JSON files: `./.wingman/annotations/:id.json`
 - No database, no complex storage layers
 - File-based storage for simplicity and debugging
 

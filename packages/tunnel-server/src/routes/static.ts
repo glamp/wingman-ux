@@ -58,6 +58,9 @@ export function createStaticRouter(sessionManager: SessionManager, connectionMan
               <title>Invalid Session - Wingman</title>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
+              <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+              <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+              <link rel="icon" type="image/png" href="/static/favicon.png">
               <link rel="stylesheet" href="/static/styles.css">
             </head>
             <body>
@@ -188,6 +191,9 @@ export function createStaticRouter(sessionManager: SessionManager, connectionMan
             <title>Session Not Found - Wingman</title>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+            <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+            <link rel="icon" type="image/png" href="/static/favicon.png">
             <link rel="stylesheet" href="/static/styles.css">
           </head>
           <body>
@@ -208,6 +214,9 @@ export function createStaticRouter(sessionManager: SessionManager, connectionMan
           <title>Wingman Tunnel - Session ${id}</title>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
+          <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+          <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+          <link rel="icon" type="image/png" href="/static/favicon.png">
           <link rel="stylesheet" href="/static/styles.css">
         </head>
         <body>

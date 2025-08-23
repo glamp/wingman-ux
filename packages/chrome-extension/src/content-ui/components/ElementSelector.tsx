@@ -166,8 +166,8 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
             left: 0,
             width: '100%',
             height: cornerThickness,
-            background: 'linear-gradient(90deg, #00d4ff, #0084ff)',
-            boxShadow: '0 0 10px rgba(0, 212, 255, 0.5)',
+            background: 'linear-gradient(90deg, #0084ff, #8b5cf6)',
+            boxShadow: '0 0 10px rgba(0, 132, 255, 0.5)',
           },
           
           '&::after': {
@@ -177,8 +177,8 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
             left: 0,
             width: cornerThickness,
             height: '100%',
-            background: 'linear-gradient(180deg, #00d4ff, #0084ff)',
-            boxShadow: '0 0 10px rgba(0, 212, 255, 0.5)',
+            background: 'linear-gradient(180deg, #0084ff, #8b5cf6)',
+            boxShadow: '0 0 10px rgba(0, 132, 255, 0.5)',
           },
         }}
       />
@@ -204,8 +204,8 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
             right: 0,
             width: '100%',
             height: cornerThickness,
-            background: 'linear-gradient(90deg, #0084ff, #00d4ff)',
-            boxShadow: '0 0 10px rgba(0, 212, 255, 0.5)',
+            background: 'linear-gradient(90deg, #8b5cf6, #0084ff)',
+            boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)',
           },
           
           '&::after': {
@@ -215,8 +215,8 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
             right: 0,
             width: cornerThickness,
             height: '100%',
-            background: 'linear-gradient(180deg, #00d4ff, #0084ff)',
-            boxShadow: '0 0 10px rgba(0, 212, 255, 0.5)',
+            background: 'linear-gradient(180deg, #0084ff, #8b5cf6)',
+            boxShadow: '0 0 10px rgba(0, 132, 255, 0.5)',
           },
         }}
       />
@@ -242,8 +242,8 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
             left: 0,
             width: '100%',
             height: cornerThickness,
-            background: 'linear-gradient(90deg, #00d4ff, #0084ff)',
-            boxShadow: '0 0 10px rgba(0, 212, 255, 0.5)',
+            background: 'linear-gradient(90deg, #0084ff, #8b5cf6)',
+            boxShadow: '0 0 10px rgba(0, 132, 255, 0.5)',
           },
           
           '&::after': {
@@ -253,8 +253,8 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
             left: 0,
             width: cornerThickness,
             height: '100%',
-            background: 'linear-gradient(180deg, #0084ff, #00d4ff)',
-            boxShadow: '0 0 10px rgba(0, 212, 255, 0.5)',
+            background: 'linear-gradient(180deg, #8b5cf6, #0084ff)',
+            boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)',
           },
         }}
       />
@@ -280,8 +280,8 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
             right: 0,
             width: '100%',
             height: cornerThickness,
-            background: 'linear-gradient(90deg, #0084ff, #00d4ff)',
-            boxShadow: '0 0 10px rgba(0, 212, 255, 0.5)',
+            background: 'linear-gradient(90deg, #8b5cf6, #0084ff)',
+            boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)',
           },
           
           '&::after': {
@@ -291,8 +291,8 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
             right: 0,
             width: cornerThickness,
             height: '100%',
-            background: 'linear-gradient(180deg, #0084ff, #00d4ff)',
-            boxShadow: '0 0 10px rgba(0, 212, 255, 0.5)',
+            background: 'linear-gradient(180deg, #8b5cf6, #0084ff)',
+            boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)',
           },
         }}
       />

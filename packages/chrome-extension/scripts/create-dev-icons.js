@@ -25,8 +25,8 @@ async function addDevBadge(inputPath, outputPath, size) {
     const image = await loadImage(inputPath);
     ctx.drawImage(image, 0, 0, size, size);
     
-    // Add semi-transparent green overlay for visual distinction
-    ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+    // Add semi-transparent blue overlay for visual distinction
+    ctx.fillStyle = 'rgba(0, 132, 255, 0.2)';
     ctx.fillRect(0, 0, size, size);
     
     // Add "DEV" badge in corner for larger icons
@@ -35,14 +35,17 @@ async function addDevBadge(inputPath, outputPath, size) {
       const badgeX = size - badgeSize - 2;
       const badgeY = size - badgeSize - 2;
       
-      // Badge background
-      ctx.fillStyle = '#00FF00';
+      // Badge background with gradient
+      const gradient = ctx.createLinearGradient(badgeX, badgeY, badgeX + badgeSize, badgeY + badgeSize);
+      gradient.addColorStop(0, '#0084ff');
+      gradient.addColorStop(1, '#8b5cf6');
+      ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.roundRect(badgeX, badgeY, badgeSize, badgeSize * 0.6, 3);
       ctx.fill();
       
       // Badge text
-      ctx.fillStyle = '#000000';
+      ctx.fillStyle = '#ffffff';
       ctx.font = `bold ${Math.floor(badgeSize * 0.4)}px Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';

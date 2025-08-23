@@ -27,7 +27,7 @@ wingman serve --verbose
 
 The Wingman CLI runs a local relay server that:
 - Receives feedback annotations from the Wingman Chrome Extension
-- Stores feedback locally in `./wingman/annotations/`
+- Stores feedback locally in `./.wingman/annotations/`
 - Provides a REST API to retrieve annotations
 - Includes a preview UI at `http://localhost:8787/preview`
 
@@ -51,7 +51,7 @@ The server accepts the following environment variables:
 
 - `WINGMAN_PORT` - Server port (default: 8787)
 - `WINGMAN_HOST` - Server host (default: localhost)
-- `WINGMAN_STORAGE_DIR` - Storage directory (default: ./wingman)
+- `WINGMAN_STORAGE_DIR` - Storage directory (default: ./.wingman)
 
 ## Development
 

@@ -29,7 +29,7 @@ const WYSIWYG_CSS = `
 }
 
 .rsw-editor {
-  border: 1px solid #ddd;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
   display: flex;
   flex-direction: column;
@@ -57,7 +57,7 @@ const WYSIWYG_CSS = `
 }
 
 .rsw-ce[contentEditable=true]:empty:not(:focus):before {
-  color: #999;
+  color: #94a3b8;
   content: attr(placeholder);
   pointer-events: none;
 }
@@ -65,7 +65,7 @@ const WYSIWYG_CSS = `
 .rsw-btn {
   background: transparent;
   border: 0;
-  color: #333;
+  color: #1e293b;
   cursor: pointer;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-size: 14px;
@@ -79,18 +79,18 @@ const WYSIWYG_CSS = `
 }
 
 .rsw-btn:hover {
-  background: #f0f0f0;
+  background: #f8fafc;
 }
 
 .rsw-btn[data-active=true] {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: linear-gradient(135deg, rgba(0, 132, 255, 0.1), rgba(139, 92, 246, 0.1));
+  color: #0084ff;
 }
 
 .rsw-toolbar {
   align-items: center;
-  background-color: #fafafa;
-  border-bottom: 1px solid #e0e0e0;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   padding: 6px 8px;
   gap: 2px;
@@ -113,13 +113,13 @@ const WYSIWYG_CSS = `
 
 /* Style inline code elements */
 .rsw-ce code {
-  background-color: #f5f5f5;
-  border: 1px solid #e0e0e0;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 3px;
   padding: 2px 4px;
   font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
   font-size: 13px;
-  color: #d73a49;
+  color: #ef4444;
 }
 `;
 

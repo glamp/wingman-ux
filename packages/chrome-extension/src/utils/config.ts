@@ -20,7 +20,7 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     debug: true,
     badge: {
       text: 'DEV',
-      color: '#00FF00'
+      color: '#0084ff'
     },
     features: {
       verboseLogging: true,
@@ -28,7 +28,7 @@ export function getEnvironmentConfig(): EnvironmentConfig {
       debugPanel: true
     },
     ui: {
-      headerColor: '#2E7D32',
+      headerColor: '#0084ff',
       environmentLabel: 'DEV MODE',
       showEnvironmentBanner: true
     }

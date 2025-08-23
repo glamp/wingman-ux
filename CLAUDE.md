@@ -79,7 +79,7 @@ The project uses a monorepo structure with shared TypeScript types across all pa
 - Provides `GET /annotations/last` for retrieving the most recent annotation
 - Body size limit ≥ 25MB for screenshots
 - Returns consistent error shapes: `{ error: string, code?: string, details?: any }`
-- Stores annotations as files in `./wingman/annotations/:id.json`
+- Stores annotations as files in `./.wingman/annotations/:id.json`
 - CORS enabled for browser access
 - No authentication (for v1)
 - **MCP Integration**: Serves MCP over HTTP/SSE at `/mcp` endpoint

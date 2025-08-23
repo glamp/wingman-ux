@@ -74,7 +74,7 @@ The server provides:
 3. Add your feedback notes
 4. Submit to send to the relay server
 
-The feedback is stored locally in `./wingman/annotations/` and can be retrieved via:
+The feedback is stored locally in `./.wingman/annotations/` and can be retrieved via:
 
 ```bash
 # Get the last annotation
@@ -184,7 +184,7 @@ http://localhost:8787/
 └── /health           # Health check endpoint
 ```
 
-All endpoints share the same storage (`./wingman/annotations/`), ensuring consistency between Chrome extension feedback and Claude Code tools.
+All endpoints share the same storage (`./.wingman/annotations/`), ensuring consistency between Chrome extension feedback and Claude Code tools.
 
 ## License
 
