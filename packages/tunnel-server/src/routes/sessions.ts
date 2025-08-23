@@ -36,7 +36,7 @@ export function createSessionsRouter(sessionManager: SessionManager): Router {
       res.status(201).json({
         sessionId,
         session,
-        tunnelUrl: `https://${sessionId}.wingman.dev`
+        tunnelUrl: `https://${sessionId}.wingmanux.com`
       });
     } catch (error) {
       console.error('Error creating session:', error);
@@ -70,7 +70,7 @@ export function createSessionsRouter(sessionManager: SessionManager): Router {
 
       res.json({
         session,
-        tunnelUrl: `https://${id}.wingman.dev`
+        tunnelUrl: `https://${id}.wingmanux.com`
       });
     } catch (error) {
       console.error('Error getting session:', error);
