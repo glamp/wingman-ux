@@ -8,6 +8,9 @@
   let ws = null;
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
+  let p2pClient = null;
+  let iframeProxy = null;
+  let connectionMonitor = null;
 
   // DOM elements
   const statusIndicator = document.querySelector('.status-indicator');
@@ -29,6 +32,15 @@
         console.log('WebSocket connected');
         reconnectAttempts = 0;
         updateConnectionStatus('connected', 'Connected to tunnel server');
+        
+        // Register as PM for P2P if session data available
+        if (window.SESSION_DATA && window.SESSION_DATA.sessionId) {
+          ws.send(JSON.stringify({
+            type: 'register',
+            role: 'pm',
+            sessionId: window.SESSION_DATA.sessionId
+          }));
+        }
       };
 
       ws.onmessage = function(event) {
@@ -79,6 +91,22 @@
       case 'tunnel_error':
         handleTunnelError(data.error);
         break;
+      case 'registered':
+        console.log('Registered with tunnel server as:', data.role);
+        break;
+      case 'p2p:initiate':
+        handleP2PInitiate(data);
+        break;
+      case 'p2p:offer':
+      case 'p2p:answer':
+      case 'p2p:ice-candidate':
+      case 'p2p:ready':
+      case 'p2p:failed':
+        // Forward P2P signaling messages to P2P client
+        if (p2pClient) {
+          p2pClient.handleSignalingMessage(data);
+        }
+        break;
       default:
         console.log('Unknown message type:', data.type);
     }
@@ -123,21 +151,111 @@
   }
 
   /**
+   * Handle P2P initiation
+   */
+  async function handleP2PInitiate(data) {
+    console.log('P2P initiation requested:', data);
+    
+    // Initialize P2P client if not already done
+    if (!p2pClient && window.P2PClient) {
+      p2pClient = new window.P2PClient(data.sessionId, ws);
+      
+      // Listen for P2P events
+      window.addEventListener('p2p:ready', handleP2PReady);
+      window.addEventListener('p2p:failed', handleP2PFailed);
+      
+      // Initialize P2P connection
+      const success = await p2pClient.init(data.role === 'pm');
+      
+      if (success) {
+        console.log('P2P client initialized successfully');
+        updateConnectionStatus('p2p-connecting', 'Establishing P2P connection...');
+      } else {
+        console.error('Failed to initialize P2P client');
+        updateConnectionStatus('relay', 'Using relay mode');
+      }
+    }
+  }
+
+  /**
+   * Handle P2P ready event
+   */
+  function handleP2PReady(event) {
+    console.log('P2P connection established:', event.detail);
+    updateConnectionStatus('p2p-connected', 'P2P Connected');
+    
+    // Enable P2P mode in iframe proxy if available
+    if (iframeProxy) {
+      iframeProxy.enableP2P();
+    }
+    
+    // Update UI to show P2P status
+    const statusElement = document.querySelector('.connection-type');
+    if (statusElement) {
+      statusElement.textContent = 'P2P';
+      statusElement.className = 'connection-type p2p';
+    }
+  }
+
+  /**
+   * Handle P2P failure event
+   */
+  function handleP2PFailed(event) {
+    console.error('P2P connection failed:', event.detail);
+    updateConnectionStatus('relay', 'Using relay mode');
+    
+    // Disable P2P mode in iframe proxy
+    if (iframeProxy) {
+      iframeProxy.disableP2P();
+    }
+    
+    // Update UI to show relay status
+    const statusElement = document.querySelector('.connection-type');
+    if (statusElement) {
+      statusElement.textContent = 'Relay';
+      statusElement.className = 'connection-type relay';
+    }
+  }
+
+  /**
    * Handle tunnel ready event
    */
   function handleTunnelReady(tunnelUrl) {
     console.log('Tunnel ready:', tunnelUrl);
     
-    // Replace placeholder with actual iframe
-    const placeholder = document.querySelector('.iframe-placeholder');
-    if (placeholder) {
-      placeholder.innerHTML = `
-        <iframe 
-          src="${tunnelUrl}" 
-          style="width: 100%; height: 500px; border: none; border-radius: 8px;"
-          title="Tunneled Application"
-        ></iframe>
-      `;
+    // Initialize iframe proxy with P2P support
+    if (window.IframeProxy) {
+      const sessionId = window.SESSION_DATA ? window.SESSION_DATA.sessionId : null;
+      const tunnelPath = `/tunnel/${sessionId}`;
+      
+      iframeProxy = new window.IframeProxy(sessionId, tunnelPath);
+      iframeProxy.init(p2pClient).then(() => {
+        console.log('Iframe proxy initialized');
+        
+        // Enable P2P if already connected
+        if (p2pClient && p2pClient.isP2PConnected()) {
+          iframeProxy.enableP2P();
+        }
+        
+        // Initialize connection monitor
+        if (window.ConnectionMonitor) {
+          connectionMonitor = new window.ConnectionMonitor(p2pClient, iframeProxy);
+          connectionMonitor.start();
+          console.log('Connection monitor started');
+        }
+      });
+    } else {
+      // Fallback to simple iframe without P2P
+      const placeholder = document.querySelector('.iframe-placeholder');
+      if (placeholder) {
+        placeholder.innerHTML = `
+          <iframe 
+            src="${tunnelUrl}" 
+            style="width: 100%; height: 500px; border: none; border-radius: 8px;"
+            title="Tunneled Application"
+          ></iframe>
+        `;
+      }
     }
   }
 

@@ -1,0 +1,30 @@
+{
+  "id": "cli-mcp-test-123",
+  "receivedAt": "2025-08-23T03:56:54.286Z",
+  "annotation": {
+    "id": "cli-mcp-test-123",
+    "createdAt": "2025-08-23T03:56:54.278Z",
+    "note": "Test annotation from CLI MCP test",
+    "page": {
+      "url": "https://example.com/test",
+      "title": "Test Page",
+      "ua": "Test UA",
+      "viewport": {
+        "w": 1920,
+        "h": 1080,
+        "dpr": 1
+      }
+    },
+    "target": {
+      "mode": "element",
+      "selector": ".test-element",
+      "rect": {
+        "x": 100,
+        "y": 200,
+        "width": 300,
+        "height": 400
+      }
+    },
+    "screenshot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+  }
+}

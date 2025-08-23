@@ -82,6 +82,7 @@ The project uses a monorepo structure with shared TypeScript types across all pa
 - Stores annotations as files in `./wingman/annotations/:id.json`
 - CORS enabled for browser access
 - No authentication (for v1)
+- **MCP Integration**: Serves MCP over HTTP/SSE at `/mcp` endpoint
 
 ## Development Commands
 
@@ -200,6 +201,115 @@ mcp__sah__search_query with query: "your search terms"
   - Switching branches with different file structures
 - The search uses TreeSitter for accurate code parsing
 - Files that fail to parse are indexed as plain text
+
+## MCP (Model Context Protocol) Integration
+
+### Overview
+The relay server includes built-in MCP support for Claude Code integration. MCP runs on the same server as the HTTP API - single server, single command.
+
+### Architecture
+- **Endpoint**: `/mcp` - Serves MCP over HTTP with SSE (Server-Sent Events) transport
+- **Tools**: Wingman-branded tools for annotation management
+- **Prompts**: UI fix prompt for processing feedback
+- **Configuration**: Simple HTTP SSE transport configuration in Claude Code
+
+### MCP SDK API Patterns
+
+**CRITICAL**: The MCP SDK uses specific method names that must be used correctly:
+
+```typescript
+// CORRECT - Using the actual SDK API
+mcpServer.registerTool(name, config, handler)
+mcpServer.registerPrompt(name, config, handler)
+
+// WRONG - These methods don't exist
+mcpServer.tool(...)        // ❌ Does not exist
+mcpServer.addTool(...)     // ❌ Does not exist  
+mcpServer.prompt(...)      // ❌ Does not exist
+```
+
+**Tool Registration**:
+```typescript
+mcpServer.registerTool(
+  'tool_name',
+  {
+    title: 'Display Title',
+    description: 'Tool description',
+    inputSchema: {  // Raw Zod schema, NOT wrapped in z.object()
+      param: z.string().describe('Parameter description')
+    }
+  },
+  async (params) => { /* handler */ }
+)
+```
+
+**Prompt Registration**:
+```typescript
+mcpServer.registerPrompt(
+  'prompt_name',
+  {
+    title: 'Display Title',
+    description: 'Prompt description',
+    argsSchema: {  // Note: argsSchema, not inputSchema for prompts!
+      param: z.string().optional()
+    }
+  },
+  async (args) => { /* handler */ }
+)
+```
+
+### Testing MCP Features
+
+**CRITICAL**: Always test the actual CLI entry point, not just the internal API:
+
+```bash
+# This MUST work without errors
+npx wingman serve
+
+# Then verify MCP is available
+curl http://localhost:8787/mcp/health
+```
+
+#### Required Tests for MCP Changes
+
+1. **CLI Integration Test**: Test that `wingman serve` starts without errors
+2. **MCP Initialization**: Verify MCP server initializes correctly  
+3. **Tool Registration**: Test that tools are actually registered (not just listed)
+4. **SSE Transport**: Verify SSE connections work properly
+5. **End-to-End**: Test actual tool invocation through the MCP protocol
+
+#### Common Testing Pitfalls
+
+- ❌ **Don't** only test the `/mcp/health` endpoint
+- ❌ **Don't** mock the MCP server in tests
+- ❌ **Don't** skip SSE connection tests
+- ✅ **Do** test the real `npx wingman serve` command
+- ✅ **Do** verify runtime behavior matches test expectations
+- ✅ **Do** test with actual process spawning
+
+### Claude Code Configuration
+
+Add to Claude Code settings:
+```json
+{
+  "mcpServers": {
+    "wingman": {
+      "transport": "sse",
+      "url": "http://localhost:8787/mcp"
+    }
+  }
+}
+```
+
+### Available Tools and Prompts
+
+**Tools**:
+- `wingman_list` - List all UI feedback annotations
+- `wingman_review` - Review specific or latest annotation
+- `wingman_delete` - Delete processed annotations
+
+**Prompts**:
+- `wingman_fix_ui` - Process and fix UI issues from annotations
 
 ## Important Notes
 

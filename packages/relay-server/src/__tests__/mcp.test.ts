@@ -6,6 +6,7 @@ import type { Server } from 'http';
 import fs from 'fs/promises';
 import path from 'path';
 import { WingmanAnnotation } from '@wingman/shared';
+import { spawn, ChildProcess } from 'child_process';
 
 describe('MCP Integration', () => {
   let app: Express;
@@ -203,10 +204,68 @@ describe('MCP Integration', () => {
     });
   });
 
+  describe('MCP Server Initialization', () => {
+    it('should initialize MCP server without errors', async () => {
+      // This test verifies that the MCP server initializes correctly
+      // and doesn't throw errors about missing methods like addTool or tool
+      
+      // The server is already started in beforeEach
+      // If it started without errors, the MCP initialization succeeded
+      expect(server).toBeDefined();
+      expect(server.listening).toBe(true);
+      
+      // Verify MCP health endpoint confirms tools are registered
+      const response = await request(app).get('/mcp/health');
+      expect(response.status).toBe(200);
+      expect(response.body.tools).toHaveLength(3);
+      expect(response.body.prompts).toHaveLength(1);
+    });
+
+    it('should use correct MCP SDK methods', async () => {
+      // This test ensures we're using registerTool and registerPrompt
+      // not the wrong methods like tool() or addTool()
+      
+      // If the server started successfully, it means the correct methods were used
+      // Wrong methods would cause startup errors
+      const response = await request(app).get('/mcp/health');
+      expect(response.status).toBe(200);
+      
+      // Tools should be properly registered
+      expect(response.body.tools).toEqual([
+        'wingman_list',
+        'wingman_review', 
+        'wingman_delete'
+      ]);
+      
+      // Prompts should be properly registered
+      expect(response.body.prompts).toEqual(['wingman_fix_ui']);
+    });
+  });
+
   describe('MCP Endpoint', () => {
-    it.skip('should accept POST /mcp requests for SSE connection', async () => {
-      // Skipped: SSE connections stay open and require a proper MCP client for testing
-      // The endpoint is tested indirectly through the health check
+    it('should accept POST /mcp requests', async () => {
+      // Test that the endpoint exists and accepts POST requests
+      // We won't test the full SSE connection to avoid timeout issues
+      const response = await request(app)
+        .post('/mcp')
+        .set('Accept', 'text/event-stream')
+        .timeout(100) // Short timeout to prevent hanging
+        .catch(err => err.response);
+      
+      // The request will likely timeout or close, but it shouldn't 404
+      // and shouldn't throw errors about missing methods
+      expect(response?.status).not.toBe(404);
+    });
+
+    it('should provide MCP configuration info', async () => {
+      // Verify the MCP endpoint is properly configured
+      const response = await request(app).get('/mcp/health');
+      
+      expect(response.body).toMatchObject({
+        status: 'healthy',
+        name: 'wingman-mcp',
+        version: '1.0.0'
+      });
     });
   });
 

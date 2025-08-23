@@ -10,16 +10,50 @@ export function createStaticRouter(sessionManager: SessionManager): Router {
   const router = Router();
 
   /**
-   * GET / - Serve landing page
+   * GET /sessions/:id - Legacy path for session pages
+   */
+  router.get('/sessions/:id', handleSessionPage);
+  
+  /**
+   * GET / - Smart routing based on subdomain
+   * - No subdomain (wingmanux.com) → Landing page
+   * - Session subdomain (ghost-whiskey.wingmanux.com) → Session page
+   * - Localhost or IP → Landing page
    */
   router.get('/', (req: Request, res: Response) => {
-    res.sendFile(path.join(__dirname, '..', 'static', 'index.html'));
+    const host = req.get('host');
+    
+    if (host) {
+      // Check for subdomain
+      const parts = host.split('.');
+      
+      // Subdomain present: at least 3 parts (subdomain.domain.tld)
+      // Also handle localhost:port and IP addresses gracefully
+      const hasSubdomain = parts.length >= 3 && 
+                          !host.startsWith('www.') && 
+                          !host.match(/^\d+\.\d+\.\d+\.\d+/); // Not an IP
+      
+      if (hasSubdomain) {
+        const sessionId = parts[0];
+        
+        // Validate it looks like a session ID (format: word-word)
+        if (sessionId && sessionId.match(/^[a-z]+-[a-z]+$/)) {
+          (req as any).params = { id: sessionId };
+          return handleSessionPage(req as any, res);
+        }
+      }
+    }
+    
+    // Default: serve landing page for:
+    // - No subdomain (wingmanux.com)
+    // - www subdomain (www.wingmanux.com)
+    // - localhost
+    // - IP addresses
+    // - Invalid session IDs
+    return res.sendFile(path.join(__dirname, '..', 'static', 'index.html'));
   });
-
-  /**
-   * GET /sessions/:id - Serve PM access page
-   */
-  router.get('/sessions/:id', (req: Request, res: Response) => {
+  
+  function handleSessionPage(req: Request, res: Response) {
     try {
       const { id } = req.params;
       if (!id) {
@@ -90,6 +124,9 @@ export function createStaticRouter(sessionManager: SessionManager): Router {
           <script>
             window.SESSION_DATA = ${JSON.stringify(session)};
           </script>
+          <script src="/static/p2p-client.js"></script>
+          <script src="/static/iframe-proxy.js"></script>
+          <script src="/static/connection-monitor.js"></script>
           <script src="/static/client.js"></script>
         </body>
         </html>
@@ -100,7 +137,7 @@ export function createStaticRouter(sessionManager: SessionManager): Router {
       console.error('Error serving session page:', error);
       res.status(500).send('Internal server error');
     }
-  });
+  }
 
   return router;
 }
