@@ -55,7 +55,7 @@ describe('Production Deployment Tests', () => {
       expect(sessionData.session.developerId).toBe('prod-test-dev');
       expect(sessionData.session.targetPort).toBe(3000);
       expect(sessionData.session.status).toBe('pending');
-      expect(sessionData.tunnelUrl).toMatch(/^https:\/\/.+\.wingman\.dev$/);
+      expect(sessionData.tunnelUrl).toMatch(/^https:\/\/.+\.wingmanux\.com$/);
       
       testSessionId = sessionData.sessionId;
     });

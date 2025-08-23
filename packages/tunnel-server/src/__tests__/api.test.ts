@@ -65,7 +65,7 @@ describe('Tunnel Server API', () => {
       expect(response.body.session.developerId).toBe('test-dev');
       expect(response.body.session.targetPort).toBe(3000);
       expect(response.body.session.status).toBe('pending');
-      expect(response.body.tunnelUrl).toMatch(/^https:\/\/.+\.wingman\.dev$/);
+      expect(response.body.tunnelUrl).toMatch(/^https:\/\/.+\.wingmanux\.com$/);
     });
 
     it('should reject request with missing developerId', async () => {

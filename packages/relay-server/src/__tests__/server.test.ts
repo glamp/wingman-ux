@@ -319,12 +319,22 @@ describe('Relay Server', () => {
   });
 
   describe('CORS', () => {
-    it('should allow CORS requests', async () => {
+    it('should allow CORS requests from Chrome extensions', async () => {
+      const response = await request(app)
+        .get('/health')
+        .set('Origin', 'chrome-extension://abcdefghijklmnop')
+        .expect(200);
+
+      expect(response.headers['access-control-allow-origin']).toBe('chrome-extension://abcdefghijklmnop');
+    });
+    
+    it('should handle requests without origin header', async () => {
       const response = await request(app)
         .get('/health')
         .expect(200);
 
-      expect(response.headers['access-control-allow-origin']).toBe('*');
+      // No origin header means same-origin request, which is allowed
+      expect(response.body.status).toBe('healthy');
     });
   });
 });

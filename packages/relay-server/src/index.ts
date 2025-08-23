@@ -1,10 +1,10 @@
-import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import type { Server } from 'http';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import path from 'path';
 import { errorHandler } from './middleware/error-handler';
+import { createCorsMiddleware, corsDebugMiddleware } from './middleware/cors';
 import { annotationsRouter } from './routes/annotations';
 import { healthRouter } from './routes/health';
 import { mcpRouter } from './routes/mcp';
@@ -28,8 +28,9 @@ export function createServer(options: ServerOptions = {}) {
   // Initialize storage
   const storage = new StorageService(storagePath);
 
-  // Middleware
-  app.use(cors());
+  // CORS Middleware - configured for browser extensions
+  app.use(corsDebugMiddleware); // Optional: logs CORS requests when DEBUG_CORS=true
+  app.use(createCorsMiddleware());
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 

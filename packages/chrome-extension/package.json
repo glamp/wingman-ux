@@ -22,6 +22,8 @@
     "dev:icons": "node scripts/create-dev-icons.js",
     "clean": "rm -rf dist",
     "clean:all": "rm -rf dist/development dist/staging dist/production",
+    "package": "node scripts/package-extension.js",
+    "build:package": "npm run build && npm run package",
     "test": "vitest run",
     "test:watch": "vitest watch"
   },

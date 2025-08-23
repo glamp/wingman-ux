@@ -99,7 +99,7 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
 
   return (
     <>
-      {/* Main highlight box with background */}
+      {/* Main highlight box without background - just for positioning */}
       <Box
         id="wingman-highlighter"
         sx={{
@@ -111,7 +111,7 @@ const ElementSelector: React.FC<ElementSelectorProps> = ({
           pointerEvents: 'none',
           transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
           zIndex: 2147483646,
-          backgroundColor: 'rgba(0, 132, 255, 0.08)',
+          // Removed backgroundColor to keep page colors unchanged
           borderRadius: '4px',
         }}
       />

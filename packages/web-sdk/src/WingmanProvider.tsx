@@ -22,7 +22,7 @@ interface FeedbackData {
 
 const WingmanContext = createContext<WingmanContextValue | null>(null);
 
-const logger = createLogger('Wingman:Provider');
+// Logger will be initialized in component with debug flag
 
 export interface WingmanProviderProps {
   config?: WingmanConfig;
@@ -40,6 +40,11 @@ export function WingmanProvider({
   const { enabled = true } = config;
   const [isActive, setIsActive] = useState(false);
   const introspectorRef = useRef<ReactIntrospector | null>(null);
+  
+  // Create logger with debug flag
+  const logger = useRef(createLogger('Wingman:Provider', { 
+    level: debug ? 'debug' : undefined 
+  })).current;
 
   useEffect(() => {
     if (!enabled) return;
@@ -66,16 +71,17 @@ export function WingmanProvider({
   const activate = useCallback(() => {
     setIsActive(true);
     if (debug) {
-      logger.debug('Activated');
+      logger.info('SDK Activated');
+      logger.debug('Activated with debug mode');
     }
-  }, [debug]);
+  }, [debug, logger]);
 
   const deactivate = useCallback(() => {
     setIsActive(false);
     if (debug) {
       logger.debug('Deactivated');
     }
-  }, [debug]);
+  }, [debug, logger]);
 
   const sendFeedback = useCallback(async (data: FeedbackData) => {
     try {

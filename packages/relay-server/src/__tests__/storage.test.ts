@@ -183,7 +183,7 @@ describe('StorageService', () => {
       );
       
       // Small delay to ensure different modification time
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 5));
       
       await fs.writeFile(
         path.join(testDir, '2000-new.json'),
@@ -251,7 +251,7 @@ describe('StorageService', () => {
       const result1 = await storage.save(annotation);
       
       // Small delay to ensure different timestamp
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 5));
       
       // Change ID for second save to avoid overwriting
       annotation.id = 'duplicate-test-2';

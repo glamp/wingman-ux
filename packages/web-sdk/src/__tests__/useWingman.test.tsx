@@ -212,7 +212,10 @@ describe('useWingman Hook (TDD)', () => {
     });
 
     it('should support optional debug mode', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      // Spy on all console methods that the logger might use
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+      const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
       
       const wrapper = ({ children }: { children: React.ReactNode }) => (
         <WingmanProvider endpoint="http://localhost:8787/annotations" debug>
@@ -227,10 +230,28 @@ describe('useWingman Hook (TDD)', () => {
       });
       
       // Check that some debug logging occurred
-      expect(consoleSpy).toHaveBeenCalled();
+      const anyConsoleCalled = 
+        consoleLogSpy.mock.calls.length > 0 ||
+        consoleInfoSpy.mock.calls.length > 0 ||
+        consoleDebugSpy.mock.calls.length > 0;
       
-      // Check for any Wingman-related log message
-      const wingmanLogs = consoleSpy.mock.calls.some(call => 
+      expect(anyConsoleCalled).toBe(true);
+      
+      // Check for any Wingman-related log message in any console method
+      const allCalls = [
+        ...consoleLogSpy.mock.calls,
+        ...consoleInfoSpy.mock.calls,
+        ...consoleDebugSpy.mock.calls
+      ];
+      
+      // Debug output
+      if (allCalls.length === 0) {
+        console.error('No console calls were captured!');
+      } else {
+        console.error('All console calls:', JSON.stringify(allCalls, null, 2));
+      }
+      
+      const wingmanLogs = allCalls.some(call => 
         call.some(arg => 
           typeof arg === 'string' && 
           (arg.includes('[Wingman]') || arg.includes('[Wingman SDK]'))
@@ -238,7 +259,9 @@ describe('useWingman Hook (TDD)', () => {
       );
       expect(wingmanLogs).toBe(true);
       
-      consoleSpy.mockRestore();
+      consoleLogSpy.mockRestore();
+      consoleInfoSpy.mockRestore();
+      consoleDebugSpy.mockRestore();
     });
   });
 
