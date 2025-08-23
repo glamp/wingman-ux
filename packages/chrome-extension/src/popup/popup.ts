@@ -418,10 +418,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           detectedServer.style.display = 'block';
           showStatus(`Detected server on port ${data.suggested}`, 'success');
         } else {
-          showStatus('No local servers detected', 'error');
+          showStatus('No local servers detected. Start your dev server first', 'error');
         }
-      } catch (error) {
-        showStatus('Failed to detect local servers', 'error');
+      } catch (error: any) {
+        console.error('Server detection failed:', error);
+        if (error.message?.includes('Failed to fetch')) {
+          showStatus('Relay server not running. Run: npm run dev', 'error');
+        } else {
+          showStatus('Failed to detect local servers', 'error');
+        }
       }
     });
 
@@ -501,9 +506,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         showStatus('Tunnel created successfully!', 'success');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create tunnel:', error);
-      showStatus('Failed to create tunnel', 'error');
+      
+      // Provide specific error messages based on the error type
+      let errorMessage = 'Failed to create tunnel';
+      
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        errorMessage = 'Cannot connect to relay server. Make sure it\'s running (npm run dev)';
+      } else if (error.message?.includes('ECONNREFUSED')) {
+        errorMessage = `Relay server not responding on ${relayUrl}`;
+      } else if (error.message?.includes('INVALID_PORT')) {
+        errorMessage = 'Invalid port number. Please enter a valid port (1-65535)';
+      } else if (error.message?.includes('TUNNEL_CREATE_FAILED')) {
+        errorMessage = 'Tunnel server unavailable. Try again later';
+      } else if (error.message) {
+        errorMessage = `Tunnel error: ${error.message}`;
+      }
+      
+      showStatus(errorMessage, 'error');
     } finally {
       tunnelActionBtn.disabled = false;
     }
@@ -540,9 +561,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       await chrome.storage.local.remove('activeTunnel');
 
       showStatus('Tunnel stopped', 'success');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to stop tunnel:', error);
-      showStatus('Failed to stop tunnel', 'error');
+      
+      // Provide helpful error message
+      let errorMessage = 'Failed to stop tunnel';
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        errorMessage = 'Lost connection to relay server. Tunnel may already be stopped';
+        // Clear the tunnel state anyway since we can't reach the server
+        activeTunnel = null;
+        tunnelStatus.textContent = 'Inactive';
+        tunnelStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+        tunnelStatus.style.color = 'var(--error-color)';
+        tunnelUrlDisplay.style.display = 'none';
+        tunnelUrlInput.value = '';
+        await chrome.storage.local.remove('activeTunnel');
+      }
+      
+      showStatus(errorMessage, 'error');
     } finally {
       tunnelActionBtn.disabled = false;
     }
@@ -600,9 +636,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       qrCodeContainer.appendChild(canvas);
       qrUrlText.textContent = url;
       qrModal.style.display = 'flex';
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate QR code:', error);
-      showStatus('Failed to generate QR code', 'error');
+      
+      // Provide more helpful error message
+      if (error.message?.includes('QRCode is not defined')) {
+        showStatus('QR code library not loaded. Please reload the extension', 'error');
+      } else {
+        showStatus('Failed to generate QR code. Try copying the URL instead', 'error');
+      }
     }
   }
 });

@@ -25,7 +25,7 @@ export class TunnelConnector extends EventEmitter {
   private debug: boolean;
   private p2pHost: P2PHost | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
-  private isConnected = false;
+  private wsConnected = false;
 
   constructor(options: TunnelConnectorOptions) {
     super();
@@ -53,7 +53,7 @@ export class TunnelConnector extends EventEmitter {
         
         this.ws.on('open', () => {
           this.log('Connected to tunnel server');
-          this.isConnected = true;
+          this.wsConnected = true;
           
           // Register as developer
           this.ws!.send(JSON.stringify({
@@ -76,7 +76,7 @@ export class TunnelConnector extends EventEmitter {
         
         this.ws.on('close', () => {
           this.log('Disconnected from tunnel server');
-          this.isConnected = false;
+          this.wsConnected = false;
           this.emit('disconnected');
           
           // Attempt reconnect after delay
@@ -95,7 +95,7 @@ export class TunnelConnector extends EventEmitter {
           this.emit('error', error);
           
           // If not connected yet, reject the promise
-          if (!this.isConnected) {
+          if (!this.wsConnected) {
             reject(error);
           }
         });
@@ -288,7 +288,7 @@ export class TunnelConnector extends EventEmitter {
    * Send P2P signaling data
    */
   private sendP2PSignal(data: any): void {
-    if (!this.ws || !this.isConnected) {
+    if (!this.ws || !this.wsConnected) {
       this.error('Cannot send P2P signal - not connected');
       return;
     }
@@ -319,12 +319,19 @@ export class TunnelConnector extends EventEmitter {
   }
 
   /**
+   * Check if connected (either relay or P2P)
+   */
+  isConnected(): boolean {
+    return this.isP2PConnected() || this.wsConnected;
+  }
+
+  /**
    * Get connection mode
    */
   getConnectionMode(): 'p2p' | 'relay' | 'disconnected' {
     if (this.isP2PConnected()) {
       return 'p2p';
-    } else if (this.isConnected) {
+    } else if (this.wsConnected) {
       return 'relay';
     } else {
       return 'disconnected';

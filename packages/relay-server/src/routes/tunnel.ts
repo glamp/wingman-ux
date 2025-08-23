@@ -13,6 +13,30 @@ const activeTunnels = new Map<string, {
   createdAt: Date;
 }>();
 
+// Cleanup stale tunnels periodically
+function cleanupStaleTunnels() {
+  const now = Date.now();
+  const staleTimeout = 30 * 60 * 1000; // 30 minutes
+  
+  for (const [sessionId, tunnel] of activeTunnels.entries()) {
+    const age = now - tunnel.createdAt.getTime();
+    
+    // Check if tunnel is stale or disconnected
+    if (age > staleTimeout || !tunnel.connector.isConnected()) {
+      logger.info(`Cleaning up stale/disconnected tunnel ${sessionId} (age: ${Math.round(age / 1000)}s)`);
+      try {
+        tunnel.connector.disconnect();
+      } catch (error) {
+        // Ignore errors during cleanup
+      }
+      activeTunnels.delete(sessionId);
+    }
+  }
+}
+
+// Run cleanup every 5 minutes
+setInterval(cleanupStaleTunnels, 5 * 60 * 1000);
+
 export function tunnelRouter(): Router {
   const router = Router();
 
@@ -22,7 +46,7 @@ export function tunnelRouter(): Router {
    */
   router.post('/create', async (req: Request, res: Response) => {
     try {
-      const { targetPort } = req.body;
+      const { targetPort, enableP2P = false } = req.body;
 
       // Validate input
       if (!targetPort) {
@@ -40,16 +64,19 @@ export function tunnelRouter(): Router {
         });
       }
 
-      // Check if we already have an active tunnel
-      const existingTunnel = Array.from(activeTunnels.values()).find(t => t.targetPort === port);
-      if (existingTunnel) {
-        return res.json({
-          success: true,
-          sessionId: existingTunnel.sessionId,
-          tunnelUrl: `https://wingman-tunnel.fly.dev/sessions/${existingTunnel.sessionId}`,
-          targetPort: existingTunnel.targetPort,
-          status: 'active'
-        });
+      // Clean up any existing tunnels for the same port
+      const existingTunnels = Array.from(activeTunnels.entries()).filter(([_, t]) => t.targetPort === port);
+      if (existingTunnels.length > 0) {
+        logger.info(`Cleaning up ${existingTunnels.length} existing tunnel(s) for port ${port}`);
+        for (const [sessionId, tunnel] of existingTunnels) {
+          try {
+            tunnel.connector.disconnect();
+            activeTunnels.delete(sessionId);
+            logger.info(`Cleaned up tunnel ${sessionId}`);
+          } catch (error) {
+            logger.error(`Failed to clean up tunnel ${sessionId}:`, error);
+          }
+        }
       }
 
       // Create session on tunnel server
@@ -82,16 +109,17 @@ export function tunnelRouter(): Router {
         targetPort: port,
         tunnelUrl: tunnelServerUrl,
         developerId: 'relay-server',
-        enableP2P: false, // Start with relay mode for simplicity
+        enableP2P: enableP2P, // Use the parameter from the request
         debug: process.env.NODE_ENV === 'development'
       });
 
-      // Store the tunnel
+      // Store the tunnel with correct subdomain URL format
+      const tunnelUrl = data.tunnelUrl || `https://${sessionId}.wingmanux.com`;
       activeTunnels.set(sessionId, {
         connector,
         sessionId: sessionId,
         targetPort: port,
-        tunnelUrl: data.tunnelUrl || `${tunnelServerUrl}/sessions/${sessionId}`,
+        tunnelUrl: tunnelUrl,
         createdAt: new Date()
       });
 
@@ -117,7 +145,7 @@ export function tunnelRouter(): Router {
       res.json({
         success: true,
         sessionId: sessionId,
-        tunnelUrl: data.tunnelUrl || `${tunnelServerUrl}/sessions/${sessionId}`,
+        tunnelUrl: tunnelUrl, // Use the consistent subdomain format
         targetPort: port,
         status: 'active'
       });

@@ -6,7 +6,15 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0', // Accept connections from any host
-    allowedHosts: 'all', // Disable host header check
-    cors: true // Enable CORS for all origins
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      '.wingmanux.com', // Allow all Wingman tunnel subdomains
+      '.wingman-tunnel.fly.dev' // Allow tunnel server subdomains
+    ],
+    cors: true, // Enable CORS for all origins
+    hmr: {
+      clientPort: 443 // Configure HMR for HTTPS tunnels
+    }
   }
 })
