@@ -44,13 +44,19 @@
             height: 120px;
             margin: 0 auto 30px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
+            border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 60px;
             backdrop-filter: blur(10px);
             border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         h1 {
@@ -195,7 +201,9 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo">✈️</div>
+        <div class="logo">
+            <img src="/static/logo.png" alt="Wingman Logo">
+        </div>
         
         <h1>Wingman Tunnel</h1>
         <p class="tagline">Secure P2P tunnels with aviation-themed callsigns</p>
