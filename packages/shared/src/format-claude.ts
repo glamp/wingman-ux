@@ -1,4 +1,4 @@
-import type { WingmanAnnotation } from './types';
+import type { WingmanAnnotation } from './types.js';
 
 /**
  * Formats a Wingman annotation as markdown for Claude Code
@@ -29,7 +29,9 @@ export function formatAnnotationForClaude(annotation: WingmanAnnotation): string
   // Target Information
   output += `## Target Information\n`;
   output += `- **Mode:** ${annotation.target.mode}\n`;
-  output += `- **Position:** ${annotation.target.rect.width}×${annotation.target.rect.height} at (${annotation.target.rect.x}, ${annotation.target.rect.y})\n`;
+  if (annotation.target.rect) {
+    output += `- **Position:** ${annotation.target.rect.width}×${annotation.target.rect.height} at (${annotation.target.rect.x}, ${annotation.target.rect.y})\n`;
+  }
   if (annotation.target.selector) {
     output += `- **CSS Selector:** \`${annotation.target.selector}\`\n`;
   }
