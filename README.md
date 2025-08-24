@@ -2,30 +2,26 @@
 
 A lightweight UX feedback assistant for capturing and sharing feedback from web applications.
 
-## Quick Start (NPM)
-
-### 1. Install and Start the Server
+## Quick Start
 
 ```bash
-# Quick start with npx (no installation required)
-npx wingman serve
-
-# Or install globally
-npm install -g wingman-cli
-wingman serve
+npx wingman-cli serve
 ```
 
-The server will start on `http://localhost:8787` with:
-- Annotation API for receiving UI feedback
-- MCP integration for Claude Code
-- Preview UI for viewing annotations
+That's it! Your server is running at `http://localhost:8787` 🎉
 
-### 2. Install Chrome Extension
+### What You Get
+- 🪶 Annotation API for receiving UI feedback
+- 🤖 MCP integration for Claude Code
+- 👁️ Preview UI for viewing annotations
 
-1. Install from [Chrome Web Store](https://chrome.google.com/webstore/detail/wingman) (coming soon)
-2. Or [load the unpacked extension](#development-setup) for development
+### Next Steps
 
-### 3. Optional: Add SDK to Your React App
+1. **Install Chrome Extension**
+   - [Chrome Web Store](https://chrome.google.com/webstore/detail/wingman) (coming soon)
+   - Or [load unpacked](#development-setup) for development
+
+2. **Optional: Add to Your React App**
 
 ```bash
 npm install wingman-sdk
@@ -244,16 +240,13 @@ npm version patch  # or minor/major
 
 ### After Publishing
 
-Users can install with:
+Users can run immediately with:
 
 ```bash
-# Install CLI globally
-npm install -g wingman-cli
+# No installation needed!
+npx wingman-cli serve
 
-# Or use without installing
-npx wingman serve
-
-# Install SDK in React projects
+# SDK for React projects (optional)
 npm install wingman-sdk
 ```
 

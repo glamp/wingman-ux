@@ -38,7 +38,9 @@
     "release:build": "./scripts/build-release.sh",
     "release:chrome": "./scripts/build-release.sh --chrome",
     "release:cli": "./scripts/build-release.sh --cli",
-    "release:sdk": "./scripts/build-release.sh --sdk"
+    "release:sdk": "./scripts/build-release.sh --sdk",
+    "test:docker": "./test/integration/run-docker-test.sh",
+    "test:npx": "docker build -t wingman-test test/integration && docker run --rm wingman-test"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.0",

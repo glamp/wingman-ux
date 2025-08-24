@@ -5,27 +5,23 @@ Lightweight UX feedback assistant with local relay server and MCP support for Cl
 ## Quick Start
 
 ```bash
-npx wingman serve
+npx wingman-cli serve
 ```
 
-This starts the Wingman relay server on `http://localhost:8787` with:
-- Annotation API for receiving UI feedback
-- MCP integration for Claude Code
-- Preview UI for viewing annotations
+That's it! Server running at `http://localhost:8787` 🎉
 
-## Installation
+### What You Get
+- 🪶 Annotation API for receiving UI feedback  
+- 🤖 MCP integration for Claude Code
+- 👁️ Preview UI for viewing annotations
 
-### Global Installation (Recommended)
+## Installation (Optional)
+
+Only needed if you prefer a global install:
 
 ```bash
 npm install -g wingman-cli
 wingman serve
-```
-
-### Using npx (No Installation)
-
-```bash
-npx wingman serve
 ```
 
 ## Usage

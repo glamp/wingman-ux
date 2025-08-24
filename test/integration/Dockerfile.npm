@@ -1,0 +1,12 @@
+# Test that wingman-cli package exists and works from npm
+FROM node:20
+
+# Set working directory
+WORKDIR /test
+
+# Copy test script
+COPY test-npm-package.sh /test/test-npm-package.sh
+RUN chmod +x /test/test-npm-package.sh
+
+# Run the test
+CMD ["/test/test-npm-package.sh"]
