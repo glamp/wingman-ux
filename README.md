@@ -110,31 +110,18 @@ Wingman provides MCP (Model Context Protocol) tools for Claude Code to review an
 
 Add Wingman to your Claude Code settings:
 
-1. Open Claude Code settings
-2. Navigate to MCP Servers section
-3. Add the following configuration:
-
-```json
-{
-  "wingman": {
-    "transport": "sse",
-    "url": "http://localhost:8787/mcp"
-  }
-}
-```
-
-Or add it manually to your MCP configuration file:
-
 ```json
 {
   "mcpServers": {
     "wingman": {
-      "transport": "sse",
-      "url": "http://localhost:8787/mcp"
+      "command": "npx",
+      "args": ["wingman-cli", "serve"]
     }
   }
 }
 ```
+
+That's it! Claude Code will automatically start the Wingman server when needed.
 
 ### Available MCP Tools
 

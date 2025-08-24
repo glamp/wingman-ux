@@ -60,14 +60,14 @@ Add to your Claude Code settings:
 {
   "mcpServers": {
     "wingman": {
-      "transport": "sse",
-      "url": "http://localhost:8787/mcp"
+      "command": "npx",
+      "args": ["wingman-cli", "serve"]
     }
   }
 }
 ```
 
-This enables Claude Code to:
+Claude Code will automatically start the Wingman server when needed. This enables Claude Code to:
 - List UI feedback annotations
 - Review specific annotations with screenshots
 - Process and fix UI issues automatically

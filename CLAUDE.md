@@ -191,6 +191,10 @@ Add to your Claude Code settings:
 ```json
 {
   "mcpServers": {
+    "wingman": {
+      "command": "npx",
+      "args": ["wingman-cli", "serve"]
+    },
     "wingman-playwright": {
       "command": "node",
       "args": [".mcp/server.js"],
@@ -373,8 +377,8 @@ Add to Claude Code settings:
 {
   "mcpServers": {
     "wingman": {
-      "transport": "sse",
-      "url": "http://localhost:8787/mcp"
+      "command": "npx",
+      "args": ["wingman-cli", "serve"]
     }
   }
 }
