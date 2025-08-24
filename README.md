@@ -2,32 +2,37 @@
 
 A lightweight UX feedback assistant for capturing and sharing feedback from web applications.
 
-## Quick Start
+## Quick Start (NPM)
 
-### 1. Install Dependencies
-
-```bash
-# Clone the repository
-git clone https://github.com/wingman/wingman.git
-cd wingman
-
-# Install dependencies and build packages
-npm install
-npm run build
-```
-
-### 2. Add to Your React Project
-
-Install the Wingman SDK in your React app:
+### 1. Install and Start the Server
 
 ```bash
-npm install @wingman/sdk
+# Quick start with npx (no installation required)
+npx wingman serve
+
+# Or install globally
+npm install -g wingman-cli
+wingman serve
 ```
 
-Wrap your app with the WingmanProvider:
+The server will start on `http://localhost:8787` with:
+- Annotation API for receiving UI feedback
+- MCP integration for Claude Code
+- Preview UI for viewing annotations
+
+### 2. Install Chrome Extension
+
+1. Install from [Chrome Web Store](https://chrome.google.com/webstore/detail/wingman) (coming soon)
+2. Or [load the unpacked extension](#development-setup) for development
+
+### 3. Optional: Add SDK to Your React App
+
+```bash
+npm install wingman-sdk
+```
 
 ```jsx
-import { WingmanProvider } from '@wingman/sdk';
+import { WingmanProvider } from 'wingman-sdk';
 
 function App() {
   return (
@@ -38,29 +43,40 @@ function App() {
 }
 ```
 
-### 3. Install Chrome Extension
+## Development Setup
+
+### Clone and Build from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/glamp/wingman-attempt-4.git
+cd wingman-attempt-4
+
+# Install dependencies and build packages
+npm install
+npm run build
+```
+
+### Load Chrome Extension for Development
 
 1. Open Chrome and go to `chrome://extensions/`
 2. Enable "Developer mode" (top right)
 3. Click "Load unpacked"
-4. Select the `packages/chrome-extension/dist` folder
+4. Select the `packages/chrome-extension/dist/development` folder
 
-### 4. Start the Wingman Server
+### Start Development Server
 
-Run the Wingman server to collect feedback:
+Run all services in development mode:
 
 ```bash
-# Install globally
-npm install -g wingman
+# Start all development services
+npm run dev
 
-# Start the server
-wingman serve
+# Check status
+npm run dev:status
 
-# Or use npx (no global install)
-npx wingman serve
-
-# Custom port/host
-wingman serve --port 3000 --host 0.0.0.0
+# Stop services
+npm run dev:stop
 ```
 
 The server provides:
@@ -185,6 +201,61 @@ http://localhost:8787/
 ```
 
 All endpoints share the same storage (`./.wingman/annotations/`), ensuring consistency between Chrome extension feedback and Claude Code tools.
+
+## Publishing to NPM
+
+### Prerequisites
+
+1. Login to npm:
+```bash
+npm login
+```
+
+2. Ensure you have publishing rights for:
+- `wingman-cli` package
+- `wingman-sdk` package (optional)
+
+### Publishing Packages
+
+```bash
+# Publish all packages
+./scripts/publish-npm.sh
+
+# Publish only CLI
+./scripts/publish-npm.sh --cli
+
+# Publish only SDK
+./scripts/publish-npm.sh --sdk
+
+# Dry run (test without publishing)
+npm run release:cli
+cd release/cli
+npm publish --dry-run
+```
+
+### Version Management
+
+Update version in package.json before publishing:
+
+```bash
+cd packages/cli
+npm version patch  # or minor/major
+```
+
+### After Publishing
+
+Users can install with:
+
+```bash
+# Install CLI globally
+npm install -g wingman-cli
+
+# Or use without installing
+npx wingman serve
+
+# Install SDK in React projects
+npm install wingman-sdk
+```
 
 ## License
 

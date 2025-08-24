@@ -20,7 +20,8 @@ async function build() {
       // Keep these as external since they have native bindings
       'canvas',
       'bufferutil',
-      'utf-8-validate'
+      'utf-8-validate',
+      '@roamhq/wrtc'
     ],
     define: {
       'process.env.NODE_ENV': '"production"'

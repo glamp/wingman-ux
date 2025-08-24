@@ -1,78 +1,112 @@
 # Wingman CLI
 
-Local relay server for Wingman - A lightweight UX feedback assistant for web applications.
+Lightweight UX feedback assistant with local relay server and MCP support for Claude Code.
+
+## Quick Start
+
+```bash
+npx wingman serve
+```
+
+This starts the Wingman relay server on `http://localhost:8787` with:
+- Annotation API for receiving UI feedback
+- MCP integration for Claude Code
+- Preview UI for viewing annotations
 
 ## Installation
 
+### Global Installation (Recommended)
+
 ```bash
 npm install -g wingman-cli
+wingman serve
+```
+
+### Using npx (No Installation)
+
+```bash
+npx wingman serve
 ```
 
 ## Usage
 
-Start the Wingman relay server:
-
 ```bash
-# Start with default settings (port 8787)
-wingman serve
+wingman serve [options]
 
-# Custom port and host
-wingman serve --port 3000 --host 0.0.0.0
-
-# With verbose logging
-wingman serve --verbose
+Options:
+  -p, --port <number>     Port to listen on (default: 8787)
+  -h, --host <address>    Host/address to bind to (default: localhost)
+  --help                  Display help for command
 ```
 
-## What it Does
+## Features
 
-The Wingman CLI runs a local relay server that:
-- Receives feedback annotations from the Wingman Chrome Extension
-- Stores feedback locally in `./.wingman/annotations/`
-- Provides a REST API to retrieve annotations
-- Includes a preview UI at `http://localhost:8787/preview`
-
-## API Endpoints
-
-- `POST /annotations` - Submit new feedback annotation
-- `GET /annotations/last` - Get the most recent annotation
-- `GET /preview` - View the preview UI
-- `GET /health` - Health check endpoint
+- **Local Relay Server**: Receives UI feedback annotations from the Wingman Chrome Extension
+- **MCP Integration**: Built-in Model Context Protocol support for Claude Code
+- **Preview UI**: Web interface for viewing captured annotations
+- **Zero Config**: Works out of the box with sensible defaults
+- **Lightweight**: Minimal dependencies, fast startup
 
 ## Chrome Extension
 
-To use Wingman, you'll also need the Chrome Extension:
+The Wingman CLI works with the [Wingman Chrome Extension](https://chrome.google.com/webstore/detail/wingman) to capture UI feedback.
 
-1. Download the extension from [Chrome Web Store](https://chrome.google.com/webstore)
-2. Or load the unpacked extension from the GitHub repository
+1. Install the Chrome Extension
+2. Start the relay server: `npx wingman serve`
+3. Click the Wingman icon in Chrome to capture feedback
+4. View annotations at `http://localhost:8787`
 
-## Configuration
+## Claude Code Integration
 
-The server accepts the following environment variables:
+Add to your Claude Code settings:
 
-- `WINGMAN_PORT` - Server port (default: 8787)
-- `WINGMAN_HOST` - Server host (default: localhost)
-- `WINGMAN_STORAGE_DIR` - Storage directory (default: ./.wingman)
+```json
+{
+  "mcpServers": {
+    "wingman": {
+      "transport": "sse",
+      "url": "http://localhost:8787/mcp"
+    }
+  }
+}
+```
+
+This enables Claude Code to:
+- List UI feedback annotations
+- Review specific annotations with screenshots
+- Process and fix UI issues automatically
+
+## API Endpoints
+
+- `POST /annotations` - Submit new annotation
+- `GET /annotations/last` - Get most recent annotation
+- `GET /annotations/:id` - Get specific annotation
+- `GET /mcp` - MCP server endpoint (SSE)
+- `GET /` - Preview UI
 
 ## Development
 
 ```bash
-# Clone the repo
-git clone https://github.com/wingman/wingman.git
-cd wingman/packages/cli
+# Clone the repository
+git clone https://github.com/glamp/wingman-attempt-4.git
+cd wingman-attempt-4/packages/cli
 
 # Install dependencies
 npm install
 
 # Run in development mode
 npm run dev
+
+# Build for production
+npm run build
 ```
 
 ## License
 
-MIT © Wingman Team
+MIT
 
 ## Links
 
-- [GitHub Repository](https://github.com/wingman/wingman)
-- [Chrome Extension](https://chrome.google.com/webstore)
-- [Documentation](https://github.com/wingman/wingman#readme)
+- [GitHub Repository](https://github.com/glamp/wingman-attempt-4)
+- [Chrome Extension](https://chrome.google.com/webstore/detail/wingman)
+- [Documentation](https://github.com/glamp/wingman-attempt-4#readme)

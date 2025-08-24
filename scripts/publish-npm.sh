@@ -61,9 +61,13 @@ publish_package() {
         log "Publishing new package: $package_name"
     fi
     
-    # Build the package
-    log "Building $package_name..."
-    npm run build
+    # Build the package if not already built
+    if [ ! -d "dist" ]; then
+        log "Building $package_name..."
+        npm run build
+    else
+        log "Using existing build for $package_name"
+    fi
     
     # Dry run first
     log "Running dry-run for $package_name..."

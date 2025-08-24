@@ -1,0 +1,216 @@
+/**
+ * Simple template engine for rendering annotation templates
+ * This is a lightweight implementation that will be enhanced with
+ * a proper template library (like Handlebars) in the future
+ */
+
+import type { WingmanAnnotation } from '../types.js';
+import type { AnnotationTemplate, TemplateEngine, TemplateVariable } from './types.js';
+
+/**
+ * Get a value from an object using a dot-notation path
+ */
+function getValueByPath(obj: any, path: string): any {
+  if (!obj || !path) return undefined;
+  
+  const keys = path.split('.');
+  let current = obj;
+  
+  for (const key of keys) {
+    if (current == null) return undefined;
+    current = current[key];
+  }
+  
+  return current;
+}
+
+/**
+ * Simple template engine implementation
+ * Note: This is a basic implementation. In production, we'll use
+ * a proper template library like Handlebars for full functionality
+ */
+export class SimpleTemplateEngine implements TemplateEngine {
+  /**
+   * Render an annotation using a template
+   */
+  render(annotation: WingmanAnnotation, template: AnnotationTemplate): string {
+    let result = template.template;
+    
+    // Process variables
+    for (const variable of template.variables) {
+      const value = this.getValue(annotation, variable.path);
+      const formattedValue = variable.formatter 
+        ? variable.formatter(value)
+        : value?.toString() || variable.defaultValue || '';
+      
+      // Simple replacement for now (will be enhanced with Handlebars)
+      const placeholder = `{{${variable.key}}}`;
+      result = result.replace(new RegExp(placeholder, 'g'), formattedValue);
+    }
+    
+    // Handle conditional blocks (simplified version)
+    // {{#if variable}}...{{/if}}
+    result = this.processConditionals(result, annotation, template);
+    
+    // Handle loops (simplified version)
+    // {{#each array}}...{{/each}}
+    result = this.processLoops(result, annotation, template);
+    
+    return result;
+  }
+  
+  /**
+   * Process conditional blocks in the template
+   * This is a simplified implementation for the foundation
+   */
+  private processConditionals(template: string, annotation: WingmanAnnotation, tmpl: AnnotationTemplate): string {
+    const conditionalRegex = /\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g;
+    
+    return template.replace(conditionalRegex, (match, varName, content) => {
+      const variable = tmpl.variables.find(v => v.key === varName);
+      if (!variable) return '';
+      
+      const value = this.getValue(annotation, variable.path);
+      const processedValue = variable.formatter ? variable.formatter(value) : value;
+      
+      // Check truthiness
+      const isTruthy = processedValue && 
+        (Array.isArray(processedValue) ? processedValue.length > 0 : true);
+      
+      return isTruthy ? content : '';
+    });
+  }
+  
+  /**
+   * Process loops in the template
+   * This is a simplified implementation for the foundation
+   */
+  private processLoops(template: string, annotation: WingmanAnnotation, tmpl: AnnotationTemplate): string {
+    const loopRegex = /\{\{#each\s+(\w+)\}\}([\s\S]*?)\{\{\/each\}\}/g;
+    
+    return template.replace(loopRegex, (match, varName, content) => {
+      const variable = tmpl.variables.find(v => v.key === varName);
+      if (!variable) return '';
+      
+      const value = this.getValue(annotation, variable.path);
+      if (!Array.isArray(value)) return '';
+      
+      return value.map((item, index) => {
+        let itemContent = content;
+        
+        // Replace {{index}} with 1-based index
+        itemContent = itemContent.replace(/\{\{index\}\}/g, (index + 1).toString());
+        
+        // Replace item properties
+        if (typeof item === 'object' && item !== null) {
+          for (const [key, val] of Object.entries(item)) {
+            const placeholder = `{{${key}}}`;
+            let formattedVal = val?.toString() || '';
+            
+            // Special formatting for specific fields
+            if (key === 'ts' && typeof val === 'number') {
+              formattedVal = new Date(val).toLocaleTimeString();
+            } else if (key === 'level' && typeof val === 'string') {
+              formattedVal = val.toUpperCase();
+            } else if (key === 'args' && Array.isArray(val)) {
+              formattedVal = val.map((arg: any) => 
+                typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+              ).join(' ');
+            } else if (key === 'timestamp' && typeof val === 'number') {
+              formattedVal = new Date(val).toLocaleTimeString();
+            }
+            
+            itemContent = itemContent.replace(new RegExp(placeholder, 'g'), formattedVal);
+          }
+        }
+        
+        return itemContent;
+      }).join('');
+    });
+  }
+  
+  /**
+   * Validate that a template is well-formed
+   */
+  validate(template: AnnotationTemplate): { valid: boolean; errors?: string[] } {
+    const errors: string[] = [];
+    
+    // Check required fields
+    if (!template.id) errors.push('Template ID is required');
+    if (!template.name) errors.push('Template name is required');
+    if (!template.template) errors.push('Template string is required');
+    if (!template.variables || !Array.isArray(template.variables)) {
+      errors.push('Template variables must be an array');
+    }
+    
+    // Extract variables from template and check they're defined
+    const usedVars = this.extractVariables(template.template);
+    const definedVars = new Set(template.variables.map(v => v.key));
+    
+    for (const usedVar of usedVars) {
+      if (!definedVars.has(usedVar) && 
+          !['index', 'timestamp', 'message', 'stack', 'level', 'args', 'url', 'status', 'duration', 'initiatorType'].includes(usedVar)) {
+        errors.push(`Variable '${usedVar}' is used in template but not defined`);
+      }
+    }
+    
+    // Check for required variables
+    for (const variable of template.variables) {
+      if (variable.required && !usedVars.includes(variable.key)) {
+        errors.push(`Required variable '${variable.key}' is not used in template`);
+      }
+    }
+    
+    return {
+      valid: errors.length === 0,
+      errors: errors.length > 0 ? errors : undefined
+    };
+  }
+  
+  /**
+   * Extract variables from a template string
+   */
+  extractVariables(templateString: string): string[] {
+    const variables = new Set<string>();
+    
+    // Match {{variable}} patterns
+    const simpleVarRegex = /\{\{([^#/][^}]+)\}\}/g;
+    let match;
+    
+    while ((match = simpleVarRegex.exec(templateString)) !== null) {
+      const varName = match[1].trim();
+      // Skip special keywords
+      if (!varName.startsWith('#') && !varName.startsWith('/')) {
+        variables.add(varName);
+      }
+    }
+    
+    // Match {{#if variable}} patterns
+    const conditionalRegex = /\{\{#if\s+(\w+)\}\}/g;
+    while ((match = conditionalRegex.exec(templateString)) !== null) {
+      variables.add(match[1]);
+    }
+    
+    // Match {{#each variable}} patterns
+    const loopRegex = /\{\{#each\s+(\w+)\}\}/g;
+    while ((match = loopRegex.exec(templateString)) !== null) {
+      variables.add(match[1]);
+    }
+    
+    return Array.from(variables);
+  }
+  
+  /**
+   * Get value from annotation using path
+   */
+  getValue(annotation: WingmanAnnotation, path: string): any {
+    return getValueByPath(annotation, path);
+  }
+}
+
+/**
+ * Create a default template engine instance
+ */
+export function createTemplateEngine(): TemplateEngine {
+  return new SimpleTemplateEngine();
+}
