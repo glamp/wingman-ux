@@ -28,7 +28,7 @@ for pkg in "${packages[@]}"; do
         echo "⚠️  $pkg: No package.json found"
     fi
     
-    cd /Users/glamp/workspace/github.com/glamp/wingman-attempt-4
+    cd ../..
     echo ""
 done
 

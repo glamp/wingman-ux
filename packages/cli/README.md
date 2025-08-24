@@ -84,8 +84,8 @@ Claude Code will automatically start the Wingman server when needed. This enable
 
 ```bash
 # Clone the repository
-git clone https://github.com/glamp/wingman-attempt-4.git
-cd wingman-attempt-4/packages/cli
+git clone https://github.com/glamp/wingman-ux.git
+cd wingman-ux/packages/cli
 
 # Install dependencies
 npm install
@@ -103,6 +103,6 @@ MIT
 
 ## Links
 
-- [GitHub Repository](https://github.com/glamp/wingman-attempt-4)
+- [GitHub Repository](https://github.com/glamp/wingman-ux)
 - [Chrome Extension](https://chrome.google.com/webstore/detail/wingman)
-- [Documentation](https://github.com/glamp/wingman-attempt-4#readme)
+- [Documentation](https://github.com/glamp/wingman-ux#readme)

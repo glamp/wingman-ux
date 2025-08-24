@@ -45,8 +45,8 @@ function App() {
 
 ```bash
 # Clone the repository
-git clone https://github.com/glamp/wingman-attempt-4.git
-cd wingman-attempt-4
+git clone https://github.com/glamp/wingman-ux.git
+cd wingman-ux
 
 # Install dependencies and build packages
 npm install
