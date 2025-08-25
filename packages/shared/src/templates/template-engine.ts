@@ -30,6 +30,22 @@ function getValueByPath(obj: any, path: string): any {
  * a proper template library like Handlebars for full functionality
  */
 export class SimpleTemplateEngine implements TemplateEngine {
+  private truncationConfig: {
+    console?: { templateLimit: number };
+    network?: { templateLimit: number };
+    errors?: { templateLimit: number };
+  } | undefined;
+
+  constructor(options?: { 
+    truncationConfig?: {
+      console?: { templateLimit: number };
+      network?: { templateLimit: number };
+      errors?: { templateLimit: number };
+    }
+  }) {
+    this.truncationConfig = options?.truncationConfig;
+  }
+  
   /**
    * Render an annotation using a template
    */
@@ -163,7 +179,7 @@ export class SimpleTemplateEngine implements TemplateEngine {
     
     return {
       valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined
+      ...(errors.length > 0 && { errors })
     };
   }
   
@@ -178,9 +194,9 @@ export class SimpleTemplateEngine implements TemplateEngine {
     let match;
     
     while ((match = simpleVarRegex.exec(templateString)) !== null) {
-      const varName = match[1].trim();
+      const varName = match[1]?.trim();
       // Skip special keywords
-      if (!varName.startsWith('#') && !varName.startsWith('/')) {
+      if (varName && !varName.startsWith('#') && !varName.startsWith('/')) {
         variables.add(varName);
       }
     }
@@ -188,29 +204,60 @@ export class SimpleTemplateEngine implements TemplateEngine {
     // Match {{#if variable}} patterns
     const conditionalRegex = /\{\{#if\s+(\w+)\}\}/g;
     while ((match = conditionalRegex.exec(templateString)) !== null) {
-      variables.add(match[1]);
+      if (match[1]) {
+        variables.add(match[1]);
+      }
     }
     
     // Match {{#each variable}} patterns
     const loopRegex = /\{\{#each\s+(\w+)\}\}/g;
     while ((match = loopRegex.exec(templateString)) !== null) {
-      variables.add(match[1]);
+      if (match[1]) {
+        variables.add(match[1]);
+      }
     }
     
     return Array.from(variables);
   }
   
   /**
-   * Get value from annotation using path
+   * Get value from annotation using path, applying truncation if configured
    */
   getValue(annotation: WingmanAnnotation, path: string): any {
-    return getValueByPath(annotation, path);
+    const value = getValueByPath(annotation, path);
+    
+    // Apply truncation based on path and configuration
+    if (Array.isArray(value) && this.truncationConfig) {
+      if (path === 'console' && this.truncationConfig.console?.templateLimit) {
+        // Return most recent console entries
+        const limit = this.truncationConfig.console.templateLimit;
+        return value.slice(-limit);
+      }
+      if (path === 'network' && this.truncationConfig.network?.templateLimit) {
+        // Return most recent network entries
+        const limit = this.truncationConfig.network.templateLimit;
+        return value.slice(-limit);
+      }
+      if (path === 'errors' && this.truncationConfig.errors?.templateLimit) {
+        // Return most recent error entries
+        const limit = this.truncationConfig.errors.templateLimit;
+        return value.slice(-limit);
+      }
+    }
+    
+    return value;
   }
 }
 
 /**
- * Create a default template engine instance
+ * Create a template engine instance with optional configuration
  */
-export function createTemplateEngine(): TemplateEngine {
-  return new SimpleTemplateEngine();
+export function createTemplateEngine(options?: {
+  truncationConfig?: {
+    console?: { templateLimit: number };
+    network?: { templateLimit: number };
+    errors?: { templateLimit: number };
+  }
+}): TemplateEngine {
+  return new SimpleTemplateEngine(options);
 }

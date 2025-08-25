@@ -16,5 +16,22 @@
     "headerColor": "#0084ff",
     "environmentLabel": "DEV MODE",
     "showEnvironmentBanner": true
+  },
+  "dataCapture": {
+    "console": {
+      "maxEntries": 100,
+      "templateLimit": 20,
+      "description": "Most recent console logs to include in template output"
+    },
+    "network": {
+      "maxEntries": 50,
+      "templateLimit": 15,
+      "description": "Most recent network requests to include in template output"
+    },
+    "errors": {
+      "maxEntries": 100,
+      "templateLimit": 10,
+      "description": "Most recent errors to include in template output"
+    }
   }
 }

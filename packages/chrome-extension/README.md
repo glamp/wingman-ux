@@ -153,6 +153,39 @@ The development build includes automatic extension reloading:
 - Posts feedback to `http://localhost:8787/annotations` (configurable)
 - Handles annotation storage and MCP integration
 
+## Usage
+
+### Keyboard Shortcuts
+
+**Activate Wingman Feedback Overlay**:
+- **Windows/Linux**: `Alt + Shift + K`
+- **Mac**: `⌘ + Shift + K` (Command + Shift + K)
+
+**Important Notes**:
+- On Mac, the shortcut uses the Command key (⌘), not Control
+- If the shortcut doesn't work, check Chrome's extension shortcuts in `chrome://extensions/shortcuts`
+- You can customize the shortcut through Chrome's extension settings
+- The shortcut only works on regular web pages (not chrome:// pages or the Chrome Web Store)
+
+**Troubleshooting Keyboard Shortcuts**:
+1. **Shortcut not working**: 
+   - Go to `chrome://extensions/shortcuts`
+   - Find "Wingman UX Feedback" and verify the shortcut is set
+   - Try manually setting a different shortcut if needed
+
+2. **Conflicts with other extensions**:
+   - Chrome will show shortcut conflicts in the shortcuts page
+   - Choose a different combination or disable conflicting shortcuts
+
+3. **Mac users experiencing inconsistent behavior**:
+   - Ensure you're using Command (⌘) + Shift + K, not Option or Control
+   - Some keyboard layouts may affect key detection - try the extension popup as an alternative
+
+### Alternative Activation Methods
+- **Extension Icon**: Click the Wingman icon in the Chrome toolbar
+- **Context Menu**: Right-click → Wingman (if enabled)
+- **Programmatic**: Via the Wingman Web SDK integration
+
 ## Configuration
 
 ### Environment Variables

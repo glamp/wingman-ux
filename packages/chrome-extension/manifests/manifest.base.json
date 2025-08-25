@@ -46,9 +46,9 @@
     "activate-overlay": {
       "suggested_key": {
         "default": "Alt+Shift+K",
-        "mac": "MacCtrl+Shift+K"
+        "mac": "Command+Shift+K"
       },
-      "description": "Activate Wingman feedback"
+      "description": "Activate Wingman feedback (⌘⇧K on Mac)"
     }
   }
 }

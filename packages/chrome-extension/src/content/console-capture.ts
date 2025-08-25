@@ -2,14 +2,29 @@ export class ConsoleCapture {
   private entries: Array<{ level: 'log' | 'info' | 'warn' | 'error'; args: any[]; ts: number }> =
     [];
   private errors: Array<{ message: string; stack?: string; ts: number }> = [];
-  private maxEntries = 100;
+  private maxConsoleEntries = 100;
+  private maxErrorEntries = 100;
   private removeWingmanLogs = true;
 
   constructor() {
+    this.initializeConfig();
     this.loadBufferedLogs();
     this.injectConsoleWrapper();
     this.listenForPageLogs();
     this.setupErrorHandlers();
+  }
+
+  private initializeConfig() {
+    // Try to get configuration from environment
+    try {
+      const config = (globalThis as any).__WINGMAN_CONFIG__;
+      if (config?.dataCapture) {
+        this.maxConsoleEntries = config.dataCapture.console.maxEntries || 100;
+        this.maxErrorEntries = config.dataCapture.errors.maxEntries || 100;
+      }
+    } catch (error) {
+      console.debug('[Wingman] Using default capture limits:', error);
+    }
   }
   
   private loadBufferedLogs() {
@@ -121,7 +136,7 @@ export class ConsoleCapture {
       ts: timestamp || Date.now(),
     });
 
-    if (this.entries.length > this.maxEntries) {
+    if (this.entries.length > this.maxConsoleEntries) {
       this.entries.shift();
     }
   }
@@ -148,7 +163,7 @@ export class ConsoleCapture {
   private addError(error: { message: string; stack?: string; ts: number }) {
     this.errors.push(error);
 
-    if (this.errors.length > this.maxEntries) {
+    if (this.errors.length > this.maxErrorEntries) {
       this.errors.shift();
     }
   }

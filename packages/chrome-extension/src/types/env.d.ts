@@ -19,6 +19,23 @@ interface EnvironmentConfig {
     environmentLabel: string;
     showEnvironmentBanner: boolean;
   };
+  dataCapture: {
+    console: {
+      maxEntries: number;
+      templateLimit: number;
+      description: string;
+    };
+    network: {
+      maxEntries: number;
+      templateLimit: number;
+      description: string;
+    };
+    errors: {
+      maxEntries: number;
+      templateLimit: number;
+      description: string;
+    };
+  };
 }
 
 declare global {

@@ -10,7 +10,20 @@ export class NetworkCapture {
   private observer: PerformanceObserver | null = null;
 
   constructor() {
+    this.initializeConfig();
     this.setupObserver();
+  }
+
+  private initializeConfig() {
+    // Try to get configuration from environment
+    try {
+      const config = (globalThis as any).__WINGMAN_CONFIG__;
+      if (config?.dataCapture?.network) {
+        this.maxEntries = config.dataCapture.network.maxEntries || 50;
+      }
+    } catch (error) {
+      console.debug('[Wingman] Using default network capture limit:', error);
+    }
   }
 
   private setupObserver() {

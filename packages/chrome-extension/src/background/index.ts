@@ -6,11 +6,9 @@ import type { WingmanAnnotation } from '@wingman/shared';
  * Content scripts CANNOT use ES modules, so they must use the local duplicate
  * in src/utils/format-claude.ts instead.
  * 
- * If you modify formatAnnotationForClaude, update BOTH:
- * - packages/shared/src/format-claude.ts (canonical version)
- * - packages/chrome-extension/src/utils/format-claude.ts (content script copy)
+ * Now using the template engine for improved formatting with the optimized template.
  */
-import { formatAnnotationForClaude, createLogger } from '@wingman/shared';
+import { createLogger, createTemplateEngine, defaultTemplate } from '@wingman/shared';
 import { getEnvironmentConfig } from '../utils/config';
 import type { EnvironmentConfig } from '../types/env';
 
@@ -20,10 +18,22 @@ let extensionConfig: EnvironmentConfig | null = null;
 // Create logger instance for background script
 const logger = createLogger('Wingman:Background');
 
+// Template engine instance (will be initialized with config)
+let templateEngine: any;
+
 // Initialize extension with environment-specific settings
 async function initializeExtension() {
   try {
     extensionConfig = getEnvironmentConfig();
+    
+    // Initialize template engine with truncation configuration
+    templateEngine = createTemplateEngine({
+      truncationConfig: extensionConfig.dataCapture ? {
+        console: { templateLimit: extensionConfig.dataCapture.console.templateLimit },
+        network: { templateLimit: extensionConfig.dataCapture.network.templateLimit },
+        errors: { templateLimit: extensionConfig.dataCapture.errors.templateLimit }
+      } : undefined
+    });
     
     // Set up environment badge
     if (extensionConfig.badge.text) {
@@ -198,7 +208,8 @@ function formatAnnotationForClipboard(annotation: WingmanAnnotation, format: str
     
     case 'claude':
     default:
-      return formatAnnotationForClaude(annotation);
+      // Use the new template engine with the optimized template
+      return templateEngine.render(annotation, defaultTemplate);
   }
 }
 
