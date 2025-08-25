@@ -9,20 +9,20 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/relay-server/package*.json ./packages/relay-server/
 COPY packages/shared/package*.json ./packages/shared/
-COPY packages/webapp/package*.json ./packages/webapp/
 
 # Install dependencies
-RUN npm ci --workspace=@wingman/relay-server --workspace=@wingman/shared --workspace=@wingman/webapp
+RUN npm ci --workspace=@wingman/relay-server --workspace=@wingman/shared
 
 # Copy source code
 COPY packages/relay-server ./packages/relay-server
 COPY packages/shared ./packages/shared
-COPY packages/webapp ./packages/webapp
 
-# Build TypeScript and webapp
+# Build TypeScript
 RUN npm run build --workspace=@wingman/shared
-RUN npm run build --workspace=@wingman/webapp
 RUN npm run build --workspace=@wingman/relay-server
+
+# Copy pre-built webapp dist (built locally before deployment)
+COPY packages/webapp/dist ./packages/webapp/dist
 
 # Runtime stage
 FROM node:20-alpine
