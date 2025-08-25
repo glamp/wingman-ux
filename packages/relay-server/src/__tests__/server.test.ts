@@ -155,7 +155,7 @@ describe('Relay Server', () => {
         .expect(201);
 
       // Check that preview URL uses the forwarded protocol and host
-      expect(response.body.previewUrl).toContain('/preview/?id=protocol-test');
+      expect(response.body.previewUrl).toContain('/annotations?id=protocol-test');
     });
 
     it('should handle large screenshots', async () => {

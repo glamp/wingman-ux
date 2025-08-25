@@ -32,7 +32,7 @@ export function annotationsRouter(storage: StorageService): Router {
       // Construct the full preview URL
       const protocol = req.protocol;
       const host = req.get('host') || 'localhost:8787';
-      const previewUrl = `${protocol}://${host}/preview/?id=${stored.id}`;
+      const previewUrl = `${protocol}://${host}/annotations?id=${stored.id}`;
       
       const response: RelayResponse = {
         id: stored.id,
@@ -259,7 +259,7 @@ export function annotationsRouter(storage: StorageService): Router {
       }
 
       // Redirect to preview UI with annotation ID
-      res.redirect(`/preview/?id=${req.params.id}`);
+      res.redirect(`/annotations?id=${req.params.id}`);
     } catch (error) {
       next(error);
     }

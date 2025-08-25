@@ -21,8 +21,11 @@ A comprehensive guide to all the different ways you can utilize Wingman for UI f
 The simplest way to get started with Wingman:
 
 ```bash
-# Start the relay server
+# Start the unified server (local mode)
 npx wingman-cli serve
+
+# Or start with automatic tunnel
+npx wingman-cli serve --tunnel
 
 # Install Chrome Extension
 # Load from packages/chrome-extension/dist/development
@@ -39,11 +42,14 @@ npx wingman-cli serve
 
 #### Setup
 ```bash
-# Start local relay server
+# Start unified server (local mode)
 npx wingman-cli serve
 
 # Or with custom port
 npx wingman-cli serve --port 3456 --host localhost
+
+# Check server status
+npx wingman-cli serve --status
 ```
 
 #### Features
@@ -72,25 +78,29 @@ npx wingman-cli serve --port 3456 --host localhost
 
 #### Setup
 ```bash
-# Start relay server
-npx wingman-cli serve
+# Start unified server with automatic tunnel
+npx wingman-cli serve --tunnel
 
-# Create tunnel session (via API)
+# Or tunnel a different port
+npx wingman-cli serve --tunnel --tunnel-port 3000
+
+# Or create tunnel manually via API
 curl -X POST http://localhost:8787/tunnel/create \
   -H "Content-Type: application/json" \
-  -d '{"targetPort": 8787, "enableP2P": true}'
+  -d '{"targetPort": 3000, "enableP2P": true}'
 
 # Response includes public tunnel URL
 # e.g., https://phantom-delta.wingmanux.com
 ```
 
 #### Features
-- Local relay server exposed via public URL
-- Aviation-themed session URLs
-- Supports WebSocket forwarding
+- Unified server handles both local and tunnel modes
+- Automatic tunnel creation with `--tunnel` flag
+- Aviation-themed session URLs (e.g., "ghost-whiskey", "maverick-alpha")
+- Built-in WebSocket support for real-time connections
 - Optional P2P upgrade for better performance
-- 24-hour session lifetime
-- Automatic cleanup of stale tunnels
+- 24-hour session lifetime with automatic cleanup
+- Session persistence in `.wingman/sessions/` directory
 
 #### Use Cases
 - Remote team collaboration

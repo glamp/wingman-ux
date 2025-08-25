@@ -5,15 +5,21 @@ A lightweight UX feedback assistant for capturing and sharing feedback from web 
 ## Quick Start
 
 ```bash
+# Start unified server (local mode)
 npx wingman-cli serve
+
+# Or with automatic tunnel for sharing
+npx wingman-cli serve --tunnel
 ```
 
 That's it! Your server is running at `http://localhost:8787` 🎉
 
 ### What You Get
-- 🪶 Annotation API for receiving UI feedback
+- 🪶 Unified server with built-in WebSocket support
+- 🌐 Web interface for annotations, tunnels, and monitoring
+- 🚇 Optional cloud tunnel for remote collaboration
 - 🤖 MCP integration for Claude Code
-- 👁️ Preview UI for viewing annotations
+- ✈️ Aviation-themed session IDs for easy sharing
 
 ### Next Steps
 

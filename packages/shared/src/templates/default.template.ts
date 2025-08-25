@@ -208,7 +208,7 @@ Please review the **screenshot** and **user feedback** above to understand and a
     {
       key: 'hasReact',
       path: 'react',
-      formatter: (value: any) => !!value,
+      formatter: (value: any) => String(!!value),
       required: false,
       description: 'Whether React info is available'
     },
@@ -241,14 +241,14 @@ Please review the **screenshot** and **user feedback** above to understand and a
     {
       key: 'hasErrors',
       path: 'errors',
-      formatter: (value: any[]) => value && value.length > 0,
+      formatter: (value: any[]) => String(value && value.length > 0),
       required: false,
       description: 'Whether there are JavaScript errors'
     },
     {
       key: 'errorCount',
       path: 'errors',
-      formatter: (value: any[]) => value?.length || 0,
+      formatter: (value: any[]) => String(value?.length || 0),
       required: false,
       description: 'Number of JavaScript errors'
     },
@@ -261,14 +261,14 @@ Please review the **screenshot** and **user feedback** above to understand and a
     {
       key: 'hasConsole',
       path: 'console',
-      formatter: (value: any[]) => value && value.length > 0,
+      formatter: (value: any[]) => String(value && value.length > 0),
       required: false,
       description: 'Whether there are console logs'
     },
     {
       key: 'consoleCount',
       path: 'console',
-      formatter: (value: any[]) => value?.length || 0,
+      formatter: (value: any[]) => String(value?.length || 0),
       required: false,
       description: 'Number of console logs'
     },
@@ -281,14 +281,14 @@ Please review the **screenshot** and **user feedback** above to understand and a
     {
       key: 'hasNetwork',
       path: 'network',
-      formatter: (value: any[]) => value && value.length > 0,
+      formatter: (value: any[]) => String(value && value.length > 0),
       required: false,
       description: 'Whether there are network requests'
     },
     {
       key: 'networkCount',
       path: 'network',
-      formatter: (value: any[]) => value?.length || 0,
+      formatter: (value: any[]) => String(value?.length || 0),
       required: false,
       description: 'Number of network requests'
     },

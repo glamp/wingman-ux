@@ -7,7 +7,7 @@ const { execSync } = require('child_process');
 // Get the environment (default to production)
 const env = process.env.WINGMAN_ENV || 'production';
 const distDir = path.join(__dirname, '..', 'dist', env);
-const outputDir = path.join(__dirname, '..', '..', 'tunnel-server', 'src', 'static');
+const outputDir = path.join(__dirname, '..', '..', 'webapp', 'public');
 const outputFile = path.join(outputDir, 'wingman-chrome-extension.zip');
 
 console.log(`📦 Packaging Chrome extension from ${env} build...`);

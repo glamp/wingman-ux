@@ -49,14 +49,14 @@ const SERVICES = {
     prefix: 'EXTENSION'
   },
   preview: {
-    name: 'Preview UI',
-    command: 'cd packages/preview-ui && npm run dev',
+    name: 'Webapp',
+    command: 'cd packages/webapp && npm run dev',
     defaultPort: 3001,
     pidFile: 'preview.pid',
-    watchPaths: ['packages/preview-ui/src'],
-    distPath: 'packages/preview-ui/dist',
+    watchPaths: ['packages/webapp/src'],
+    distPath: 'packages/webapp/dist',
     color: COLORS.preview,
-    prefix: 'PREVIEW'
+    prefix: 'WEBAPP'
   },
   demo: {
     name: 'Demo App',

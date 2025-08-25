@@ -13,7 +13,7 @@ That's it! Server running at `http://localhost:8787` 🎉
 ### What You Get
 - 🪶 Annotation API for receiving UI feedback  
 - 🤖 MCP integration for Claude Code
-- 👁️ Preview UI for viewing annotations
+- 🌐 Web interface for annotations, tunnels, and monitoring
 
 ## Installation (Optional)
 
@@ -39,7 +39,7 @@ Options:
 
 - **Local Relay Server**: Receives UI feedback annotations from the Wingman Chrome Extension
 - **MCP Integration**: Built-in Model Context Protocol support for Claude Code
-- **Preview UI**: Web interface for viewing captured annotations
+- **Web App**: Full-featured interface for annotations, tunnels, and monitoring
 - **Zero Config**: Works out of the box with sensible defaults
 - **Lightweight**: Minimal dependencies, fast startup
 
@@ -78,7 +78,7 @@ Claude Code will automatically start the Wingman server when needed. This enable
 - `GET /annotations/last` - Get most recent annotation
 - `GET /annotations/:id` - Get specific annotation
 - `GET /mcp` - MCP server endpoint (SSE)
-- `GET /` - Preview UI
+- `GET /` - Web application
 
 ## Development
 

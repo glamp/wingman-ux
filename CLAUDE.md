@@ -46,7 +46,13 @@ Wingman is a lightweight UX feedback assistant consisting of:
 
 ## Architecture
 
-The project uses a monorepo structure with shared TypeScript types across all packages (Chrome Extension, Web SDK, and Local Relay Server). All packages must use the same `WingmanAnnotation` type definition to ensure consistency.
+The project uses a monorepo structure with a unified server that handles both local and tunnel functionality. The server includes:
+- WebSocket support for real-time connections
+- Built-in session management with persistence
+- Automatic tunnel creation capabilities
+- P2P connection support for optimal performance
+
+All packages share TypeScript types, with `WingmanAnnotation` as the single source of truth for payload structure.
 
 ## Key Technical Constraints
 
@@ -74,15 +80,24 @@ The project uses a monorepo structure with shared TypeScript types across all pa
 - Best-effort React metadata extraction via `__REACT_DEVTOOLS_GLOBAL_HOOK__`
 - Graceful degradation when React DevTools hook is unavailable
 
-### Local Relay Server
-- Receives annotations at `POST /annotations`
-- Provides `GET /annotations/last` for retrieving the most recent annotation
-- Body size limit ≥ 25MB for screenshots
-- Returns consistent error shapes: `{ error: string, code?: string, details?: any }`
-- Stores annotations as files in `./.wingman/annotations/:id.json`
-- CORS enabled for browser access
-- No authentication (for v1)
-- **MCP Integration**: Serves MCP over HTTP/SSE at `/mcp` endpoint
+### Unified Server (Relay + Tunnel)
+- **Annotations**: `POST /annotations`, `GET /annotations/last`
+- **Sessions**: Full CRUD at `/api/sessions/*`
+- **WebSocket**: Real-time connections at `/ws`
+- **Tunnel**: Create and manage tunnels at `/tunnel/*`
+- **Storage**: 
+  - Annotations in `./.wingman/annotations/:id.json`
+  - Sessions in `./.wingman/sessions/:id.json`
+- **Features**:
+  - 25MB body limit for screenshots
+  - Aviation-themed session IDs
+  - Automatic session cleanup (24-hour TTL)
+  - P2P connection support
+  - MCP over HTTP/SSE at `/mcp`
+- **CLI Flags**:
+  - `--tunnel`: Enable automatic tunnel creation
+  - `--tunnel-port <port>`: Specify tunnel target port
+  - `--status`: Show server and tunnel status
 
 ## Development Commands
 

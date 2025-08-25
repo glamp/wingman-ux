@@ -4,7 +4,7 @@ import type { WingmanAnnotation } from '@wingman/shared';
 export class ImageProcessor {
   /**
    * Generate an annotated screenshot with bounding box overlay
-   * This mirrors the rendering logic from ScreenshotViewer.tsx in preview-ui
+   * This mirrors the rendering logic from ScreenshotViewer.tsx in webapp
    */
   async generateAnnotatedScreenshot(annotation: WingmanAnnotation): Promise<Buffer> {
     // Load the base screenshot from data URL

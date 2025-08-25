@@ -1,44 +1,56 @@
 import express, { Router, Request, Response } from 'express';
-import TunnelConnector from '../services/tunnel-connector';
+import { SessionManager } from '../services/session-manager';
+import { ConnectionManager } from '../services/connection-manager';
 import { createLogger } from '@wingman/shared';
 
 const logger = createLogger('Wingman:TunnelRoutes');
 
-// Store active tunnel connections
+// Store active tunnel metadata (actual connections managed by ConnectionManager)
 const activeTunnels = new Map<string, {
-  connector: TunnelConnector;
   sessionId: string;
   targetPort: number;
   tunnelUrl: string;
   createdAt: Date;
+  mode: 'embedded' | 'remote';
 }>();
 
-// Cleanup stale tunnels periodically
-function cleanupStaleTunnels() {
+/**
+ * Cleanup stale tunnels periodically.
+ * Note: Session cleanup is handled by SessionManager,
+ * this just cleans up the local tunnel tracking.
+ */
+function cleanupStaleTunnels(sessionManager?: SessionManager) {
   const now = Date.now();
   const staleTimeout = 30 * 60 * 1000; // 30 minutes
   
   for (const [sessionId, tunnel] of activeTunnels.entries()) {
     const age = now - tunnel.createdAt.getTime();
     
-    // Check if tunnel is stale or disconnected
-    if (age > staleTimeout || !tunnel.connector.isConnected()) {
-      logger.info(`Cleaning up stale/disconnected tunnel ${sessionId} (age: ${Math.round(age / 1000)}s)`);
-      try {
-        tunnel.connector.disconnect();
-      } catch (error) {
-        // Ignore errors during cleanup
+    // Check if tunnel is stale
+    if (age > staleTimeout) {
+      logger.info(`Cleaning up stale tunnel ${sessionId} (age: ${Math.round(age / 1000)}s)`);
+      
+      if (sessionManager) {
+        // Update session status if using embedded mode
+        sessionManager.updateSession(sessionId, { status: 'expired' });
       }
+      
       activeTunnels.delete(sessionId);
     }
   }
 }
 
-// Run cleanup every 5 minutes
-setInterval(cleanupStaleTunnels, 5 * 60 * 1000);
-
-export function tunnelRouter(): Router {
+/**
+ * Tunnel router for creating and managing tunnel sessions.
+ * Can work in two modes:
+ * - Embedded: Uses local SessionManager (when passed)
+ * - Remote: Connects to external tunnel server
+ */
+export function tunnelRouter(sessionManager?: SessionManager, connectionManager?: ConnectionManager): Router {
   const router = Router();
+  
+  // Run cleanup every 5 minutes
+  setInterval(() => cleanupStaleTunnels(sessionManager), 5 * 60 * 1000);
 
   /**
    * POST /tunnel/create
@@ -69,78 +81,71 @@ export function tunnelRouter(): Router {
       if (existingTunnels.length > 0) {
         logger.info(`Cleaning up ${existingTunnels.length} existing tunnel(s) for port ${port}`);
         for (const [sessionId, tunnel] of existingTunnels) {
-          try {
-            tunnel.connector.disconnect();
-            activeTunnels.delete(sessionId);
-            logger.info(`Cleaned up tunnel ${sessionId}`);
-          } catch (error) {
-            logger.error(`Failed to clean up tunnel ${sessionId}:`, error);
+          // Clean up session if using embedded mode
+          if (sessionManager && tunnel.mode === 'embedded') {
+            sessionManager.deleteSession(sessionId);
           }
+          activeTunnels.delete(sessionId);
+          logger.info(`Cleaned up tunnel ${sessionId}`);
         }
       }
 
-      // Create session on tunnel server
-      const tunnelServerUrl = process.env.TUNNEL_SERVER_URL || 'https://wingman-tunnel.fly.dev';
-      const response = await fetch(`${tunnelServerUrl}/api/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          developerId: 'relay-server',
-          targetPort: port
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        logger.error('Failed to create tunnel session:', error);
-        return res.status(502).json({
-          error: 'Failed to create tunnel session',
-          code: 'TUNNEL_CREATE_FAILED'
+      // Check if we're using embedded session manager or remote tunnel server
+      let sessionId: string;
+      let tunnelUrl: string;
+      
+      if (sessionManager) {
+        // Use embedded session manager
+        const session = sessionManager.createSession('relay-server', port, { enableP2P });
+        sessionId = session.id;
+        tunnelUrl = `https://${sessionId}.wingmanux.com`;
+        session.tunnelUrl = tunnelUrl;
+        sessionManager.updateSession(sessionId, { tunnelUrl, status: 'active' });
+        logger.info('Created local tunnel session:', sessionId);
+      } else {
+        // Fall back to remote tunnel server
+        const tunnelServerUrl = process.env.TUNNEL_SERVER_URL || 'https://wingman-tunnel.fly.dev';
+        const response = await fetch(`${tunnelServerUrl}/api/sessions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            developerId: 'relay-server',
+            targetPort: port
+          })
         });
+
+        if (!response.ok) {
+          const error = await response.text();
+          logger.error('Failed to create tunnel session:', error);
+          return res.status(502).json({
+            error: 'Failed to create tunnel session',
+            code: 'TUNNEL_CREATE_FAILED'
+          });
+        }
+
+        const data = await response.json() as { sessionId: string; session: { id: string; developerId: string; targetPort: number; status: string }; tunnelUrl: string };
+        sessionId = data.sessionId || data.session?.id;
+        tunnelUrl = data.tunnelUrl || `https://${sessionId}.wingmanux.com`;
+        logger.info('Created remote tunnel session:', sessionId);
       }
 
-      const data = await response.json() as { sessionId: string; session: { id: string; developerId: string; targetPort: number; status: string }; tunnelUrl: string };
-      const sessionId = data.sessionId || data.session?.id;
-      logger.info('Created tunnel session:', sessionId);
-
-      // Create and connect tunnel connector
-      const connector = new TunnelConnector({
-        sessionId: sessionId,
-        targetPort: port,
-        tunnelUrl: tunnelServerUrl,
-        developerId: 'relay-server',
-        enableP2P: enableP2P, // Use the parameter from the request
-        debug: process.env.NODE_ENV === 'development'
-      });
-
-      // Store the tunnel with correct subdomain URL format
-      const tunnelUrl = data.tunnelUrl || `https://${sessionId}.wingmanux.com`;
+      // Store tunnel info
       activeTunnels.set(sessionId, {
-        connector,
         sessionId: sessionId,
         targetPort: port,
         tunnelUrl: tunnelUrl,
-        createdAt: new Date()
+        createdAt: new Date(),
+        mode: sessionManager ? 'embedded' : 'remote'
       });
-
-      // Connect to tunnel server
-      try {
-        await connector.connect();
-        logger.info('Connected to tunnel server for session:', sessionId);
-      } catch (error) {
-        logger.error('Failed to connect to tunnel server:', error);
-        activeTunnels.delete(sessionId);
-        return res.status(502).json({
-          error: 'Failed to connect to tunnel server',
-          code: 'TUNNEL_CONNECT_FAILED'
-        });
+      
+      // If using embedded mode, the WebSocket connections will be handled
+      // by the main server's WebSocket handler
+      if (sessionManager) {
+        logger.info('Tunnel created in embedded mode:', sessionId);
+      } else {
+        logger.info('Tunnel created in remote mode:', sessionId);
+        // In remote mode, the actual tunnel server handles the connections
       }
-
-      // Handle disconnection
-      connector.on('disconnected', () => {
-        logger.info('Tunnel disconnected:', sessionId);
-        activeTunnels.delete(sessionId);
-      });
 
       res.json({
         success: true,
@@ -169,7 +174,7 @@ export function tunnelRouter(): Router {
       tunnelUrl: tunnel.tunnelUrl,
       targetPort: tunnel.targetPort,
       createdAt: tunnel.createdAt,
-      connectionMode: tunnel.connector.getConnectionMode()
+      connectionMode: tunnel.mode
     }));
 
     res.json({
@@ -189,7 +194,11 @@ export function tunnelRouter(): Router {
       // Stop specific tunnel
       const tunnel = activeTunnels.get(sessionId);
       if (tunnel) {
-        tunnel.connector.disconnect();
+        // Clean up session if using embedded mode
+        if (sessionManager && tunnel.mode === 'embedded') {
+          sessionManager.deleteSession(sessionId);
+        }
+        
         activeTunnels.delete(sessionId);
         logger.info('Stopped tunnel:', sessionId);
         
@@ -206,7 +215,10 @@ export function tunnelRouter(): Router {
     } else {
       // Stop all tunnels
       for (const [id, tunnel] of activeTunnels) {
-        tunnel.connector.disconnect();
+        // Clean up session if using embedded mode
+        if (sessionManager && tunnel.mode === 'embedded') {
+          sessionManager.deleteSession(id);
+        }
         logger.info('Stopped tunnel:', id);
       }
       const count = activeTunnels.size;
