@@ -1,0 +1,16 @@
+{
+  "id": "test-1755955787705",
+  "receivedAt": "2025-08-23T13:29:47.711Z",
+  "annotation": {
+    "id": "test-1755955787705",
+    "url": "http://example.com",
+    "type": "click",
+    "element": {
+      "selector": "button.test",
+      "text": "Test Button"
+    },
+    "screenshot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+    "timestamp": "2025-08-23T13:29:47.705Z",
+    "comment": "Test annotation"
+  }
+}

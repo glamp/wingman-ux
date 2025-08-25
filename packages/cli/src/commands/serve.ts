@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { createServer } from '@wingman/relay-server';
+import { createServer } from '@wingman/wingman-api';
 import type { Server } from 'http';
 
 export const serveCommand = new Command('serve')

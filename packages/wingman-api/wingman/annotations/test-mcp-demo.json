@@ -1,0 +1,48 @@
+{
+  "id": "test-mcp-demo",
+  "receivedAt": "2025-08-23T01:42:39.732Z",
+  "annotation": {
+    "id": "test-mcp-demo",
+    "createdAt": "2025-08-22T19:42:39-06:00",
+    "note": "The submit button is not aligned properly on the checkout page",
+    "page": {
+      "url": "https://example.com/checkout",
+      "title": "Checkout - Example Store",
+      "ua": "Mozilla/5.0",
+      "viewport": {
+        "w": 1920,
+        "h": 1080,
+        "dpr": 1
+      }
+    },
+    "target": {
+      "mode": "element",
+      "rect": {
+        "x": 500,
+        "y": 400,
+        "width": 200,
+        "height": 50
+      },
+      "selector": ".checkout-submit-button"
+    },
+    "media": {
+      "screenshot": {
+        "mime": "image/png",
+        "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+      }
+    },
+    "console": [],
+    "errors": [],
+    "network": [],
+    "react": {
+      "componentName": "CheckoutButton",
+      "componentType": "function",
+      "source": {
+        "fileName": "CheckoutButton.tsx",
+        "lineNumber": 45,
+        "columnNumber": 10
+      },
+      "obtainedVia": "devtools-hook"
+    }
+  }
+}

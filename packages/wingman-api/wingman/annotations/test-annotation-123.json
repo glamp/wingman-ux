@@ -1,0 +1,30 @@
+{
+  "id": "test-annotation-123",
+  "receivedAt": "2025-08-23T03:33:20.209Z",
+  "annotation": {
+    "id": "test-annotation-123",
+    "note": "Button not working on checkout page",
+    "createdAt": "2024-08-21T18:00:00Z",
+    "page": {
+      "title": "Checkout - My Store",
+      "url": "https://example.com/checkout",
+      "ua": "Mozilla/5.0",
+      "viewport": {
+        "w": 1920,
+        "h": 1080,
+        "dpr": 2
+      }
+    },
+    "target": {
+      "mode": "element",
+      "selector": "button.checkout-btn",
+      "rect": {
+        "x": 100,
+        "y": 200,
+        "width": 150,
+        "height": 50
+      }
+    },
+    "screenshot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+  }
+}
