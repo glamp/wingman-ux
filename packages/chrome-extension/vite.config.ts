@@ -79,11 +79,11 @@ export default defineConfig(async () => {
   plugins: [
     // React plugin for JSX support
     react(),
-    // Hot reload plugin only in development
+    // Hot reload plugin with unique port to avoid conflicts
     ...(isDev && envConfig.features?.hotReload ? [hotReloadExtension({
       log: true,
-      backgroundPath: 'src/background/index.ts',
-      port: 8081
+      backgroundPath: 'src/background/index.ts'
+      // Port is configured via HOT_RELOAD_EXTENSION_VITE_PORT env var
     })] : []),
     {
       name: 'watch-static-files',

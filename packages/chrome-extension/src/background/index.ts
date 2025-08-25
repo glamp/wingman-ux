@@ -49,6 +49,11 @@ async function initializeExtension() {
       logger.setLevel('debug');
     }
     
+    // Set up hot reload in development mode
+    if (extensionConfig.environment === 'development' && extensionConfig.features.hotReload) {
+      setupHotReload();
+    }
+    
     // Log initialization
     logger.info(`Service worker started - ${extensionConfig.environmentName} mode`);
     logger.debug('Config:', extensionConfig);
@@ -56,6 +61,82 @@ async function initializeExtension() {
   } catch (error) {
     logger.error('Failed to initialize:', error);
   }
+}
+
+// Hot reload functionality for development
+function setupHotReload() {
+  let lastReloadTime = 0;
+  let wsConnected = false;
+  
+  // Try WebSocket connection for HMR (port 9012)
+  const HMR_PORT = 9012;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 3;
+  
+  function connectWebSocket() {
+    if (reconnectAttempts >= maxReconnectAttempts) {
+      logger.debug('Max WebSocket reconnect attempts reached, falling back to file polling');
+      return;
+    }
+    
+    try {
+      const ws = new WebSocket(`ws://localhost:${HMR_PORT}`);
+      
+      ws.onopen = () => {
+        wsConnected = true;
+        reconnectAttempts = 0;
+        logger.info(`HMR WebSocket connected on port ${HMR_PORT}`);
+      };
+      
+      ws.onmessage = (event) => {
+        if (event.data === 'file-change') {
+          logger.info('HMR: File change detected, reloading extension...');
+          chrome.runtime.reload();
+        }
+      };
+      
+      ws.onerror = (error) => {
+        logger.debug('HMR WebSocket error, will use file polling fallback');
+      };
+      
+      ws.onclose = () => {
+        wsConnected = false;
+        logger.debug('HMR WebSocket disconnected');
+        // Try to reconnect after a delay
+        reconnectAttempts++;
+        if (reconnectAttempts < maxReconnectAttempts) {
+          setTimeout(connectWebSocket, 2000);
+        }
+      };
+    } catch (error) {
+      logger.debug('Failed to create WebSocket connection:', error);
+    }
+  }
+  
+  // Try WebSocket first
+  connectWebSocket();
+  
+  // Fallback: Poll for reload trigger file changes
+  setInterval(async () => {
+    // Skip file polling if WebSocket is connected
+    if (wsConnected) return;
+    
+    try {
+      const response = await fetch(chrome.runtime.getURL('.reload'));
+      const text = await response.text();
+      const reloadTime = parseInt(text, 10);
+      
+      if (reloadTime > lastReloadTime) {
+        lastReloadTime = reloadTime;
+        logger.info('Hot reload triggered via file polling, reloading extension...');
+        chrome.runtime.reload();
+      }
+    } catch (error) {
+      // Silently ignore - file might not exist yet
+    }
+  }, 2000); // Check every 2 seconds instead of 1 to reduce overhead
+  
+  logger.info('Hot reload enabled - WebSocket on port 9012 with file polling fallback');
 }
 
 // Call initialization
