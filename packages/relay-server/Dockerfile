@@ -34,7 +34,7 @@ COPY package*.json ./
 COPY packages/relay-server/package*.json ./packages/relay-server/
 COPY packages/shared/package*.json ./packages/shared/
 
-RUN npm ci --workspace=@wingman/relay-server --workspace=@wingman/shared --production
+RUN npm ci --workspace=@wingman/relay-server --workspace=@wingman/shared --omit=dev
 
 # Copy built application
 COPY --from=builder /app/packages/relay-server/dist ./packages/relay-server/dist

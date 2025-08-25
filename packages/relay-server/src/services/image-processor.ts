@@ -1,5 +1,19 @@
-import { createCanvas, loadImage } from 'canvas';
 import type { WingmanAnnotation } from '@wingman/shared';
+
+// Canvas is optional - only used for image annotation processing
+let createCanvas: any;
+let loadImage: any;
+let canvasAvailable = false;
+
+try {
+  const canvas = require('canvas');
+  createCanvas = canvas.createCanvas;
+  loadImage = canvas.loadImage;
+  canvasAvailable = true;
+} catch (error) {
+  // Canvas not available - image processing will be disabled
+  console.warn('Canvas module not available - image annotation processing disabled');
+}
 
 export class ImageProcessor {
   /**
@@ -7,6 +21,9 @@ export class ImageProcessor {
    * This mirrors the rendering logic from ScreenshotViewer.tsx in webapp
    */
   async generateAnnotatedScreenshot(annotation: WingmanAnnotation): Promise<Buffer> {
+    if (!canvasAvailable) {
+      throw new Error('Canvas module not available - cannot process images');
+    }
     // Load the base screenshot from data URL
     const img = await loadImage(annotation.media.screenshot.dataUrl);
     
