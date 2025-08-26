@@ -35,7 +35,7 @@ export const defaultTemplate: AnnotationTemplate = {
 ## 🎨 Visual Context
 
 {{#if targetRect}}
-- **Selected Area:** {{targetRect.width}}×{{targetRect.height}} pixels at position ({{targetRect.x}}, {{targetRect.y}})
+- **Selected Area:** {{targetRectWidth}}×{{targetRectHeight}} pixels at position ({{targetRectX}}, {{targetRectY}})
 {{/if}}
 - **Selection Mode:** {{selectionModeText}}
 {{#if targetSelector}}
@@ -54,79 +54,54 @@ export const defaultTemplate: AnnotationTemplate = {
 ## 🔧 Technical Details
 
 {{#if hasReact}}
-<details>
-<summary><strong>React Component Info</strong></summary>
+### React Component Info
 
-{{#if reactComponentName}}
 - **Component:** {{reactComponentName}}
-{{/if}}
 - **Data Source:** {{reactDataSource}}
-{{#if reactProps}}
 
 **Props:**
 \`\`\`json
 {{reactPropsJson}}
 \`\`\`
-{{/if}}
-{{#if reactState}}
 
 **State:**
 \`\`\`json
 {{reactStateJson}}
 \`\`\`
-{{/if}}
-
-</details>
 
 {{/if}}
 {{#if hasErrors}}
-<details open>
-<summary><strong>⚠️ JavaScript Errors ({{errorCount}})</strong></summary>
+### ⚠️ JavaScript Errors ({{errorCount}})
 
 {{#each errors}}
 {{index}}. **[{{timestamp}}]** {{message}}
-{{#if stack}}
-\`\`\`
-{{stack}}
-\`\`\`
-{{/if}}
+   {{stack}}
 {{/each}}
-
-</details>
 
 {{/if}}
 {{#if hasConsole}}
-<details>
-<summary><strong>Console Logs ({{consoleCount}})</strong></summary>
+### Console Logs ({{consoleCount}})
 
 {{#each consoleLogs}}
 {{index}}. **[{{level}}]** {{timestamp}}: {{args}}
 {{/each}}
 
-</details>
-
 {{/if}}
 {{#if hasNetwork}}
-<details>
-<summary><strong>Network Activity ({{networkCount}} requests)</strong></summary>
+### Network Activity ({{networkCount}} requests)
 
 {{#each networkRequests}}
 {{index}}. **{{url}}**
-{{#if status}}   - Status: {{status}}{{/if}}
-{{#if duration}}   - Duration: {{duration}}ms{{/if}}
-{{#if initiatorType}}   - Type: {{initiatorType}}{{/if}}
+   - Status: {{status}}
+   - Duration: {{duration}}ms
+   - Type: {{initiatorType}}
 {{/each}}
 
-</details>
-
 {{/if}}
-<details>
-<summary><strong>Browser Info</strong></summary>
+### Browser Info
 
 - **User Agent:** {{userAgent}}
 - **Annotation ID:** {{annotationId}}
-
-</details>
 
 ---
 
@@ -154,6 +129,30 @@ Please review the **screenshot** and **user feedback** above to understand and a
       path: 'target.rect',
       required: false,
       description: 'Rectangle coordinates of selected area'
+    },
+    {
+      key: 'targetRectWidth',
+      path: 'target.rect.width',
+      required: false,
+      description: 'Width of selected area'
+    },
+    {
+      key: 'targetRectHeight',
+      path: 'target.rect.height',
+      required: false,
+      description: 'Height of selected area'
+    },
+    {
+      key: 'targetRectX',
+      path: 'target.rect.x',
+      required: false,
+      description: 'X coordinate of selected area'
+    },
+    {
+      key: 'targetRectY',
+      path: 'target.rect.y',
+      required: false,
+      description: 'Y coordinate of selected area'
     },
     {
       key: 'selectionModeText',

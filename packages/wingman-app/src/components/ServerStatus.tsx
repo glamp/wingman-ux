@@ -7,14 +7,14 @@ import { colors, gradients, effects, animations } from '../styles/theme';
 /**
  * Glassmorphic status card component
  */
-const StatusCard = styled(Box)({
+const StatusCard = styled(Box)(({ theme }) => ({
   ...effects.glassmorphism,
   borderRadius: '24px',
-  padding: '32px',
+  padding: '24px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  gap: '40px',
+  gap: '24px',
   margin: '0 auto 40px',
   maxWidth: '500px',
   position: 'relative',
@@ -29,12 +29,20 @@ const StatusCard = styled(Box)({
     background: gradients.primary,
     opacity: 0.8,
   },
-});
+  // Mobile responsive styles
+  '@media (max-width: 600px)': {
+    padding: '16px',
+    gap: '16px',
+    borderRadius: '16px',
+  },
+}));
 
 /**
  * Pulsing health indicator
  */
 const PulseIndicator = styled('div')<{ healthy: boolean }>(({ healthy }) => ({
+  minWidth: '12px',
+  minHeight: '12px',
   width: '12px',
   height: '12px',
   background: healthy ? colors.success : colors.error,
@@ -42,6 +50,7 @@ const PulseIndicator = styled('div')<{ healthy: boolean }>(({ healthy }) => ({
   animation: healthy 
     ? 'pulseHealthy 2s infinite' 
     : 'pulseError 2s infinite',
+  flexShrink: 0, // Prevent squishing
 }));
 
 /**

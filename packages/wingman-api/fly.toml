@@ -9,9 +9,6 @@ kill_timeout = '30s'
 [experimental]
   auto_rollback = true
 
-[build]
-  dockerfile = 'packages/wingman-api/Dockerfile'
-
 [env]
   NODE_ENV = 'production'
   PORT = '8787'
@@ -21,7 +18,7 @@ kill_timeout = '30s'
   # Base URL for generating tunnel URLs
   TUNNEL_BASE_URL = 'wingmanux.com'
   # CORS configuration for frontend
-  CORS_ORIGIN = 'https://wingman-app.fly.dev'
+  CORS_ORIGIN = 'https://wingmanux.com'
 
 [[services]]
   protocol = 'tcp'

@@ -35,9 +35,10 @@ export function createSessionsRouter(sessionManager: SessionManager): Router {
       const session = sessionManager.createSession(developerId, port, metadata);
       
       // Generate tunnel URL (using subdomain format)
-      const tunnelUrl = process.env.TUNNEL_BASE_URL 
-        ? `https://${session.id}.${process.env.TUNNEL_BASE_URL}`
-        : `https://${session.id}.wingmanux.com`;
+      const baseUrl = process.env.TUNNEL_BASE_URL || 'wingmanux.com';
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      const portSuffix = process.env.NODE_ENV === 'production' ? '' : `:${process.env.PORT || '8787'}`;
+      const tunnelUrl = `${protocol}://${session.id}.${baseUrl}${portSuffix}`;
       
       session.tunnelUrl = tunnelUrl;
       sessionManager.updateSession(session.id, { tunnelUrl });

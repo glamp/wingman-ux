@@ -3,6 +3,7 @@
 A comprehensive guide to all the different ways you can utilize Wingman for UI feedback collection and development collaboration.
 
 ## Table of Contents
+
 - [Quick Start](#quick-start)
 - [Usage Modes](#usage-modes)
   - [1. Local-Only Mode](#1-local-only-mode)
@@ -41,6 +42,7 @@ npx wingman-cli serve --tunnel
 **The default and simplest setup for solo developers**
 
 #### Setup
+
 ```bash
 # Start unified server (local mode)
 npx wingman-cli serve
@@ -53,6 +55,7 @@ npx wingman-cli serve --status
 ```
 
 #### Features
+
 - Relay server runs on `http://localhost:8787` (default)
 - Chrome extension posts annotations directly to local server
 - Annotations stored in `.wingman/annotations/` directory
@@ -60,12 +63,14 @@ npx wingman-cli serve --status
 - No external network dependencies
 
 #### Use Cases
+
 - Solo development
 - Privacy-sensitive projects
 - Offline development
 - Local testing and debugging
 
 #### Chrome Extension Config
+
 ```json
 {
   "relayUrl": "http://localhost:8787"
@@ -77,6 +82,7 @@ npx wingman-cli serve --status
 **Share your local development with remote team members**
 
 #### Setup
+
 ```bash
 # Start unified server with automatic tunnel
 npx wingman-cli serve --tunnel
@@ -94,6 +100,7 @@ curl -X POST http://localhost:8787/tunnel/create \
 ```
 
 #### Features
+
 - Unified server handles both local and tunnel modes
 - Automatic tunnel creation with `--tunnel` flag
 - Aviation-themed session URLs (e.g., "ghost-whiskey", "maverick-alpha")
@@ -103,12 +110,14 @@ curl -X POST http://localhost:8787/tunnel/create \
 - Session persistence in `.wingman/sessions/` directory
 
 #### Use Cases
+
 - Remote team collaboration
 - Client demos of local development
 - Cross-network testing
 - Temporary sharing without deployment
 
 #### Connection Modes
+
 - **Relay Mode**: All traffic through tunnel server
 - **P2P Mode**: Direct WebRTC connection when possible
 - **Hybrid**: Starts with relay, upgrades to P2P
@@ -118,6 +127,7 @@ curl -X POST http://localhost:8787/tunnel/create \
 **Cloud-first approach using hosted tunnel server**
 
 #### Setup
+
 ```bash
 # Create session on hosted server
 curl -X POST https://wingman-tunnel.fly.dev/api/sessions \
@@ -128,24 +138,27 @@ curl -X POST https://wingman-tunnel.fly.dev/api/sessions \
   }'
 
 # Get session URL like:
-# https://maverick-alpha.wingman.dev
+# https://maverick-alpha.wingmanux.com
 ```
 
 #### Features
+
 - No local relay server needed
 - Hosted at `wingman-tunnel.fly.dev`
 - Beautiful PM interface with real-time status
-- Aviation callsign URLs (e.g., `ghost-whiskey.wingman.dev`)
+- Aviation callsign URLs (e.g., `ghost-whiskey.wingmanux.com`)
 - WebSocket-based real-time updates
 - 24-hour TTL with automatic cleanup
 
 #### Use Cases
+
 - Distributed teams
 - No local setup for product managers
 - Cloud-native workflows
 - Production feedback collection
 
 #### PM Interface
+
 - Visit session URL to see live status
 - Real-time connection indicators
 - Beautiful gradient UI with glassmorphism
@@ -156,6 +169,7 @@ curl -X POST https://wingman-tunnel.fly.dev/api/sessions \
 **Manual export and sharing of annotations**
 
 #### Setup
+
 ```bash
 # Start local server
 npx wingman-cli serve
@@ -170,6 +184,7 @@ ls .wingman/annotations/
 ```
 
 #### Features
+
 - Export annotations as JSON files
 - Manual sharing via email/Slack/tickets
 - Full annotation data including screenshots
@@ -177,6 +192,7 @@ ls .wingman/annotations/
 - Complete offline capability
 
 #### Use Cases
+
 - Security-restricted environments
 - Asynchronous review workflows
 - Integration with existing tools
@@ -184,6 +200,7 @@ ls .wingman/annotations/
 - Batch processing of feedback
 
 #### Export Format
+
 ```json
 {
   "id": "annotation-id",
@@ -204,6 +221,7 @@ ls .wingman/annotations/
 **Direct peer-to-peer connections for optimal performance**
 
 #### Setup
+
 ```bash
 # Enable P2P when creating tunnel
 curl -X POST http://localhost:8787/tunnel/create \
@@ -212,6 +230,7 @@ curl -X POST http://localhost:8787/tunnel/create \
 ```
 
 #### Features
+
 - Initial connection via tunnel server (signaling)
 - Automatic upgrade to WebRTC P2P when possible
 - Falls back to relay mode if P2P fails
@@ -220,6 +239,7 @@ curl -X POST http://localhost:8787/tunnel/create \
 - Automatic reconnection handling
 
 #### Use Cases
+
 - Performance-critical applications
 - High-frequency feedback sessions
 - Bandwidth-sensitive environments
@@ -227,6 +247,7 @@ curl -X POST http://localhost:8787/tunnel/create \
 - Screen sharing scenarios
 
 #### Connection Flow
+
 ```
 1. Initial WebSocket connection to tunnel server
 2. Exchange WebRTC offers/answers
@@ -240,7 +261,9 @@ curl -X POST http://localhost:8787/tunnel/create \
 **AI-assisted development with Claude Code**
 
 #### Setup
+
 Add to Claude Code settings:
+
 ```json
 {
   "mcpServers": {
@@ -253,26 +276,31 @@ Add to Claude Code settings:
 ```
 
 #### Features
+
 - Automatic server startup via Claude Code
 - Built-in MCP tools for annotation management
 - AI-powered fix suggestions
 - Integrated workflow with code editing
 
 #### Available MCP Tools
+
 - `wingman_list()` - List all UI feedback annotations
 - `wingman_review(id?)` - Review specific or latest annotation
 - `wingman_delete(id)` - Remove processed annotation
 
 #### Available MCP Prompts
+
 - `wingman_fix_ui` - Guided UI issue fixing workflow
 
 #### Use Cases
+
 - AI-assisted bug fixing
 - Automated UI improvements
 - Learning from feedback patterns
 - Rapid iteration on UI issues
 
 #### Example Workflow
+
 ```
 1. User reports issue via Chrome extension
 2. In Claude Code: "Check for wingman feedback"
@@ -288,6 +316,7 @@ Add to Claude Code settings:
 Different build configurations for various environments:
 
 #### Development
+
 ```json
 {
   "environment": "development",
@@ -302,6 +331,7 @@ Different build configurations for various environments:
 ```
 
 #### Production
+
 ```json
 {
   "environment": "production",
@@ -343,6 +373,7 @@ wingman serve
 ## Environment-Specific Setups
 
 ### Development Environment
+
 ```bash
 # Use development manager script
 npm run dev              # Start all services
@@ -351,11 +382,13 @@ npm run dev:logs         # Stream logs
 ```
 
 ### Staging Environment
+
 - Configure Chrome extension with staging relay URL
 - Use staging tunnel server if available
 - Enable debug features for testing
 
 ### Production Environment
+
 - Use production Chrome extension build
 - Configure proper CORS origins
 - Enable monitoring and logging
@@ -365,34 +398,39 @@ npm run dev:logs         # Stream logs
 
 ### Decision Matrix
 
-| Mode | Best For | Network | Setup Complexity | Real-time |
-|------|----------|---------|-----------------|-----------|
-| **Local-Only** | Solo devs | Local | Low | Yes |
-| **Local + Tunnel** | Remote teams | Hybrid | Medium | Yes |
-| **Tunnel-Only** | Cloud teams | Cloud | Low | Yes |
-| **Copy Mode** | Security/Async | Any | Low | No |
-| **Hybrid P2P** | Performance | P2P | Medium | Yes |
-| **MCP-Integrated** | AI workflow | Local | Low | Yes |
+| Mode               | Best For       | Network | Setup Complexity | Real-time |
+| ------------------ | -------------- | ------- | ---------------- | --------- |
+| **Local-Only**     | Solo devs      | Local   | Low              | Yes       |
+| **Local + Tunnel** | Remote teams   | Hybrid  | Medium           | Yes       |
+| **Tunnel-Only**    | Cloud teams    | Cloud   | Low              | Yes       |
+| **Copy Mode**      | Security/Async | Any     | Low              | No        |
+| **Hybrid P2P**     | Performance    | P2P     | Medium           | Yes       |
+| **MCP-Integrated** | AI workflow    | Local   | Low              | Yes       |
 
 ### Recommendations by Scenario
 
 #### Solo Developer
+
 - **Primary**: Local-Only Mode with MCP
 - **Benefits**: Simple setup, full privacy, AI assistance
 
 #### Small Team (2-5 people)
+
 - **Primary**: Local + Tunnel Mode
 - **Benefits**: Easy sharing, no infrastructure needed
 
 #### Distributed Team
+
 - **Primary**: Tunnel-Only Mode
 - **Benefits**: No local setup for non-developers, always accessible
 
 #### Enterprise
+
 - **Primary**: Copy Mode or Custom Deployment
 - **Benefits**: Full control, audit trail, security compliance
 
 #### Performance-Critical
+
 - **Primary**: Hybrid P2P Mode
 - **Benefits**: Lowest latency, reduced server load
 
@@ -445,6 +483,7 @@ PostgreSQL, Redis, S3, etc.
 ### Authentication (Future)
 
 Planned authentication modes:
+
 - API keys for developers
 - Session tokens for PMs
 - OAuth integration
@@ -470,6 +509,7 @@ ls -la .wingman/annotations/ | wc -l
 ### Common Issues
 
 **Port already in use:**
+
 ```bash
 # Check what's using the port
 lsof -i :8787
@@ -479,6 +519,7 @@ wingman serve --port 3456
 ```
 
 **Tunnel connection fails:**
+
 ```bash
 # Check tunnel status
 curl http://localhost:8787/tunnel/status
@@ -488,12 +529,14 @@ curl https://wingman-tunnel.fly.dev/health
 ```
 
 **Chrome extension not connecting:**
+
 - Verify relay server is running
 - Check extension configuration
 - Look at browser console for errors
 - Ensure CORS is properly configured
 
 **P2P connection not establishing:**
+
 - Check firewall settings
 - Verify WebRTC is not blocked
 - Try relay mode as fallback
@@ -525,6 +568,7 @@ Planned features for upcoming releases:
 ---
 
 For more information, see:
+
 - [README.md](README.md) - Project overview
 - [CLAUDE.md](CLAUDE.md) - Development guide
 - [Chrome Extension Docs](packages/chrome-extension/README.md)

@@ -7,6 +7,7 @@ WORKDIR /app
 
 # Copy workspace files
 COPY package*.json ./
+COPY tsconfig.json ./
 COPY packages/wingman-api/package*.json ./packages/wingman-api/
 COPY packages/shared/package*.json ./packages/shared/
 
@@ -46,7 +47,7 @@ ENV PORT=8787
 ENV HOST=0.0.0.0
 ENV STORAGE_PATH=/data/.wingman
 # Allow CORS from the frontend
-ENV CORS_ORIGIN=https://wingman-app.fly.dev
+ENV CORS_ORIGIN=https://wingmanux.com
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

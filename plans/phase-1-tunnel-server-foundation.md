@@ -1,24 +1,28 @@
 # Phase 1: Tunnel Server Foundation
 
 ## Objective
+
 Create the basic tunnel server infrastructure that can accept session requests and serve PM access pages. This phase establishes the foundation without P2P complexity.
 
 ## Deliverables
 
 ### 1. New Package: `packages/tunnel-server`
+
 - Basic Express server with session management
 - Static file serving for PM access pages
 - WebSocket server for future signaling
 - Fly.io deployment configuration
 
 ### 2. Session Management System
+
 - Create/retrieve tunnel sessions
 - Generate unique session IDs
 - Basic session storage (in-memory for Phase 1)
 - Session cleanup and expiration
 
 ### 3. PM Access Page
-- Simple HTML page served at `session-{id}.wingman.dev`
+
+- Simple HTML page served at `session-{id}.wingmanux.com`
 - Basic connection status UI
 - Placeholder for tunnel connection logic
 
@@ -45,6 +49,7 @@ packages/tunnel-server/
 ## Implementation Details
 
 ### Session Manager
+
 ```typescript
 interface TunnelSession {
   id: string;
@@ -64,12 +69,15 @@ class SessionManager {
 ```
 
 ### API Endpoints
+
 - `POST /api/sessions` - Create new tunnel session
 - `GET /api/sessions/:id` - Get session details
 - `GET /session/:id` - Serve PM access page
 
 ### PM Access Page
+
 Simple HTML that shows:
+
 - Connection status
 - Basic branding
 - Placeholder for app iframe
@@ -78,24 +86,28 @@ Simple HTML that shows:
 ## Testing Strategy
 
 ### Unit Tests
+
 - Session manager CRUD operations
 - Session expiration logic
 - API endpoint responses
 
 ### Integration Tests
+
 - Session creation flow
 - Static file serving
 - WebSocket connection establishment
 
 ### Manual Testing
+
 1. Deploy to Fly.io
 2. Create session via API
-3. Access `session-{id}.wingman.dev` in browser
+3. Access `session-{id}.wingmanux.com` in browser
 4. Verify page loads with correct session info
 
 ## Deployment
 
 ### Fly.io Configuration
+
 ```toml
 app = "wingman-tunnel"
 primary_region = "lax"
@@ -109,20 +121,21 @@ primary_region = "lax"
 ```
 
 ### Domain Setup
-- Configure `*.wingman.dev` wildcard DNS
+
+- Configure `*.wingmanux.com` wildcard DNS
 - Point to Fly.io app
 
 ## Acceptance Criteria
 
-✅ PM can access unique URL (session-abc123.wingman.dev)  
+✅ PM can access unique URL (session-abc123.wingmanux.com)  
 ✅ Session page loads with basic UI  
 ✅ Sessions are created and tracked properly  
 ✅ Expired sessions are cleaned up  
 ✅ Server deployed successfully on Fly.io  
-✅ WebSocket server accepts connections  
+✅ WebSocket server accepts connections
 
 ## Dependencies
+
 - Express.js for HTTP server
 - WebSocket library (ws)
 - Basic HTML/CSS/JS for client
-

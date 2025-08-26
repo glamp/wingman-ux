@@ -64,6 +64,9 @@ export class SimpleTemplateEngine implements TemplateEngine {
       result = result.replace(new RegExp(placeholder, 'g'), formattedValue);
     }
     
+    // Handle nested property access (e.g., {{targetRect.width}})
+    result = this.processNestedProperties(result, annotation);
+    
     // Handle conditional blocks (simplified version)
     // {{#if variable}}...{{/if}}
     result = this.processConditionals(result, annotation, template);
@@ -73,6 +76,34 @@ export class SimpleTemplateEngine implements TemplateEngine {
     result = this.processLoops(result, annotation, template);
     
     return result;
+  }
+  
+  /**
+   * Process nested property access in templates
+   * Handles patterns like {{object.property}} and {{object.nested.property}}
+   */
+  private processNestedProperties(template: string, annotation: WingmanAnnotation): string {
+    // Match patterns like {{variable.property}} but not {{#if variable}} or {{/if}}
+    const nestedPropRegex = /\{\{([^#/][^}]+\.[^}]+)\}\}/g;
+    
+    return template.replace(nestedPropRegex, (match, path) => {
+      const trimmedPath = path.trim();
+      
+      // Check if this path starts with a known variable key (like targetRect.width)
+      // If so, try to resolve it from the annotation directly
+      const value = getValueByPath(annotation, trimmedPath);
+      
+      // Special handling for common nested properties
+      if (!value && trimmedPath.startsWith('target.rect.')) {
+        const rectValue = getValueByPath(annotation, 'target.rect');
+        if (rectValue) {
+          const prop = trimmedPath.split('.').pop();
+          return rectValue[prop]?.toString() || '';
+        }
+      }
+      
+      return value?.toString() || '';
+    });
   }
   
   /**
@@ -117,14 +148,28 @@ export class SimpleTemplateEngine implements TemplateEngine {
         // Replace {{index}} with 1-based index
         itemContent = itemContent.replace(/\{\{index\}\}/g, (index + 1).toString());
         
+        // Handle nested {{#if}} blocks within the loop
+        const nestedIfRegex = /\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g;
+        itemContent = itemContent.replace(nestedIfRegex, (ifMatch: string, propName: string, ifContent: string) => {
+          const propValue = item[propName];
+          return propValue ? ifContent : '';
+        });
+        
         // Replace item properties
         if (typeof item === 'object' && item !== null) {
+          // Handle special fields first
+          if ('ts' in item && typeof item.ts === 'number') {
+            const timestamp = new Date(item.ts).toLocaleTimeString();
+            itemContent = itemContent.replace(/\{\{timestamp\}\}/g, timestamp);
+          }
+          
           for (const [key, val] of Object.entries(item)) {
             const placeholder = `{{${key}}}`;
-            let formattedVal = val?.toString() || '';
+            let formattedVal = '';
             
-            // Special formatting for specific fields
-            if (key === 'ts' && typeof val === 'number') {
+            if (val === undefined || val === null) {
+              formattedVal = '';
+            } else if (key === 'ts' && typeof val === 'number') {
               formattedVal = new Date(val).toLocaleTimeString();
             } else if (key === 'level' && typeof val === 'string') {
               formattedVal = val.toUpperCase();
@@ -134,10 +179,20 @@ export class SimpleTemplateEngine implements TemplateEngine {
               ).join(' ');
             } else if (key === 'timestamp' && typeof val === 'number') {
               formattedVal = new Date(val).toLocaleTimeString();
+            } else {
+              formattedVal = val.toString();
             }
             
             itemContent = itemContent.replace(new RegExp(placeholder, 'g'), formattedVal);
           }
+          
+          // Clean up any remaining undefined placeholders
+          itemContent = itemContent.replace(/\{\{[^}]+\}\}/g, (match: string) => {
+            // Keep index placeholder
+            if (match === '{{index}}') return match;
+            // Remove undefined field references
+            return '';
+          });
         }
         
         return itemContent;

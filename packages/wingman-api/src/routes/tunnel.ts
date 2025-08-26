@@ -98,10 +98,16 @@ export function tunnelRouter(sessionManager?: SessionManager, connectionManager?
         // Use embedded session manager
         const session = sessionManager.createSession('relay-server', port, { enableP2P });
         sessionId = session.id;
-        tunnelUrl = `https://${sessionId}.wingmanux.com`;
+        
+        // Generate tunnel URL based on environment
+        const baseUrl = process.env.TUNNEL_BASE_URL || 'wingmanux.com';
+        const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+        const portSuffix = process.env.NODE_ENV === 'production' ? '' : `:${process.env.PORT || '8787'}`;
+        tunnelUrl = `${protocol}://${sessionId}.${baseUrl}${portSuffix}`;
+        
         session.tunnelUrl = tunnelUrl;
         sessionManager.updateSession(sessionId, { tunnelUrl, status: 'active' });
-        logger.info('Created local tunnel session:', sessionId);
+        logger.info('Created local tunnel session:', sessionId, 'URL:', tunnelUrl);
       } else {
         // Fall back to remote tunnel server
         const tunnelServerUrl = process.env.TUNNEL_SERVER_URL || 'https://wingman-tunnel.fly.dev';

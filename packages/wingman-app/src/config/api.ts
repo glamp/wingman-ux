@@ -12,7 +12,7 @@ const getApiUrl = (): string => {
   }
   
   // Production API URL
-  return import.meta.env.VITE_API_URL || 'https://wingman-tunnel.fly.dev';
+  return import.meta.env.VITE_API_URL || 'https://api.wingmanux.com';
 };
 
 export const API_BASE_URL = getApiUrl();

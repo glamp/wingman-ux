@@ -53,8 +53,8 @@ export function createCorsMiddleware() {
       callback(new Error('Not allowed by CORS - only browser extensions can access this server'));
     },
 
-    // Extensions don't typically need credentials
-    credentials: false,
+    // Allow credentials for frontend session management
+    credentials: true,
 
     // Methods that extensions might use
     methods: ['GET', 'POST', 'OPTIONS'],

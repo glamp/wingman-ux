@@ -5,6 +5,7 @@ import { WebSocketServer } from 'ws';
 import path from 'path';
 import { errorHandler } from './middleware/error-handler';
 import { createCorsMiddleware, corsDebugMiddleware } from './middleware/cors';
+import { createSubdomainProxyMiddleware } from './middleware/subdomain-proxy';
 import { annotationsRouter } from './routes/annotations';
 import { healthRouter } from './routes/health';
 import { mcpRouter } from './routes/mcp';
@@ -46,6 +47,10 @@ export function createServer(options: ServerOptions = {}) {
   app.use(createCorsMiddleware());
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+
+  // Subdomain-based tunnel routing - MUST come before other routes
+  // This handles requests like session-id.wingmanux.com
+  app.use(createSubdomainProxyMiddleware(sessionManager, proxyHandler));
 
   // Rate limiting
   const limiter = rateLimit({

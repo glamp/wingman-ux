@@ -1,752 +1,999 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    :root {
-      --primary-color: #0084ff;
-      --primary-hover: #0073e6;
-      --success-color: #10b981;
-      --error-color: #ef4444;
-      --warning-color: #f59e0b;
-      --bg-primary: #ffffff;
-      --bg-secondary: #f8fafc;
-      --bg-glass: rgba(255, 255, 255, 0.8);
-      --text-primary: #1e293b;
-      --text-secondary: #64748b;
-      --text-muted: #94a3b8;
-      --border-color: #e2e8f0;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-      --radius-sm: 6px;
-      --radius-md: 8px;
-      --radius-lg: 12px;
-      --radius-xl: 16px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      width: 420px;
-      height: 100%;
-    }
-
-    body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      font-size: 14px;
-      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-      color: var(--text-primary);
-      overflow-x: hidden;
-      overflow-y: hidden;
-      position: relative;
-    }
-
-    body::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-image: 
-        radial-gradient(circle at 25% 25%, rgba(0, 132, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .container {
-      padding: 20px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .logo-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .logo-image {
-      width: 28px;
-      height: 28px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .logo-container:hover .logo-image {
-      transform: scale(1.1) rotate(5deg);
-    }
-
-    .logo-text {
-      font-size: 24px;
-      font-weight: 600;
-      background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .dock {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-      margin: 16px 0 20px 0;
-      padding: 12px;
-      background: var(--bg-glass);
-      backdrop-filter: blur(10px);
-      border-radius: var(--radius-xl);
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow-md);
-    }
-
-    .dock-item {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      padding: 12px 16px;
-      border-radius: var(--radius-md);
-      min-width: 100px;
-    }
-
-    .dock-item.primary {
-      background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
-      color: white;
-    }
-
-    .dock-item.primary:hover {
-      transform: scale(1.05) translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 132, 255, 0.4);
-    }
-
-    .dock-item.secondary {
-      background: var(--bg-glass);
-      border: 1px solid var(--border-color);
-    }
-
-    .dock-item.secondary:hover {
-      transform: scale(1.05) translateY(-2px);
-      background: rgba(255, 255, 255, 0.8);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .dock-icon {
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      transition: all 0.3s ease;
-    }
-
-    .dock-item.primary .dock-icon {
-      color: white;
-    }
-
-    .dock-item.secondary .dock-icon {
-      color: var(--text-secondary);
-    }
-
-    .dock-item:hover .dock-icon {
-      transform: scale(1.1);
-    }
-
-    .dock-label {
-      font-size: 12px;
-      font-weight: 600;
-      text-align: center;
-      white-space: nowrap;
-    }
-
-    .dock-item.primary .dock-label {
-      color: white;
-    }
-
-    .dock-item.secondary .dock-label {
-      color: var(--text-primary);
-    }
-
-    .dock-shortcut {
-      font-size: 9px;
-      font-weight: 500;
-      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-      opacity: 0.8;
-      text-align: center;
-    }
-
-    .dock-item.primary .dock-shortcut {
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .dock-item.secondary .dock-shortcut {
-      color: var(--text-muted);
-    }
-
-    .settings-panel {
-      background: var(--bg-glass);
-      backdrop-filter: blur(10px);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-color);
-      padding: 16px;
-      margin-top: 16px;
-      box-shadow: var(--shadow-md);
-    }
-
-    .connection-status {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      font-size: 12px;
-      padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-color);
-    }
-
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--error-color);
-      transition: all 0.3s ease;
-      position: relative;
-    }
-
-    .status-dot.connected {
-      background: var(--success-color);
-      box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
-    }
-
-    .status-dot.connected::before {
-      content: '';
-      position: absolute;
-      top: -3px;
-      left: -3px;
-      right: -3px;
-      bottom: -3px;
-      border-radius: 50%;
-      background: var(--success-color);
-      opacity: 0.2;
-      animation: statusPulse 2s infinite;
-    }
-
-    .status-dot.connecting {
-      background: var(--warning-color);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes statusPulse {
-      0%, 100% { transform: scale(0.8); opacity: 0.5; }
-      50% { transform: scale(1.2); opacity: 0.1; }
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .input-group {
-      position: relative;
-      margin-bottom: 16px;
-    }
-
-    .input-label {
-      font-size: 11px;
-      color: var(--text-secondary);
-      font-weight: 600;
-      margin-bottom: 6px;
-      display: block;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .input-field {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      font-size: 13px;
-      background: rgba(255, 255, 255, 0.7);
-      transition: all 0.2s ease;
-      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-    }
-
-    .input-field:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
-      background: white;
-    }
-
-    .preset-buttons {
-      display: flex;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .preset-btn {
-      flex: 1;
-      padding: 6px 8px;
-      font-size: 10px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      color: var(--text-secondary);
-      font-weight: 500;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      position: relative;
-    }
-
-    .preset-btn:hover {
-      background: var(--primary-color);
-      color: white;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(0, 132, 255, 0.2);
-    }
-
-    .preset-icon {
-      font-size: 12px;
-      line-height: 1;
-    }
-
-    .preset-text {
-      font-size: 9px;
-      font-weight: 600;
-      line-height: 1;
-    }
-
-    .preset-btn[title]:hover::after {
-      content: attr(title);
-      position: absolute;
-      bottom: -35px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 10px;
-      white-space: nowrap;
-      z-index: 1000;
-      pointer-events: none;
-    }
-
-    .custom-dropdown {
-      position: relative;
-      width: 100%;
-    }
-
-    .dropdown-selected {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.7);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 13px;
-    }
-
-    .dropdown-selected:hover {
-      background: white;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
-    }
-
-    .dropdown-selected.active {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
-    }
-
-    .dropdown-arrow {
-      margin-left: auto;
-      transition: transform 0.2s ease;
-      font-size: 10px;
-      color: var(--text-muted);
-    }
-
-    .dropdown-selected.active .dropdown-arrow {
-      transform: rotate(180deg);
-    }
-
-    .dropdown-options {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: white;
-      border: 1px solid var(--border-color);
-      border-top: none;
-      border-radius: 0 0 var(--radius-md) var(--radius-md);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-      opacity: 0;
-      transform: translateY(-8px);
-      pointer-events: none;
-      transition: all 0.2s ease;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .dropdown-options.visible {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: all;
-    }
-
-    .dropdown-option {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .dropdown-option:last-child {
-      border-bottom: none;
-    }
-
-    .dropdown-option:hover {
-      background: var(--bg-secondary);
-      transform: translateX(2px);
-    }
-
-    .dropdown-option.selected {
-      background: rgba(0, 132, 255, 0.1);
-      color: var(--primary-color);
-    }
-
-    .format-icon {
-      font-size: 16px;
-      width: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .format-text {
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    .format-desc {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-left: auto;
-    }
-
-    .dropdown-option.selected .format-desc {
-      color: var(--primary-color);
-      opacity: 0.8;
-    }
-
-    .status-message {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
-      padding: 10px 12px;
-      border-radius: var(--radius-md);
-      font-size: 12px;
-      font-weight: 500;
-      transform: translateY(10px);
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 1000;
-    }
-
-    .status-message.visible {
-      transform: translateY(0);
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .status-message.success {
-      background: rgba(16, 185, 129, 0.1);
-      color: var(--success-color);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-    }
-
-    .status-message.error {
-      background: rgba(239, 68, 68, 0.1);
-      color: var(--error-color);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-    }
-
-
-
-    @keyframes slideInUp {
-      from {
-        transform: translateY(20px);
-        opacity: 0;
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      :root {
+        --primary-color: #0084ff;
+        --primary-hover: #0073e6;
+        --success-color: #10b981;
+        --error-color: #ef4444;
+        --warning-color: #f59e0b;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8fafc;
+        --bg-glass: rgba(255, 255, 255, 0.8);
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --text-muted: #94a3b8;
+        --border-color: #e2e8f0;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --radius-sm: 6px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-xl: 16px;
       }
-      to {
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        width: 420px;
+        height: 100%;
+      }
+
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-size: 14px;
+        background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        color: var(--text-primary);
+        overflow-x: hidden;
+        overflow-y: hidden;
+        position: relative;
+      }
+
+      body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+          radial-gradient(circle at 25% 25%, rgba(0, 132, 255, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .container {
+        padding: 20px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .logo-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .logo-image {
+        width: 28px;
+        height: 28px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .logo-container:hover .logo-image {
+        transform: scale(1.1) rotate(5deg);
+      }
+
+      .logo-text {
+        font-size: 24px;
+        font-weight: 600;
+        background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .subtitle {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .dock {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin: 16px 0 20px 0;
+        padding: 12px;
+        background: var(--bg-glass);
+        backdrop-filter: blur(10px);
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-md);
+      }
+
+      .dock-item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 12px 16px;
+        border-radius: var(--radius-md);
+        min-width: 100px;
+      }
+
+      .dock-item.primary {
+        background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+        color: white;
+      }
+
+      .dock-item.primary:hover {
+        transform: scale(1.05) translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 132, 255, 0.4);
+      }
+
+      .dock-item.secondary {
+        background: var(--bg-glass);
+        border: 1px solid var(--border-color);
+      }
+
+      .dock-item.secondary:hover {
+        transform: scale(1.05) translateY(-2px);
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .dock-icon {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        transition: all 0.3s ease;
+      }
+
+      .dock-item.primary .dock-icon {
+        color: white;
+      }
+
+      .dock-item.secondary .dock-icon {
+        color: var(--text-secondary);
+      }
+
+      .dock-item:hover .dock-icon {
+        transform: scale(1.1);
+      }
+
+      .dock-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .dock-item.primary .dock-label {
+        color: white;
+      }
+
+      .dock-item.secondary .dock-label {
+        color: var(--text-primary);
+      }
+
+      .dock-shortcut {
+        font-size: 9px;
+        font-weight: 500;
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+        opacity: 0.8;
+        text-align: center;
+      }
+
+      .dock-item.primary .dock-shortcut {
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .dock-item.secondary .dock-shortcut {
+        color: var(--text-muted);
+      }
+
+      .settings-panel {
+        background: var(--bg-glass);
+        backdrop-filter: blur(10px);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        padding: 16px;
+        margin-top: 16px;
+        box-shadow: var(--shadow-md);
+      }
+
+      .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        font-size: 12px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--error-color);
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .status-dot.connected {
+        background: var(--success-color);
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+      }
+
+      .status-dot.connected::before {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        border-radius: 50%;
+        background: var(--success-color);
+        opacity: 0.2;
+        animation: statusPulse 2s infinite;
+      }
+
+      .status-dot.connecting {
+        background: var(--warning-color);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes statusPulse {
+        0%,
+        100% {
+          transform: scale(0.8);
+          opacity: 0.5;
+        }
+        50% {
+          transform: scale(1.2);
+          opacity: 0.1;
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .input-group {
+        position: relative;
+        margin-bottom: 16px;
+      }
+
+      .input-label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        font-weight: 600;
+        margin-bottom: 6px;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .input-field {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        background: rgba(255, 255, 255, 0.7);
+        transition: all 0.2s ease;
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      }
+
+      .input-field:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
+        background: white;
+      }
+
+      .preset-buttons {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .preset-btn {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 10px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: var(--text-secondary);
+        font-weight: 500;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        position: relative;
+      }
+
+      .preset-btn:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 132, 255, 0.2);
+      }
+
+      .preset-icon {
+        font-size: 12px;
+        line-height: 1;
+      }
+
+      .preset-text {
+        font-size: 9px;
+        font-weight: 600;
+        line-height: 1;
+      }
+
+      .preset-btn[title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: -35px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        white-space: nowrap;
+        z-index: 1000;
+        pointer-events: none;
+      }
+
+      .custom-dropdown {
+        position: relative;
+        width: 100%;
+      }
+
+      .dropdown-selected {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 13px;
+      }
+
+      .dropdown-selected:hover {
+        background: white;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
+      }
+
+      .dropdown-selected.active {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.1);
+      }
+
+      .dropdown-arrow {
+        margin-left: auto;
+        transition: transform 0.2s ease;
+        font-size: 10px;
+        color: var(--text-muted);
+      }
+
+      .dropdown-selected.active .dropdown-arrow {
+        transform: rotate(180deg);
+      }
+
+      .dropdown-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid var(--border-color);
+        border-top: none;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        opacity: 0;
+        transform: translateY(-8px);
+        pointer-events: none;
+        transition: all 0.2s ease;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .dropdown-options.visible {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: all;
+      }
+
+      .dropdown-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .dropdown-option:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-option:hover {
+        background: var(--bg-secondary);
+        transform: translateX(2px);
+      }
+
+      .dropdown-option.selected {
+        background: rgba(0, 132, 255, 0.1);
+        color: var(--primary-color);
+      }
+
+      .format-icon {
+        font-size: 16px;
+        width: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .format-text {
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      .format-desc {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-left: auto;
+      }
+
+      .dropdown-option.selected .format-desc {
+        color: var(--primary-color);
+        opacity: 0.8;
+      }
+
+      .status-message {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        padding: 10px 12px;
+        border-radius: var(--radius-md);
+        font-size: 12px;
+        font-weight: 500;
+        transform: translateY(10px);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1000;
+      }
+
+      .status-message.visible {
         transform: translateY(0);
         opacity: 1;
+        pointer-events: auto;
       }
-    }
 
-    .container > * {
-      animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    }
+      .status-message.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success-color);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+      }
 
-    .container > *:nth-child(1) { animation-delay: 0.1s; opacity: 0; }
-    .container > *:nth-child(2) { animation-delay: 0.2s; opacity: 0; }
-    .container > *:nth-child(3) { animation-delay: 0.3s; opacity: 0; }
-    .container > *:nth-child(4) { animation-delay: 0.4s; opacity: 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo-container">
-        <img src="icons/logo.png" alt="Wingman" class="logo-image">
-        <div class="logo-text">Wingman</div>
-      </div>
-      <div class="subtitle">UX Feedback Assistant</div>
-    </div>
-    
-    
-    <div class="dock">
-      <div class="dock-item primary" id="activateItem">
-        <div class="dock-icon">🎯</div>
-        <div class="dock-label">Start Capture</div>
-        <div class="dock-shortcut" id="shortcutText">⌘+Shift+K</div>
-      </div>
-      <div class="dock-item secondary" id="helpItem">
-        <div class="dock-icon">❓</div>
-        <div class="dock-label">Help</div>
-      </div>
-    </div>
+      .status-message.error {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--error-color);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+      }
 
-    <div class="settings-panel" id="settingsPanel">
-      <div class="connection-status">
-        <div class="status-dot" id="connectionDot"></div>
-        <span id="connectionText">Checking connection...</span>
+      @keyframes slideInUp {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .container > * {
+        animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+
+      .container > *:nth-child(1) {
+        animation-delay: 0.1s;
+        opacity: 0;
+      }
+      .container > *:nth-child(2) {
+        animation-delay: 0.2s;
+        opacity: 0;
+      }
+      .container > *:nth-child(3) {
+        animation-delay: 0.3s;
+        opacity: 0;
+      }
+      .container > *:nth-child(4) {
+        animation-delay: 0.4s;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo-container">
+          <img src="icons/logo.png" alt="Wingman" class="logo-image" />
+          <div class="logo-text">Wingman</div>
+        </div>
+        <div class="subtitle">UX Feedback Assistant</div>
       </div>
-      
-      <div class="input-group" style="margin-bottom: 12px;">
-        <label class="input-label" for="showPreviewUrl">Show Preview URL</label>
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <label class="toggle-switch">
-            <input type="checkbox" id="showPreviewUrl" checked>
-            <span class="toggle-slider"></span>
-          </label>
-          <span style="font-size: 12px; color: #64748b;">Display preview link after submission</span>
+
+      <div class="dock">
+        <div class="dock-item primary" id="activateItem">
+          <div class="dock-icon">🎯</div>
+          <div class="dock-label">Start Capture</div>
+          <div class="dock-shortcut" id="shortcutText">⌘+Shift+K</div>
+        </div>
+        <div class="dock-item secondary" id="helpItem">
+          <div class="dock-icon">❓</div>
+          <div class="dock-label">Help</div>
         </div>
       </div>
 
-      <div class="input-group" style="margin-bottom: 12px;">
-        <label class="input-label" for="copyFormat">Copy Format</label>
-        <div class="custom-dropdown" id="copyFormatDropdown">
-          <div class="dropdown-selected" id="copyFormatSelected">
-            <span class="format-icon">🤖</span>
-            <span class="format-text">Claude Code</span>
-            <span class="dropdown-arrow">▼</span>
+      <div class="settings-panel" id="settingsPanel">
+        <div class="connection-status">
+          <div class="status-dot" id="connectionDot"></div>
+          <span id="connectionText">Checking connection...</span>
+        </div>
+
+        <div class="input-group" style="margin-bottom: 12px">
+          <label class="input-label" for="showPreviewUrl">Show Preview URL</label>
+          <div style="display: flex; align-items: center; gap: 10px">
+            <label class="toggle-switch">
+              <input type="checkbox" id="showPreviewUrl" checked />
+              <span class="toggle-slider"></span>
+            </label>
+            <span style="font-size: 12px; color: #64748b"
+              >Display preview link after submission</span
+            >
           </div>
-          <div class="dropdown-options" id="copyFormatOptions">
-            <div class="dropdown-option" data-value="claude" data-icon="🤖">
+        </div>
+
+        <div class="input-group" style="margin-bottom: 12px">
+          <label class="input-label" for="copyFormat">Copy Format</label>
+          <div class="custom-dropdown" id="copyFormatDropdown">
+            <div class="dropdown-selected" id="copyFormatSelected">
               <span class="format-icon">🤖</span>
               <span class="format-text">Claude Code</span>
-              <span class="format-desc">Optimized for AI conversations</span>
+              <span class="dropdown-arrow">▼</span>
             </div>
-            <div class="dropdown-option" data-value="json" data-icon="📄">
-              <span class="format-icon">📄</span>
-              <span class="format-text">JSON</span>
-              <span class="format-desc">Raw structured data</span>
+            <div class="dropdown-options" id="copyFormatOptions">
+              <div class="dropdown-option" data-value="claude" data-icon="🤖">
+                <span class="format-icon">🤖</span>
+                <span class="format-text">Claude Code</span>
+                <span class="format-desc">Optimized for AI conversations</span>
+              </div>
+              <div class="dropdown-option" data-value="json" data-icon="📄">
+                <span class="format-icon">📄</span>
+                <span class="format-text">JSON</span>
+                <span class="format-desc">Raw structured data</span>
+              </div>
+              <div class="dropdown-option" data-value="markdown" data-icon="📝">
+                <span class="format-icon">📝</span>
+                <span class="format-text">Markdown</span>
+                <span class="format-desc">Human-readable format</span>
+              </div>
             </div>
-            <div class="dropdown-option" data-value="markdown" data-icon="📝">
-              <span class="format-icon">📝</span>
-              <span class="format-text">Markdown</span>
-              <span class="format-desc">Human-readable format</span>
-            </div>
+          </div>
+        </div>
+
+        <style>
+          .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+          }
+
+          .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+          }
+
+          .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e2e8f0;
+            transition: 0.3s;
+            border-radius: 24px;
+          }
+
+          .toggle-slider:before {
+            position: absolute;
+            content: '';
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          }
+
+          input:checked + .toggle-slider {
+            background-color: #0084ff;
+          }
+
+          input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+          }
+
+          .toggle-switch:hover .toggle-slider {
+            box-shadow: 0 0 8px rgba(0, 132, 255, 0.3);
+          }
+        </style>
+
+        <div class="input-group">
+          <label class="input-label" for="relayUrl">Relay Server URL</label>
+          <input
+            type="text"
+            id="relayUrl"
+            class="input-field"
+            placeholder="http://localhost:8787"
+          />
+          <div class="preset-buttons">
+            <button
+              class="preset-btn"
+              data-url="http://localhost:8787"
+              title="Send to local relay server on port 8787"
+            >
+              <span class="preset-icon">🏠</span>
+              <span class="preset-text">Local</span>
+            </button>
+            <button
+              class="preset-btn"
+              data-url="https://api.wingmanux.com"
+              title="Send to remote Wingman server"
+            >
+              <span class="preset-icon">🌐</span>
+              <span class="preset-text">Remote</span>
+            </button>
+            <button
+              class="preset-btn"
+              data-url="clipboard"
+              title="Copy feedback to clipboard (no server needed)"
+            >
+              <span class="preset-icon">📋</span>
+              <span class="preset-text">Copy</span>
+            </button>
           </div>
         </div>
       </div>
 
-      <style>
-        .toggle-switch {
-          position: relative;
-          display: inline-block;
-          width: 48px;
-          height: 24px;
-        }
+      <!-- Tunnel Section -->
+      <div
+        class="settings-panel"
+        id="tunnelPanel"
+        style="
+          margin-top: 16px;
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 16px;
+          background: var(--bg-glass);
+          backdrop-filter: blur(10px);
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+          "
+        >
+          <h3
+            style="
+              margin: 0;
+              font-size: 16px;
+              font-weight: 600;
+              color: var(--text-primary);
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            "
+          >
+            🚀 <span>Live Share</span>
+          </h3>
+          <span
+            id="tunnelStatus"
+            style="
+              font-size: 11px;
+              padding: 6px 10px;
+              background: rgba(239, 68, 68, 0.1);
+              color: var(--error-color);
+              border-radius: 16px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            "
+          >
+            Inactive
+          </span>
+        </div>
 
-        .toggle-switch input {
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
+        <!-- Server Configuration Section -->
+        <div style="margin-bottom: 20px">
+          <!-- Detected Server -->
+          <div id="detectedServer" style="display: none; margin-bottom: 16px">
+            <div
+              style="
+                font-size: 12px;
+                color: var(--text-secondary);
+                margin-bottom: 6px;
+                font-weight: 500;
+              "
+            >
+              Detected Local Server
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px">
+              <span
+                style="
+                  font-family: monospace;
+                  font-size: 13px;
+                  padding: 8px 12px;
+                  background: rgba(0, 132, 255, 0.1);
+                  border-radius: 8px;
+                  color: var(--primary-color);
+                  font-weight: 500;
+                "
+              >
+                <span id="detectedPort">localhost:3000</span>
+              </span>
+              <button
+                id="changePortBtn"
+                style="font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; hover:background: var(--bg-secondary);"
+              >
+                Change
+              </button>
+            </div>
+          </div>
 
-        .toggle-slider {
-          position: absolute;
-          cursor: pointer;
+          <!-- Manual Port Input (hidden by default) -->
+          <div id="manualPortInput" style="display: none; margin-bottom: 16px">
+            <div
+              style="
+                font-size: 12px;
+                color: var(--text-secondary);
+                margin-bottom: 6px;
+                font-weight: 500;
+              "
+            >
+              Target Port
+            </div>
+            <div style="display: flex; gap: 10px">
+              <input
+                type="number"
+                id="targetPort"
+                min="1"
+                max="65535"
+                placeholder="3000"
+                style="
+                  flex: 1;
+                  padding: 8px 12px;
+                  border: 1px solid var(--border-color);
+                  border-radius: 8px;
+                  font-size: 13px;
+                "
+              />
+              <button
+                id="detectPortBtn"
+                style="
+                  padding: 8px 16px;
+                  background: var(--bg-secondary);
+                  border: 1px solid var(--border-color);
+                  border-radius: 8px;
+                  font-size: 12px;
+                  cursor: pointer;
+                  font-weight: 500;
+                "
+              >
+                Auto-detect
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Share URL Section -->
+        <div id="tunnelUrlDisplay" style="display: none; margin-bottom: 20px">
+          <div
+            style="
+              font-size: 12px;
+              color: var(--text-secondary);
+              margin-bottom: 8px;
+              font-weight: 500;
+            "
+          >
+            Share URL
+          </div>
+          <div style="margin-bottom: 12px">
+            <input
+              type="text"
+              id="tunnelUrl"
+              readonly
+              style="
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--success-color);
+                border-radius: 8px;
+                font-family: monospace;
+                font-size: 12px;
+                background: rgba(16, 185, 129, 0.05);
+                box-sizing: border-box;
+              "
+            />
+          </div>
+          <div style="display: flex; gap: 10px">
+            <button
+              id="copyTunnelUrl"
+              style="
+                flex: 1;
+                padding: 8px 16px;
+                background: var(--success-color);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 12px;
+                cursor: pointer;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+              "
+            >
+              📋 <span>Copy</span>
+            </button>
+            <button
+              id="showQRCode"
+              style="
+                flex: 1;
+                padding: 8px 16px;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                font-size: 12px;
+                cursor: pointer;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+              "
+            >
+              📱 <span>QR</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tunnel Action Button -->
+        <button
+          id="tunnelActionBtn"
+          style="
+            width: 100%;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          "
+        >
+          Start Live Sharing
+        </button>
+      </div>
+
+      <!-- QR Code Modal -->
+      <div
+        id="qrModal"
+        style="
+          display: none;
+          position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background-color: #e2e8f0;
-          transition: .3s;
-          border-radius: 24px;
-        }
-
-        .toggle-slider:before {
-          position: absolute;
-          content: "";
-          height: 18px;
-          width: 18px;
-          left: 3px;
-          bottom: 3px;
-          background-color: white;
-          transition: .3s;
-          border-radius: 50%;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        input:checked + .toggle-slider {
-          background-color: #0084ff;
-        }
-
-        input:checked + .toggle-slider:before {
-          transform: translateX(24px);
-        }
-
-        .toggle-switch:hover .toggle-slider {
-          box-shadow: 0 0 8px rgba(0, 132, 255, 0.3);
-        }
-      </style>
-      
-      <div class="input-group">
-        <label class="input-label" for="relayUrl">Relay Server URL</label>
-        <input type="text" id="relayUrl" class="input-field" placeholder="http://localhost:8787">
-        <div class="preset-buttons">
-          <button class="preset-btn" data-url="http://localhost:8787" title="Send to local relay server on port 8787">
-            <span class="preset-icon">🏠</span>
-            <span class="preset-text">Local</span>
-          </button>
-          <button class="preset-btn" data-url="https://api.wingman.dev" title="Send to remote Wingman server">
-            <span class="preset-icon">🌐</span>
-            <span class="preset-text">Remote</span>
-          </button>
-          <button class="preset-btn" data-url="clipboard" title="Copy feedback to clipboard (no server needed)">
-            <span class="preset-icon">📋</span>
-            <span class="preset-text">Copy</span>
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 2000;
+          align-items: center;
+          justify-content: center;
+        "
+      >
+        <div
+          style="
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            text-align: center;
+          "
+        >
+          <h3 style="margin: 0 0 16px 0; font-size: 16px">Scan to Test on Mobile</h3>
+          <div id="qrCodeContainer" style="margin: 16px 0"></div>
+          <div
+            id="qrUrlText"
+            style="
+              font-family: monospace;
+              font-size: 11px;
+              color: var(--text-secondary);
+              margin-bottom: 16px;
+              word-break: break-all;
+            "
+          ></div>
+          <button
+            id="closeQRModal"
+            style="
+              padding: 8px 24px;
+              background: var(--bg-secondary);
+              border: 1px solid var(--border-color);
+              border-radius: 6px;
+              cursor: pointer;
+            "
+          >
+            Close
           </button>
         </div>
       </div>
 
+      <div id="status" class="status-message"></div>
     </div>
 
-    <!-- Tunnel Section -->
-    <div class="settings-panel" id="tunnelPanel" style="margin-top: 16px; border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; background: var(--bg-glass); backdrop-filter: blur(10px);">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-          🚀 <span>Live Share</span>
-        </h3>
-        <span id="tunnelStatus" style="font-size: 11px; padding: 6px 10px; background: rgba(239, 68, 68, 0.1); color: var(--error-color); border-radius: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-          Inactive
-        </span>
-      </div>
-      
-      <!-- Server Configuration Section -->
-      <div style="margin-bottom: 20px;">
-        <!-- Detected Server -->
-        <div id="detectedServer" style="display: none; margin-bottom: 16px;">
-          <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Detected Local Server</div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-family: monospace; font-size: 13px; padding: 8px 12px; background: rgba(0, 132, 255, 0.1); border-radius: 8px; color: var(--primary-color); font-weight: 500;">
-              <span id="detectedPort">localhost:3000</span>
-            </span>
-            <button id="changePortBtn" style="font-size: 11px; padding: 6px 12px; background: transparent; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; hover:background: var(--bg-secondary);">
-              Change
-            </button>
-          </div>
-        </div>
-      
-        <!-- Manual Port Input (hidden by default) -->
-        <div id="manualPortInput" style="display: none; margin-bottom: 16px;">
-          <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Target Port</div>
-          <div style="display: flex; gap: 10px;">
-            <input type="number" id="targetPort" min="1" max="65535" placeholder="3000" style="flex: 1; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 13px;">
-            <button id="detectPortBtn" style="padding: 8px 16px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 500;">
-              Auto-detect
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Share URL Section -->
-      <div id="tunnelUrlDisplay" style="display: none; margin-bottom: 20px;">
-        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500;">Share URL</div>
-        <div style="margin-bottom: 12px;">
-          <input type="text" id="tunnelUrl" readonly style="width: 100%; padding: 10px 12px; border: 1px solid var(--success-color); border-radius: 8px; font-family: monospace; font-size: 12px; background: rgba(16, 185, 129, 0.05); box-sizing: border-box;">
-        </div>
-        <div style="display: flex; gap: 10px;">
-          <button id="copyTunnelUrl" style="flex: 1; padding: 8px 16px; background: var(--success-color); color: white; border: none; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            📋 <span>Copy</span>
-          </button>
-          <button id="showQRCode" style="flex: 1; padding: 8px 16px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            📱 <span>QR</span>
-          </button>
-        </div>
-      </div>
-      
-      <!-- Tunnel Action Button -->
-      <button id="tunnelActionBtn" style="width: 100%; padding: 12px 16px; background: linear-gradient(135deg, var(--primary-color), #8b5cf6); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;">
-        Start Live Sharing
-      </button>
-    </div>
-
-    <!-- QR Code Modal -->
-    <div id="qrModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000; align-items: center; justify-content: center;">
-      <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); text-align: center;">
-        <h3 style="margin: 0 0 16px 0; font-size: 16px;">Scan to Test on Mobile</h3>
-        <div id="qrCodeContainer" style="margin: 16px 0;"></div>
-        <div id="qrUrlText" style="font-family: monospace; font-size: 11px; color: var(--text-secondary); margin-bottom: 16px; word-break: break-all;"></div>
-        <button id="closeQRModal" style="padding: 8px 24px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
-          Close
-        </button>
-      </div>
-    </div>
-    
-    <div id="status" class="status-message"></div>
-  </div>
-
-  <script type="module" src="popup.js"></script>
-</body>
+    <script type="module" src="popup.js"></script>
+  </body>
 </html>
