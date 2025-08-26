@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material/styles';
+import { colors } from './styles/theme';
 
 // Extend the theme to include custom colors
 declare module '@mui/material/styles' {
@@ -20,13 +21,13 @@ export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#0084ff',
-      dark: '#0073e6',
+      main: colors.primary,
+      dark: colors.primaryHover,
       light: 'rgba(0, 132, 255, 0.1)',
     },
     secondary: {
-      main: '#8b5cf6',
-      dark: '#7c3aed',
+      main: colors.purple,
+      dark: colors.purpleHover,
       light: 'rgba(139, 92, 246, 0.1)',
     },
     gradient: {
@@ -34,23 +35,30 @@ export const theme = createTheme({
       primaryHover: 'linear-gradient(135deg, #0073e6, #7c3aed)',
     },
     background: {
-      default: '#ffffff',
-      paper: '#f8fafc',
+      default: colors.bgPrimary,
+      paper: colors.bgPrimary,
     },
     text: {
-      primary: '#1e293b',
-      secondary: '#64748b',
-      disabled: '#94a3b8',
+      primary: colors.textPrimary,
+      secondary: colors.textSecondary,
+      disabled: colors.textMuted,
     },
-    divider: '#e2e8f0',
+    divider: colors.borderColor,
     success: {
-      main: '#10b981',
+      main: colors.success,
+      dark: colors.successHover,
     },
     error: {
-      main: '#ef4444',
+      main: colors.error,
+      dark: colors.errorHover,
     },
     warning: {
-      main: '#f59e0b',
+      main: colors.warning,
+      dark: colors.warningHover,
+    },
+    info: {
+      main: colors.info,
+      dark: colors.infoHover,
     },
   },
   typography: {
@@ -91,7 +99,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
-          backgroundColor: '#f8fafc',
+          backgroundColor: colors.bgPrimary,
         },
       },
     },
