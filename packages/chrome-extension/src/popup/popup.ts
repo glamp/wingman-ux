@@ -464,38 +464,79 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  async function getTargetPort(): Promise<number> {
+    // If manual input is shown and has a value, use that
+    if (manualPortInput.style.display !== 'none' && targetPortInput.value) {
+      return parseInt(targetPortInput.value, 10);
+    }
+    
+    // Otherwise, try to get port from current tab URL
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.url) {
+        const url = new URL(tab.url);
+        if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+          const port = parseInt(url.port, 10);
+          if (port && port > 0 && port <= 65535) {
+            // Update the detected port display
+            detectedPort.textContent = `localhost:${port}`;
+            detectedServer.style.display = 'block';
+            manualPortInput.style.display = 'none';
+            return port;
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Could not detect port from current tab:', error);
+    }
+    
+    // Default to 3000 if no port detected
+    detectedPort.textContent = 'localhost:3000';
+    detectedServer.style.display = 'block';
+    manualPortInput.style.display = 'none';
+    return 3000;
+  }
+
   async function startTunnel() {
-    const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
-    const port = parseInt(targetPortInput.value || detectedPort.textContent?.match(/\d+/)?.[0] || '3000');
+    // Get the target port from current tab URL or manual input
+    const port = await getTargetPort();
 
     tunnelActionBtn.disabled = true;
     tunnelActionBtn.textContent = 'Starting...';
+    
+    // Update status to connecting
+    tunnelStatus.textContent = 'Connecting';
+    tunnelStatus.style.background = 'rgba(245, 158, 11, 0.1)';
+    tunnelStatus.style.color = 'var(--warning-color)';
 
     try {
-      const response = await fetch(`${relayUrl}/tunnel/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetPort: port })
+      // Send message to background script to create tunnel
+      const response = await new Promise<any>((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          { type: 'TUNNEL_CREATE', targetPort: port },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(response);
+            }
+          }
+        );
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create tunnel');
-      }
-
-      const data = await response.json();
-      if (data.success) {
+      if (response.success && response.tunnel) {
         activeTunnel = {
-          sessionId: data.sessionId,
-          tunnelUrl: data.tunnelUrl,
-          targetPort: data.targetPort
+          sessionId: response.tunnel.sessionId,
+          tunnelUrl: response.tunnel.tunnelUrl,
+          targetPort: response.tunnel.targetPort
         };
 
-        // Update UI
+        // Update UI to active state
         tunnelStatus.textContent = 'Active';
         tunnelStatus.style.background = 'rgba(16, 185, 129, 0.1)';
         tunnelStatus.style.color = 'var(--success-color)';
         
-        tunnelUrlInput.value = data.tunnelUrl;
+        tunnelUrlInput.value = response.tunnel.tunnelUrl;
         tunnelUrlDisplay.style.display = 'block';
         
         tunnelActionBtn.textContent = 'Stop Sharing';
@@ -504,120 +545,197 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Save tunnel state
         await chrome.storage.local.set({ activeTunnel });
 
-        showStatus('Tunnel created successfully!', 'success');
+        showStatus('Live sharing started! 🚀', 'success');
+      } else {
+        throw new Error(response.error || 'Failed to create tunnel');
       }
     } catch (error: any) {
       console.error('Failed to create tunnel:', error);
       
-      // Provide specific error messages based on the error type
-      let errorMessage = 'Failed to create tunnel';
+      // Update UI to error state
+      tunnelStatus.textContent = 'Error';
+      tunnelStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+      tunnelStatus.style.color = 'var(--error-color)';
+      
+      let errorMessage = 'Failed to start live sharing';
       
       if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        errorMessage = 'Cannot connect to relay server. Make sure it\'s running (npm run dev)';
-      } else if (error.message?.includes('ECONNREFUSED')) {
-        errorMessage = `Relay server not responding on ${relayUrl}`;
-      } else if (error.message?.includes('INVALID_PORT')) {
-        errorMessage = 'Invalid port number. Please enter a valid port (1-65535)';
-      } else if (error.message?.includes('TUNNEL_CREATE_FAILED')) {
-        errorMessage = 'Tunnel server unavailable. Try again later';
+        errorMessage = 'Cannot connect to tunnel server. Check your internet connection';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Connection timeout. Try again later';
       } else if (error.message) {
-        errorMessage = `Tunnel error: ${error.message}`;
+        errorMessage = error.message;
       }
       
       showStatus(errorMessage, 'error');
     } finally {
       tunnelActionBtn.disabled = false;
+      
+      // Reset button if tunnel creation failed
+      if (!activeTunnel) {
+        tunnelActionBtn.textContent = 'Start Live Sharing';
+        tunnelActionBtn.style.background = 'linear-gradient(135deg, var(--primary-color), #8b5cf6)';
+      }
     }
   }
 
   async function stopTunnel() {
     if (!activeTunnel) return;
 
-    const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
     tunnelActionBtn.disabled = true;
     tunnelActionBtn.textContent = 'Stopping...';
 
     try {
-      await fetch(`${relayUrl}/tunnel/stop`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: activeTunnel.sessionId })
+      // Send message to background script to stop tunnel
+      const response = await new Promise<any>((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          { type: 'TUNNEL_STOP' },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(response);
+            }
+          }
+        );
       });
 
-      activeTunnel = null;
-
-      // Update UI
-      tunnelStatus.textContent = 'Inactive';
-      tunnelStatus.style.background = 'rgba(239, 68, 68, 0.1)';
-      tunnelStatus.style.color = 'var(--error-color)';
-      
-      tunnelUrlDisplay.style.display = 'none';
-      tunnelUrlInput.value = '';
-      
-      tunnelActionBtn.textContent = 'Start Live Sharing';
-      tunnelActionBtn.style.background = 'linear-gradient(135deg, var(--primary-color), #8b5cf6)';
-
-      // Clear saved tunnel state
-      await chrome.storage.local.remove('activeTunnel');
-
-      showStatus('Tunnel stopped', 'success');
-    } catch (error: any) {
-      console.error('Failed to stop tunnel:', error);
-      
-      // Provide helpful error message
-      let errorMessage = 'Failed to stop tunnel';
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        errorMessage = 'Lost connection to relay server. Tunnel may already be stopped';
-        // Clear the tunnel state anyway since we can't reach the server
+      if (response.success) {
+        // Clear local state
         activeTunnel = null;
+
+        // Update UI to inactive state
         tunnelStatus.textContent = 'Inactive';
         tunnelStatus.style.background = 'rgba(239, 68, 68, 0.1)';
         tunnelStatus.style.color = 'var(--error-color)';
+        
         tunnelUrlDisplay.style.display = 'none';
         tunnelUrlInput.value = '';
+        
+        tunnelActionBtn.textContent = 'Start Live Sharing';
+        tunnelActionBtn.style.background = 'linear-gradient(135deg, var(--primary-color), #8b5cf6)';
+
+        // Clear saved tunnel state
         await chrome.storage.local.remove('activeTunnel');
+
+        showStatus('Live sharing stopped', 'success');
+      } else {
+        throw new Error('Failed to stop tunnel');
       }
+    } catch (error: any) {
+      console.error('Failed to stop tunnel:', error);
       
-      showStatus(errorMessage, 'error');
+      // Clear state anyway since background script handles cleanup
+      activeTunnel = null;
+      tunnelStatus.textContent = 'Inactive';
+      tunnelStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+      tunnelStatus.style.color = 'var(--error-color)';
+      tunnelUrlDisplay.style.display = 'none';
+      tunnelUrlInput.value = '';
+      tunnelActionBtn.textContent = 'Start Live Sharing';
+      tunnelActionBtn.style.background = 'linear-gradient(135deg, var(--primary-color), #8b5cf6)';
+      await chrome.storage.local.remove('activeTunnel');
+      
+      showStatus('Tunnel stopped (connection lost)', 'success');
     } finally {
       tunnelActionBtn.disabled = false;
     }
   }
 
   async function checkTunnelStatus() {
-    const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
-    
-    // Check saved tunnel state
-    const { activeTunnel: saved } = await chrome.storage.local.get('activeTunnel');
-    
     try {
-      const response = await fetch(`${relayUrl}/tunnel/status`);
-      const data = await response.json();
-      
-      if (data.active && data.tunnels.length > 0) {
-        const tunnel = data.tunnels[0];
+      // Check tunnel status from background script
+      const response = await new Promise<any>((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          { type: 'TUNNEL_STATUS' },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(response);
+            }
+          }
+        );
+      });
+
+      if (response.tunnel) {
+        const tunnel = response.tunnel;
         activeTunnel = {
           sessionId: tunnel.sessionId,
           tunnelUrl: tunnel.tunnelUrl,
           targetPort: tunnel.targetPort
         };
 
-        // Update UI
-        tunnelStatus.textContent = 'Active';
-        tunnelStatus.style.background = 'rgba(16, 185, 129, 0.1)';
-        tunnelStatus.style.color = 'var(--success-color)';
+        // Update UI based on tunnel status
+        updateTunnelUI(tunnel.status);
         
-        tunnelUrlInput.value = tunnel.tunnelUrl;
-        tunnelUrlDisplay.style.display = 'block';
+        if (tunnel.status === 'active') {
+          tunnelUrlInput.value = tunnel.tunnelUrl;
+          tunnelUrlDisplay.style.display = 'block';
+        }
         
-        targetPortInput.value = tunnel.targetPort.toString();
+        // Update port display
         detectedPort.textContent = `localhost:${tunnel.targetPort}`;
-        
-        tunnelActionBtn.textContent = 'Stop Sharing';
-        tunnelActionBtn.style.background = 'var(--error-color)';
+        detectedServer.style.display = 'block';
+        manualPortInput.style.display = 'none';
+      } else {
+        // No active tunnel
+        activeTunnel = null;
+        updateTunnelUI('inactive');
       }
     } catch (error) {
-      console.log('No active tunnels');
+      console.log('Error checking tunnel status:', error);
+      activeTunnel = null;
+      updateTunnelUI('inactive');
+    }
+  }
+
+  function updateTunnelUI(status: string) {
+    const statusConfig = {
+      inactive: {
+        text: 'Inactive',
+        background: 'rgba(239, 68, 68, 0.1)',
+        color: 'var(--error-color)',
+        buttonText: 'Start Live Sharing',
+        buttonBg: 'linear-gradient(135deg, var(--primary-color), #8b5cf6)'
+      },
+      connecting: {
+        text: 'Connecting',
+        background: 'rgba(245, 158, 11, 0.1)',
+        color: 'var(--warning-color)',
+        buttonText: 'Connecting...',
+        buttonBg: 'var(--warning-color)'
+      },
+      active: {
+        text: 'Active',
+        background: 'rgba(16, 185, 129, 0.1)',
+        color: 'var(--success-color)',
+        buttonText: 'Stop Sharing',
+        buttonBg: 'var(--error-color)'
+      },
+      error: {
+        text: 'Error',
+        background: 'rgba(239, 68, 68, 0.1)',
+        color: 'var(--error-color)',
+        buttonText: 'Retry Sharing',
+        buttonBg: 'linear-gradient(135deg, var(--primary-color), #8b5cf6)'
+      }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.inactive;
+    
+    tunnelStatus.textContent = config.text;
+    tunnelStatus.style.background = config.background;
+    tunnelStatus.style.color = config.color;
+    
+    tunnelActionBtn.textContent = config.buttonText;
+    tunnelActionBtn.style.background = config.buttonBg;
+
+    if (status === 'active') {
+      tunnelUrlDisplay.style.display = 'block';
+    } else {
+      tunnelUrlDisplay.style.display = 'none';
+      tunnelUrlInput.value = '';
     }
   }
 
