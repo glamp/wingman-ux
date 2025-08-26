@@ -57,31 +57,83 @@ export class SessionManager {
   private async loadSessions() {
     try {
       const files = await fs.readdir(this.storagePath);
+      let loadedCount = 0;
+      let skippedCount = 0;
+      
       for (const file of files) {
         if (file.endsWith('.json')) {
-          const content = await fs.readFile(path.join(this.storagePath, file), 'utf-8');
-          const session = JSON.parse(content, (key, value) => {
-            // Revive Date objects
-            if (key === 'createdAt' || key === 'lastActivity') {
-              return new Date(value);
+          const filePath = path.join(this.storagePath, file);
+          
+          try {
+            const content = await fs.readFile(filePath, 'utf-8');
+            
+            // Validate JSON before parsing
+            let session: TunnelSession;
+            try {
+              session = JSON.parse(content, (key, value) => {
+                // Revive Date objects
+                if (key === 'createdAt' || key === 'lastActivity') {
+                  return new Date(value);
+                }
+                return value;
+              });
+            } catch (parseError: any) {
+              this.logger.warn(`Corrupted session file ${file}: ${parseError.message}`);
+              skippedCount++;
+              
+              // Optionally delete corrupted files
+              try {
+                await fs.unlink(filePath);
+                this.logger.info(`Deleted corrupted session file: ${file}`);
+              } catch (deleteError) {
+                this.logger.error(`Failed to delete corrupted file ${file}:`, deleteError);
+              }
+              continue;
             }
-            return value;
-          });
-          this.sessions.set(session.id, session);
+            
+            // Validate session structure
+            if (!session.id || !session.developerId || !session.targetPort) {
+              this.logger.warn(`Invalid session structure in ${file}, skipping`);
+              skippedCount++;
+              continue;
+            }
+            
+            this.sessions.set(session.id, session);
+            loadedCount++;
+          } catch (readError: any) {
+            this.logger.error(`Failed to read session file ${file}: ${readError.message}`);
+            skippedCount++;
+          }
         }
       }
-      this.logger.info(`Loaded ${this.sessions.size} sessions from disk`);
+      
+      this.logger.info(`Loaded ${loadedCount} sessions from disk` + 
+        (skippedCount > 0 ? ` (skipped ${skippedCount} corrupted files)` : ''));
     } catch (error) {
-      this.logger.error('Failed to load sessions:', error);
+      this.logger.error('Failed to load sessions directory:', error);
     }
   }
 
   private async saveSession(session: TunnelSession) {
     try {
       const filePath = path.join(this.storagePath, `${session.id}.json`);
-      await fs.writeFile(filePath, JSON.stringify(session, null, 2));
+      const tempPath = `${filePath}.tmp`;
+      
+      // Write to temp file first (atomic write pattern)
+      await fs.writeFile(tempPath, JSON.stringify(session, null, 2));
+      
+      // Rename temp file to final file (atomic on most filesystems)
+      await fs.rename(tempPath, filePath);
     } catch (error) {
       this.logger.error('Failed to save session:', error);
+      
+      // Clean up temp file if it exists
+      const tempPath = path.join(this.storagePath, `${session.id}.json.tmp`);
+      try {
+        await fs.unlink(tempPath);
+      } catch {
+        // Ignore cleanup errors
+      }
     }
   }
 
