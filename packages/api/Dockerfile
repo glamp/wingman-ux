@@ -8,19 +8,19 @@ WORKDIR /app
 # Copy workspace files
 COPY package*.json ./
 COPY tsconfig.json ./
-COPY packages/wingman-api/package*.json ./packages/wingman-api/
+COPY packages/api/package*.json ./packages/api/
 COPY packages/shared/package*.json ./packages/shared/
 
 # Install dependencies
-RUN npm ci --workspace=@wingman/wingman-api --workspace=@wingman/shared
+RUN npm ci --workspace=@wingman/api --workspace=@wingman/shared
 
 # Copy source code
-COPY packages/wingman-api ./packages/wingman-api
+COPY packages/api ./packages/api
 COPY packages/shared ./packages/shared
 
 # Build TypeScript
 RUN npm run build --workspace=@wingman/shared
-RUN npm run build --workspace=@wingman/wingman-api
+RUN npm run build --workspace=@wingman/api
 
 # Runtime stage
 FROM node:20-alpine
@@ -29,13 +29,13 @@ WORKDIR /app
 
 # Install production dependencies only
 COPY package*.json ./
-COPY packages/wingman-api/package*.json ./packages/wingman-api/
+COPY packages/api/package*.json ./packages/api/
 COPY packages/shared/package*.json ./packages/shared/
 
-RUN npm ci --workspace=@wingman/wingman-api --workspace=@wingman/shared --omit=dev
+RUN npm ci --workspace=@wingman/api --workspace=@wingman/shared --omit=dev
 
 # Copy built application
-COPY --from=builder /app/packages/wingman-api/dist ./packages/wingman-api/dist
+COPY --from=builder /app/packages/api/dist ./packages/api/dist
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 # Create wingman storage directory
@@ -57,4 +57,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 EXPOSE 8787
 
 # Start server
-CMD ["node", "packages/wingman-api/dist/index.js"]
+CMD ["node", "packages/api/dist/index.js"]
