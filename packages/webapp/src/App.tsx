@@ -7,7 +7,7 @@ import SessionLanding from './pages/SessionLanding';
 import ShareLanding from './pages/ShareLanding';
 import TunnelDashboard from './pages/TunnelDashboard';
 import Navigation from './components/Navigation';
-import { gradients, typography } from './styles/theme';
+import { colors, gradients, typography } from './styles/theme';
 
 /**
  * Global gradient background for all pages
@@ -37,14 +37,38 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#667eea',
+      main: colors.primary,
+      dark: colors.primaryHover,
+      light: '#4da3ff',
     },
     secondary: {
-      main: '#764ba2',
+      main: colors.purple,
+      dark: colors.purpleHover,
+      light: '#a78bfa',
+    },
+    success: {
+      main: colors.success,
+      dark: colors.successHover,
+      light: colors.emerald,
+    },
+    warning: {
+      main: colors.warning,
+      dark: colors.warningHover,
+      light: colors.amber,
+    },
+    error: {
+      main: colors.error,
+      dark: colors.errorHover,
+      light: '#f87171',
+    },
+    info: {
+      main: colors.info,
+      dark: colors.infoHover,
+      light: '#22d3ee',
     },
     background: {
-      paper: '#ffffff',
-      default: '#ffffff',
+      paper: colors.bgPrimary,
+      default: colors.bgPrimary,
     },
   },
   components: {
