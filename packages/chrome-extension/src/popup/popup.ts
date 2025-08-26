@@ -27,7 +27,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tunnelUrlDisplay = document.getElementById('tunnelUrlDisplay') as HTMLDivElement;
   const tunnelUrlInput = document.getElementById('tunnelUrl') as HTMLInputElement;
   const copyTunnelUrlBtn = document.getElementById('copyTunnelUrl') as HTMLButtonElement;
+  const createShareLinkBtn = document.getElementById('createShareLink') as HTMLButtonElement;
   const showQRCodeBtn = document.getElementById('showQRCode') as HTMLButtonElement;
+  
+  // Share URL elements
+  const shareUrlDisplay = document.getElementById('shareUrlDisplay') as HTMLDivElement;
+  const shareUrlInput = document.getElementById('shareUrl') as HTMLInputElement;
+  const copyShareUrlBtn = document.getElementById('copyShareUrl') as HTMLButtonElement;
+  const revokeShareLinkBtn = document.getElementById('revokeShareLink') as HTMLButtonElement;
   const tunnelActionBtn = document.getElementById('tunnelActionBtn') as HTMLButtonElement;
   const qrModal = document.getElementById('qrModal') as HTMLDivElement;
   const qrCodeContainer = document.getElementById('qrCodeContainer') as HTMLDivElement;
@@ -35,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const closeQRModalBtn = document.getElementById('closeQRModal') as HTMLButtonElement;
   
   let activeTunnel: { sessionId: string; tunnelUrl: string; targetPort: number } | null = null;
+  let activeShareToken: string | null = null;
 
   let saveTimeout: number | null = null;
 
@@ -447,6 +455,92 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
+    createShareLinkBtn.addEventListener('click', async () => {
+      if (!activeTunnel) {
+        showStatus('No active tunnel', 'error');
+        return;
+      }
+      
+      createShareLinkBtn.disabled = true;
+      createShareLinkBtn.textContent = 'Creating...';
+      
+      try {
+        // Get relay URL from storage
+        const { relayUrl } = await chrome.storage.sync.get({ relayUrl: 'http://localhost:8787' });
+        
+        const response = await fetch(`${relayUrl}/tunnel/share`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: activeTunnel.sessionId,
+            label: `Chrome Extension Share - ${new Date().toLocaleString()}`,
+            expiresIn: 24 // 24 hours
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create share link');
+        }
+        
+        const data = await response.json();
+        activeShareToken = data.shareToken;
+        
+        // Show the share URL section
+        shareUrlInput.value = data.shareUrl;
+        shareUrlDisplay.style.display = 'block';
+        
+        // Save share token
+        await chrome.storage.local.set({ activeShareToken });
+        
+        showStatus('Shareable link created!', 'success');
+      } catch (error) {
+        console.error('Failed to create share link:', error);
+        showStatus('Failed to create share link', 'error');
+      } finally {
+        createShareLinkBtn.disabled = false;
+        createShareLinkBtn.innerHTML = '🔗 <span>Share</span>';
+      }
+    });
+
+    copyShareUrlBtn.addEventListener('click', async () => {
+      if (shareUrlInput.value) {
+        await navigator.clipboard.writeText(shareUrlInput.value);
+        showStatus('Share link copied!', 'success');
+      }
+    });
+
+    revokeShareLinkBtn.addEventListener('click', async () => {
+      if (!activeShareToken) return;
+      
+      revokeShareLinkBtn.disabled = true;
+      
+      try {
+        const { relayUrl } = await chrome.storage.sync.get({ relayUrl: 'http://localhost:8787' });
+        
+        const response = await fetch(`${relayUrl}/tunnel/share/${activeShareToken}`, {
+          method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to revoke share link');
+        }
+        
+        // Clear share state
+        activeShareToken = null;
+        shareUrlDisplay.style.display = 'none';
+        shareUrlInput.value = '';
+        
+        await chrome.storage.local.remove('activeShareToken');
+        
+        showStatus('Share link revoked', 'success');
+      } catch (error) {
+        console.error('Failed to revoke share link:', error);
+        showStatus('Failed to revoke share link', 'error');
+      } finally {
+        revokeShareLinkBtn.disabled = false;
+      }
+    });
+
     showQRCodeBtn.addEventListener('click', async () => {
       if (tunnelUrlInput.value) {
         await showQRCode(tunnelUrlInput.value);
@@ -603,6 +697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (response.success) {
         // Clear local state
         activeTunnel = null;
+        activeShareToken = null;
 
         // Update UI to inactive state
         tunnelStatus.textContent = 'Inactive';
@@ -611,12 +706,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         tunnelUrlDisplay.style.display = 'none';
         tunnelUrlInput.value = '';
+        shareUrlDisplay.style.display = 'none';
+        shareUrlInput.value = '';
         
         tunnelActionBtn.textContent = 'Start Live Sharing';
         tunnelActionBtn.style.background = 'linear-gradient(135deg, var(--primary-color), #8b5cf6)';
 
         // Clear saved tunnel state
-        await chrome.storage.local.remove('activeTunnel');
+        await chrome.storage.local.remove(['activeTunnel', 'activeShareToken']);
 
         showStatus('Live sharing stopped', 'success');
       } else {
@@ -627,14 +724,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Clear state anyway since background script handles cleanup
       activeTunnel = null;
+      activeShareToken = null;
       tunnelStatus.textContent = 'Inactive';
       tunnelStatus.style.background = 'rgba(239, 68, 68, 0.1)';
       tunnelStatus.style.color = 'var(--error-color)';
       tunnelUrlDisplay.style.display = 'none';
       tunnelUrlInput.value = '';
+      shareUrlDisplay.style.display = 'none';
+      shareUrlInput.value = '';
       tunnelActionBtn.textContent = 'Start Live Sharing';
       tunnelActionBtn.style.background = 'linear-gradient(135deg, var(--primary-color), #8b5cf6)';
-      await chrome.storage.local.remove('activeTunnel');
+      await chrome.storage.local.remove(['activeTunnel', 'activeShareToken']);
       
       showStatus('Tunnel stopped (connection lost)', 'success');
     } finally {

@@ -3,6 +3,7 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import Home from './pages/Home';
 import AnnotationPreviewPage from './pages/AnnotationPreview';
 import SessionLanding from './pages/SessionLanding';
+import ShareLanding from './pages/ShareLanding';
 import TunnelDashboard from './pages/TunnelDashboard';
 
 const theme = createTheme({
@@ -32,8 +33,12 @@ function App() {
           {/* Annotation routes */}
           <Route path="/annotations" element={<AnnotationPreviewPage />} />
           
-          {/* Session landing page */}
+          {/* Session landing page (developer URLs) */}
           <Route path="/sessions/:sessionId" element={<SessionLanding />} />
+          <Route path="/session/:sessionId" element={<SessionLanding />} />
+          
+          {/* Share landing page (Loom-style URLs) */}
+          <Route path="/s/:shareToken" element={<ShareLanding />} />
           
           {/* Tunnel dashboard */}
           <Route path="/tunnels" element={<TunnelDashboard />} />

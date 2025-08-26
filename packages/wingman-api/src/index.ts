@@ -15,6 +15,7 @@ import { StorageService } from './services/storage';
 import { SessionManager } from './services/session-manager';
 import { ConnectionManager } from './services/connection-manager';
 import { ProxyHandler } from './services/proxy-handler';
+import { ShareManager } from './services/share-manager';
 import { createLogger } from '@wingman/shared';
 
 export interface ServerOptions {
@@ -41,6 +42,7 @@ export function createServer(options: ServerOptions = {}) {
   const sessionManager = new SessionManager(sessionsPath);
   const connectionManager = new ConnectionManager();
   const proxyHandler = new ProxyHandler(connectionManager, sessionManager);
+  const shareManager = new ShareManager(path.join(path.dirname(storagePath), 'shares'));
 
   // CORS Middleware - configured for browser extensions
   app.use(corsDebugMiddleware); // Optional: logs CORS requests when DEBUG_CORS=true
@@ -63,7 +65,7 @@ export function createServer(options: ServerOptions = {}) {
   app.use('/health', healthRouter);
   app.use('/annotations', annotationsRouter(storage));
   app.use('/mcp', mcpRouter(storage));
-  app.use('/tunnel', tunnelRouter(sessionManager, connectionManager));
+  app.use('/tunnel', tunnelRouter(sessionManager, connectionManager, shareManager));
   app.use('/api', createSessionsRouter(sessionManager));
   
   // Proxy routes for tunneled requests

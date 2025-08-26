@@ -1,6 +1,7 @@
 import express, { Router, Request, Response } from 'express';
 import { SessionManager } from '../services/session-manager';
 import { ConnectionManager } from '../services/connection-manager';
+import { ShareManager } from '../services/share-manager';
 import { createLogger } from '@wingman/shared';
 
 const logger = createLogger('Wingman:TunnelRoutes');
@@ -46,11 +47,18 @@ function cleanupStaleTunnels(sessionManager?: SessionManager) {
  * - Embedded: Uses local SessionManager (when passed)
  * - Remote: Connects to external tunnel server
  */
-export function tunnelRouter(sessionManager?: SessionManager, connectionManager?: ConnectionManager): Router {
+export function tunnelRouter(
+  sessionManager?: SessionManager, 
+  connectionManager?: ConnectionManager,
+  shareManager?: ShareManager
+): Router {
   const router = Router();
   
   // Run cleanup every 5 minutes
-  setInterval(() => cleanupStaleTunnels(sessionManager), 5 * 60 * 1000);
+  setInterval(() => {
+    cleanupStaleTunnels(sessionManager);
+    shareManager?.cleanupExpiredShares();
+  }, 5 * 60 * 1000);
 
   /**
    * POST /tunnel/create
@@ -268,6 +276,173 @@ export function tunnelRouter(sessionManager?: SessionManager, connectionManager?
     res.json({
       detected,
       suggested: detected[0] || 3000
+    });
+  });
+
+  /**
+   * POST /tunnel/share
+   * Create a shareable link for a tunnel session
+   */
+  router.post('/share', (req: Request, res: Response) => {
+    const { sessionId, label, expiresIn, maxAccesses } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        error: 'Session ID is required',
+        code: 'MISSING_SESSION_ID'
+      });
+    }
+
+    // Check if we have a share manager (embedded mode only)
+    if (!shareManager) {
+      return res.status(501).json({
+        error: 'Share links not available in remote mode',
+        code: 'SHARE_NOT_AVAILABLE'
+      });
+    }
+
+    // Check if session exists
+    if (!sessionManager || !sessionManager.getSession(sessionId)) {
+      return res.status(404).json({
+        error: 'Session not found',
+        code: 'SESSION_NOT_FOUND'
+      });
+    }
+
+    // Create share metadata
+    const metadata: any = {};
+    if (label) metadata.label = label;
+    if (expiresIn) {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + parseInt(expiresIn, 10));
+      metadata.expiresAt = expiresAt;
+    }
+    if (maxAccesses) {
+      metadata.maxAccesses = parseInt(maxAccesses, 10);
+    }
+
+    // Create share token
+    const share = shareManager.createShareToken(sessionId, metadata);
+    const shareUrl = shareManager.generateShareUrl(
+      share.token,
+      process.env.NODE_ENV === 'production' ? 'https://wingmanux.com' : `http://localhost:${process.env.PORT || '8787'}`
+    );
+
+    res.json({
+      success: true,
+      shareToken: share.token,
+      shareUrl,
+      sessionId,
+      createdAt: share.createdAt,
+      ...(metadata.expiresAt && { expiresAt: metadata.expiresAt }),
+      ...(metadata.maxAccesses && { maxAccesses: metadata.maxAccesses })
+    });
+  });
+
+  /**
+   * GET /tunnel/share/:token
+   * Get session info via share token
+   */
+  router.get('/share/:token', (req: Request, res: Response) => {
+    const { token } = req.params;
+
+    if (!shareManager) {
+      return res.status(501).json({
+        error: 'Share links not available',
+        code: 'SHARE_NOT_AVAILABLE'
+      });
+    }
+
+    const share = shareManager.getShare(token as string);
+    if (!share) {
+      return res.status(404).json({
+        error: 'Share link not found or expired',
+        code: 'SHARE_NOT_FOUND'
+      });
+    }
+
+    // Get the associated session
+    const session = sessionManager?.getSession(share.sessionId);
+    if (!session) {
+      return res.status(404).json({
+        error: 'Associated session not found',
+        code: 'SESSION_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      sessionId: session.id,
+      targetPort: session.targetPort,
+      status: session.status,
+      tunnelUrl: session.tunnelUrl,
+      createdAt: session.createdAt,
+      shareInfo: {
+        accessCount: share.accessCount,
+        lastAccessed: share.lastAccessed,
+        ...(share.metadata?.label && { label: share.metadata.label }),
+        ...(share.metadata?.expiresAt && { expiresAt: share.metadata.expiresAt })
+      }
+    });
+  });
+
+  /**
+   * DELETE /tunnel/share/:token
+   * Revoke a share link
+   */
+  router.delete('/share/:token', (req: Request, res: Response) => {
+    const { token } = req.params;
+
+    if (!shareManager) {
+      return res.status(501).json({
+        error: 'Share links not available',
+        code: 'SHARE_NOT_AVAILABLE'
+      });
+    }
+
+    const deleted = shareManager.deleteShare(token as string);
+    if (!deleted) {
+      return res.status(404).json({
+        error: 'Share link not found',
+        code: 'SHARE_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Share link revoked'
+    });
+  });
+
+  /**
+   * GET /tunnel/shares/:sessionId
+   * Get all share links for a session
+   */
+  router.get('/shares/:sessionId', (req: Request, res: Response) => {
+    const { sessionId } = req.params;
+
+    if (!shareManager) {
+      return res.status(501).json({
+        error: 'Share links not available',
+        code: 'SHARE_NOT_AVAILABLE'
+      });
+    }
+
+    const shares = shareManager.getSessionTokens(sessionId as string);
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://wingmanux.com' 
+      : `http://localhost:${process.env.PORT || '8787'}`;
+
+    res.json({
+      sessionId,
+      shares: shares.map(share => ({
+        token: share.token,
+        shareUrl: shareManager.generateShareUrl(share.token, baseUrl),
+        createdAt: share.createdAt,
+        accessCount: share.accessCount,
+        lastAccessed: share.lastAccessed,
+        ...(share.metadata?.label && { label: share.metadata.label }),
+        ...(share.metadata?.expiresAt && { expiresAt: share.metadata.expiresAt })
+      }))
     });
   });
 
