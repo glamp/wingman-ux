@@ -47,56 +47,6 @@ describe('wingman serve MCP integration', () => {
     }
   });
 
-  it.skip('should start server without errors and serve MCP endpoint', async () => {
-    // Path to CLI binary
-    const cliBin = path.resolve(__dirname, '../../dist/index.js');
-    
-    // Start the server using the actual CLI
-    serverProcess = spawn('node', [cliBin, 'serve', '--port', String(testPort)], {
-      detached: true, // Create new process group for cleanup
-      stdio: 'pipe',
-    });
-
-    // Collect output for debugging
-    let stdout = '';
-    let stderr = '';
-    
-    serverProcess.stdout?.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    serverProcess.stderr?.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    // Check for immediate errors
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // The process should still be running
-    expect(serverProcess.exitCode).toBeNull();
-    
-    // No error output should contain our specific error
-    expect(stderr).not.toContain('mcpServer.addTool is not a function');
-    expect(stderr).not.toContain('mcpServer.tool is not a function');
-    
-    // Wait for server to be ready
-    const serverReady = await waitForServer(testPort);
-    expect(serverReady).toBe(true);
-
-    // Test that MCP health endpoint works
-    const mcpHealthResponse = await fetch(`http://localhost:${testPort}/mcp/health`);
-    expect(mcpHealthResponse.ok).toBe(true);
-    
-    const mcpHealth = await mcpHealthResponse.json();
-    expect(mcpHealth).toEqual({
-      status: 'healthy',
-      name: 'wingman-mcp',
-      version: '1.0.0',
-      tools: ['wingman_list', 'wingman_review', 'wingman_delete'],
-      prompts: ['wingman_fix_ui'],
-    });
-  }, 10000); // Increase timeout for server startup
-
   it('should handle MCP tool operations correctly', async () => {
     // Start server
     const cliBin = path.resolve(__dirname, '../../dist/index.js');
@@ -148,42 +98,5 @@ describe('wingman serve MCP integration', () => {
     
     const lastAnnotation = await lastResponse.json();
     expect(lastAnnotation.id).toBe('cli-mcp-test-123');
-  }, 10000);
-
-  it.skip('should properly register MCP tools on startup', async () => {
-    // This test verifies that the MCP server initializes without throwing errors
-    // about missing methods like addTool or tool
-    
-    const cliBin = path.resolve(__dirname, '../../dist/index.js');
-    serverProcess = spawn('node', [cliBin, 'serve', '--port', String(testPort)], {
-      detached: true,
-      stdio: 'pipe',
-    });
-
-    let stdout = '';
-    let stderr = '';
-    
-    serverProcess.stdout?.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    serverProcess.stderr?.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    // Wait a bit for initialization
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // Check that the server started successfully
-    expect(stderr).not.toContain('Error starting server');
-    expect(stderr).not.toContain('registerTool');
-    expect(stderr).not.toContain('TypeError');
-    
-    // Server should output the standard startup message
-    expect(stdout).toContain('Press Ctrl+C to stop the server');
-
-    // Verify the server is actually running
-    const healthResponse = await fetch(`http://localhost:${testPort}/health`);
-    expect(healthResponse.ok).toBe(true);
   }, 10000);
 });

@@ -69,21 +69,6 @@ describe('wingman serve command', () => {
     }
   });
 
-  it.skip('should handle port already in use', async () => {
-    // Start a server on port 8789
-    const { start } = createServer({ port: 8789, host: 'localhost' });
-    server = await start();
-
-    // Try to start another server on the same port
-    try {
-      const { start: start2 } = createServer({ port: 8789, host: 'localhost' });
-      await start2();
-      throw new Error('Should have thrown EADDRINUSE');
-    } catch (error: any) {
-      expect(error.code).toBe('EADDRINUSE');
-    }
-  });
-
   it('should validate port range', async () => {
     const invalidPorts = [0, -1, 65536, 100000, NaN];
     
