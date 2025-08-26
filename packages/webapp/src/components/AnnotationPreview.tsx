@@ -12,6 +12,31 @@ interface AnnotationPreviewProps {
 function AnnotationPreview({ annotation }: AnnotationPreviewProps) {
   const { annotation: data } = annotation;
 
+  // Check for malformed annotation data
+  if (!data || !data.page || !data.target || !data.media) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 3 }}>
+        <Paper sx={{ p: 3 }} elevation={1}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box 
+              component="img" 
+              src="/wingman.png" 
+              alt="Wingman"
+              sx={{ width: 40, height: 40 }}
+            />
+            <Typography variant="h5" color="error.main">
+              Malformed Annotation Data
+            </Typography>
+          </Box>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+            This annotation appears to have an invalid or outdated format and cannot be displayed properly.
+            Please create a new annotation using the Chrome extension.
+          </Typography>
+        </Paper>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       {/* Header Section */}
@@ -81,7 +106,11 @@ function AnnotationPreview({ annotation }: AnnotationPreviewProps) {
             <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
               <Typography variant="h6">Screenshot</Typography>
               <Typography variant="body2" color="text.secondary">
-                Target highlighted: {data.target.rect.width}×{data.target.rect.height} at ({data.target.rect.x}, {data.target.rect.y})
+                {data.target.rect ? (
+                  `Target highlighted: ${data.target.rect.width}×${data.target.rect.height} at (${data.target.rect.x}, ${data.target.rect.y})`
+                ) : (
+                  'Target area: Full page'
+                )}
               </Typography>
             </Box>
             <Box sx={{ p: 1 }}>

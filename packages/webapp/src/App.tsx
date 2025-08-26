@@ -1,11 +1,37 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider, createTheme, CssBaseline, Box } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import Home from './pages/Home';
 import AnnotationPreviewPage from './pages/AnnotationPreview';
 import SessionLanding from './pages/SessionLanding';
 import ShareLanding from './pages/ShareLanding';
 import TunnelDashboard from './pages/TunnelDashboard';
 import Navigation from './components/Navigation';
+import { gradients, typography } from './styles/theme';
+
+/**
+ * Global gradient background for all pages
+ */
+const GradientBackground = styled(Box)({
+  background: gradients.background,
+  minHeight: '100vh',
+  position: 'relative',
+  fontFamily: typography.fontFamily,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundImage: `
+      radial-gradient(circle at 25% 25%, rgba(0, 132, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)
+    `,
+    pointerEvents: 'none',
+    zIndex: 0,
+  },
+});
 
 const theme = createTheme({
   palette: {
@@ -15,6 +41,29 @@ const theme = createTheme({
     },
     secondary: {
       main: '#764ba2',
+    },
+    background: {
+      paper: '#ffffff',
+      default: '#ffffff',
+    },
+  },
+  components: {
+    MuiPaper: {
+      defaultProps: {
+        elevation: 0,
+      },
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+          backgroundColor: '#ffffff',
+        },
+        elevation0: {
+          backgroundColor: '#ffffff',
+        },
+        elevation1: {
+          backgroundColor: '#ffffff',
+        },
+      },
     },
   },
   typography: {
@@ -34,7 +83,7 @@ function AppLayout() {
                          location.pathname.startsWith('/s/');
 
   return (
-    <>
+    <GradientBackground>
       {!hideNavigation && <Navigation />}
       <Routes>
         {/* Home page */}
@@ -67,7 +116,7 @@ function AppLayout() {
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </GradientBackground>
   );
 }
 

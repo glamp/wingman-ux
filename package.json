@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "concurrently -n \"api,webapp,ext,react-app\" -c \"blue,cyan,green,yellow\" \"npm run dev:api\" \"npm run dev:webapp\" \"npm run dev:extension\" \"npm run dev:react-app\"",
-    "dev:api": "cd packages/api && npm run dev",
+    "dev:api": "NODE_ENV=development cd packages/api && npm run dev",
     "dev:webapp": "cd packages/webapp && npm run dev",
     "dev:extension": "cd packages/extension && npm run dev",
     "dev:react-app": "cd examples/react-app && npm run dev",

@@ -81,6 +81,24 @@ const NavLogo = styled(Box)({
   },
 });
 
+/**
+ * Sign in button with gradient accent styling
+ */
+const SignInButton = styled(Box)({
+  padding: '12px 20px',
+  borderRadius: '24px',
+  cursor: 'pointer',
+  background: gradients.primary,
+  color: 'white',
+  fontWeight: 600,
+  marginLeft: '8px',
+  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+  '&:hover': {
+    transform: 'scale(1.05)',
+    boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
+  },
+});
+
 interface NavItemData {
   path: string;
   label: string;
@@ -124,6 +142,10 @@ export default function Navigation() {
             <NavText>{item.label}</NavText>
           </NavItem>
         ))}
+        
+        <SignInButton onClick={() => console.log('Sign in clicked')}>
+          <NavText>Sign In</NavText>
+        </SignInButton>
       </NavPill>
     </NavContainer>
   );

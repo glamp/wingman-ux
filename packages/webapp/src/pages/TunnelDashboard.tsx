@@ -1,34 +1,28 @@
-import { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Paper,
+import { Add, ContentCopy, Delete, Launch, Refresh } from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Button,
-  IconButton,
-  Chip,
-  Alert,
   TextField,
-  Grid,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress
+  Typography,
 } from '@mui/material';
-import { 
-  Refresh, 
-  Delete, 
-  Add,
-  ContentCopy,
-  Launch
-} from '@mui/icons-material';
+import { useEffect, useState } from 'react';
+import WhiteCard from '../components/WhiteCard';
 
 interface Session {
   id: string;
@@ -83,9 +77,9 @@ export default function TunnelDashboard() {
           developerId: 'webapp-user',
           targetPort: parseInt(targetPort),
           metadata: {
-            createdFrom: 'webapp-dashboard'
-          }
-        })
+            createdFrom: 'webapp-dashboard',
+          },
+        }),
       });
 
       if (!response.ok) {
@@ -95,7 +89,7 @@ export default function TunnelDashboard() {
       const data = await response.json();
       setCreateDialogOpen(false);
       fetchSessions();
-      
+
       // Copy URL to clipboard
       if (data.tunnelUrl) {
         await navigator.clipboard.writeText(data.tunnelUrl);
@@ -110,7 +104,7 @@ export default function TunnelDashboard() {
   const handleDeleteSession = async (sessionId: string) => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       });
 
       if (!response.ok) {
@@ -141,7 +135,7 @@ export default function TunnelDashboard() {
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);
-    
+
     if (minutes < 1) return 'Just now';
     if (minutes < 60) return `${minutes} min ago`;
     if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
@@ -151,21 +145,18 @@ export default function TunnelDashboard() {
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Tunnel Sessions
-          </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               startIcon={loading ? <CircularProgress size={20} /> : <Refresh />}
               onClick={fetchSessions}
               disabled={loading}
             >
               Refresh
             </Button>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               startIcon={<Add />}
               onClick={() => setCreateDialogOpen(true)}
             >
@@ -183,38 +174,61 @@ export default function TunnelDashboard() {
         {/* Stats */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <div style={{ 
+              backgroundColor: '#FFFFFF',
+              padding: '24px',
+              textAlign: 'center',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+            }}>
               <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>
                 {sessions.length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Total Sessions
               </Typography>
-            </Paper>
+            </div>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <div style={{ 
+              backgroundColor: '#FFFFFF',
+              padding: '24px',
+              textAlign: 'center',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+            }}>
               <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
-                {sessions.filter(s => s.status === 'active').length}
+                {sessions.filter((s) => s.status === 'active').length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Active Sessions
               </Typography>
-            </Paper>
+            </div>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <div style={{ 
+              backgroundColor: '#FFFFFF',
+              padding: '24px',
+              textAlign: 'center',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+            }}>
               <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700 }}>
-                {sessions.filter(s => s.status === 'pending').length}
+                {sessions.filter((s) => s.status === 'pending').length}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Pending Sessions
               </Typography>
-            </Paper>
+            </div>
           </Grid>
         </Grid>
 
-        <Paper elevation={2}>
+        <div style={{ 
+          backgroundColor: '#FFFFFF',
+          borderRadius: '4px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+          overflow: 'hidden'
+        }}>
           <TableContainer>
             <Table>
               <TableHead>
@@ -232,7 +246,9 @@ export default function TunnelDashboard() {
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                       <Typography color="text.secondary">
-                        {loading ? 'Loading sessions...' : 'No active sessions. Create one to get started.'}
+                        {loading
+                          ? 'Loading sessions...'
+                          : 'No active sessions. Create one to get started.'}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -246,18 +262,18 @@ export default function TunnelDashboard() {
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
+                          <Typography
+                            variant="body2"
+                            sx={{
                               fontFamily: 'monospace',
-                              fontSize: '0.875rem'
+                              fontSize: '0.875rem',
                             }}
                           >
                             {session.tunnelUrl || 'No tunnel URL'}
                           </Typography>
                           {session.tunnelUrl && (
-                            <IconButton 
-                              size="small" 
+                            <IconButton
+                              size="small"
                               onClick={() => handleCopyUrl(session)}
                               title="Copy URL"
                             >
@@ -270,21 +286,25 @@ export default function TunnelDashboard() {
                         <Chip label={`localhost:${session.targetPort}`} size="small" />
                       </TableCell>
                       <TableCell>
-                        <Chip 
+                        <Chip
                           label={session.status}
                           size="small"
-                          color={session.status === 'active' ? 'success' : session.status === 'pending' ? 'warning' : 'default'}
+                          color={
+                            session.status === 'active'
+                              ? 'success'
+                              : session.status === 'pending'
+                                ? 'warning'
+                                : 'default'
+                          }
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
-                          {formatDate(session.createdAt)}
-                        </Typography>
+                        <Typography variant="body2">{formatDate(session.createdAt)}</Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           {session.tunnelUrl && (
-                            <IconButton 
+                            <IconButton
                               size="small"
                               onClick={() => window.open(session.tunnelUrl, '_blank')}
                               title="Open tunnel"
@@ -292,7 +312,7 @@ export default function TunnelDashboard() {
                               <Launch />
                             </IconButton>
                           )}
-                          <IconButton 
+                          <IconButton
                             size="small"
                             color="error"
                             onClick={() => handleDeleteSession(session.id)}
@@ -308,7 +328,7 @@ export default function TunnelDashboard() {
               </TableBody>
             </Table>
           </TableContainer>
-        </Paper>
+        </div>
       </Box>
 
       {/* Create Session Dialog */}
@@ -327,11 +347,9 @@ export default function TunnelDashboard() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            variant="contained" 
+          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
             onClick={handleCreateSession}
             disabled={!targetPort || isNaN(parseInt(targetPort))}
           >

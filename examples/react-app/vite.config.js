@@ -13,8 +13,9 @@ export default defineConfig({
       '.wingman-tunnel.fly.dev' // Allow tunnel server subdomains
     ],
     cors: true, // Enable CORS for all origins
-    hmr: {
+    // Only set HMR clientPort for tunnels, not local dev
+    hmr: process.env.TUNNEL_MODE === 'tunnel' ? {
       clientPort: 443 // Configure HMR for HTTPS tunnels
-    }
+    } : {}
   }
 })

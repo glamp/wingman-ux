@@ -1,27 +1,26 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Box, 
-  CircularProgress, 
-  Alert, 
-  Typography,
-  Paper,
+import { ArrowBack, Search, Visibility } from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Container,
+  InputAdornment,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Button,
-  Chip,
   TextField,
-  InputAdornment,
-  Grid
+  Typography,
 } from '@mui/material';
-import { Search, Visibility, ArrowBack } from '@mui/icons-material';
 import type { StoredAnnotation } from '@wingman/shared';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AnnotationPreview from '../components/AnnotationPreview';
+import WhiteCard from '../components/WhiteCard';
 import { apiFetch } from '../config/api';
 
 interface AnnotationListItem {
@@ -67,7 +66,7 @@ export default function AnnotationPreviewPage() {
     try {
       setLoading(true);
       const response = await apiFetch('annotations?limit=50');
-      
+
       if (!response.ok) {
         throw new Error(`Failed to load annotations: ${response.statusText}`);
       }
@@ -85,7 +84,7 @@ export default function AnnotationPreviewPage() {
     try {
       setLoading(true);
       const response = await apiFetch(`annotations/${annotationId}/preview-data`);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           setError(`Annotation with ID "${annotationId}" not found`);
@@ -104,9 +103,10 @@ export default function AnnotationPreviewPage() {
     }
   };
 
-  const filteredAnnotations = annotations.filter(annotation => 
-    (annotation.annotation?.comment || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (annotation.annotation?.url || '').toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredAnnotations = annotations.filter(
+    (annotation) =>
+      (annotation.annotation?.comment || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (annotation.annotation?.url || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatDate = (dateString: string) => {
@@ -116,12 +116,14 @@ export default function AnnotationPreviewPage() {
   if (loading) {
     return (
       <Container maxWidth="lg">
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: '100vh' 
-        }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '100vh',
+          }}
+        >
           <CircularProgress size={60} />
         </Box>
       </Container>
@@ -139,8 +141,8 @@ export default function AnnotationPreviewPage() {
             {error}
           </Alert>
           {!isListView && (
-            <Button 
-              startIcon={<ArrowBack />} 
+            <Button
+              startIcon={<ArrowBack />}
               onClick={() => navigate('/annotations')}
               sx={{ mt: 2 }}
             >
@@ -156,11 +158,7 @@ export default function AnnotationPreviewPage() {
   if (!isListView && annotation) {
     return (
       <Container maxWidth="xl" sx={{ py: 3 }}>
-        <Button 
-          startIcon={<ArrowBack />} 
-          onClick={() => navigate('/annotations')}
-          sx={{ mb: 2 }}
-        >
+        <Button startIcon={<ArrowBack />} onClick={() => navigate('/annotations')} sx={{ mb: 2 }}>
           Back to Annotations
         </Button>
         <AnnotationPreview annotation={annotation} />
@@ -171,17 +169,13 @@ export default function AnnotationPreviewPage() {
   // List view
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Annotations
-      </Typography>
-      
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={6}>
+      <WhiteCard sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <TextField
-            fullWidth
             placeholder="Search annotations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{ minWidth: '300px' }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -190,33 +184,31 @@ export default function AnnotationPreviewPage() {
               ),
             }}
           />
-        </Grid>
-        <Grid item xs={12} md={6}>
           <Typography variant="body1" color="text.secondary">
-            {filteredAnnotations.length} annotation{filteredAnnotations.length !== 1 ? 's' : ''} found
+            {filteredAnnotations.length} annotation{filteredAnnotations.length !== 1 ? 's' : ''}{' '}
+            found
           </Typography>
-        </Grid>
-      </Grid>
+        </Box>
+      </WhiteCard>
 
       {filteredAnnotations.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
+        <WhiteCard sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="h6" gutterBottom>
             {searchQuery ? 'No matching annotations found' : 'No annotations yet'}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            {searchQuery 
+            {searchQuery
               ? 'Try adjusting your search terms'
-              : 'Annotations will appear here when captured with the Chrome extension'
-            }
+              : 'Annotations will appear here when captured with the Chrome extension'}
           </Typography>
           {searchQuery && (
             <Button onClick={() => setSearchQuery('')} sx={{ mt: 2 }}>
               Clear Search
             </Button>
           )}
-        </Paper>
+        </WhiteCard>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer component={WhiteCard}>
           <Table>
             <TableHead>
               <TableRow>
@@ -246,16 +238,14 @@ export default function AnnotationPreviewPage() {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Chip 
-                      label={annotation.annotation?.type || 'click'} 
-                      size="small" 
+                    <Chip
+                      label={annotation.annotation?.type || 'click'}
+                      size="small"
                       variant="outlined"
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
-                      {formatDate(annotation.receivedAt)}
-                    </Typography>
+                    <Typography variant="body2">{formatDate(annotation.receivedAt)}</Typography>
                   </TableCell>
                   <TableCell>
                     <Button

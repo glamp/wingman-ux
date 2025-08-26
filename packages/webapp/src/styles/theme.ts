@@ -21,6 +21,7 @@ export const gradients = {
   primary: 'linear-gradient(135deg, #0084ff, #8b5cf6)',
   background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
   text: 'linear-gradient(135deg, #0084ff, #8b5cf6)',
+  card: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #ffffff 100%)',
 };
 
 export const effects = {
@@ -37,6 +38,12 @@ export const effects = {
     background: 'rgba(255, 255, 255, 0.05)',
     backdropFilter: 'blur(10px)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
+  },
+  cardGradient: {
+    background: '#ffffff',
+    backgroundColor: '#ffffff',
+    border: 'none',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
   },
 };
 
