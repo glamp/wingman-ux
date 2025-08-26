@@ -25,9 +25,9 @@ const StatusCard = styled(Box)(({ theme }) => ({
     top: 0,
     left: 0,
     right: 0,
-    height: '2px',
+    height: '4px',
     background: gradients.primary,
-    opacity: 0.8,
+    opacity: 0.9,
   },
   // Mobile responsive styles
   '@media (max-width: 600px)': {

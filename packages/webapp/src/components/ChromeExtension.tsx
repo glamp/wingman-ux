@@ -162,10 +162,12 @@ export default function ChromeExtension() {
 
   return (
     <Box sx={{ margin: '60px auto 50px', maxWidth: '700px' }}>
-      <GradientHeading variant="h2">
-        <Extension sx={{ fontSize: '1em', verticalAlign: 'middle', mr: 1 }} />
-        Chrome Extension
-      </GradientHeading>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 1.5 }}>
+        <Extension sx={{ fontSize: '2.5rem', color: colors.textPrimary }} />
+        <GradientHeading variant="h2" sx={{ margin: 0 }}>
+          Chrome Extension
+        </GradientHeading>
+      </Box>
       
       <Typography 
         variant="body1" 

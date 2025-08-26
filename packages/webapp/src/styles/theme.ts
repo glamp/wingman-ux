@@ -76,6 +76,6 @@ export const animations = {
 };
 
 export const typography = {
-  fontFamily: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`,
-  mono: `'Courier New', monospace`,
+  fontFamily: `'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`,
+  mono: `'Space Mono', 'Courier New', monospace`,
 };

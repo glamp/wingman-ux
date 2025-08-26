@@ -180,6 +180,40 @@ export default function TunnelDashboard() {
           </Alert>
         )}
 
+        {/* Stats */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={4}>
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>
+                {sessions.length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Sessions
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
+                {sessions.filter(s => s.status === 'active').length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Active Sessions
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700 }}>
+                {sessions.filter(s => s.status === 'pending').length}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Pending Sessions
+              </Typography>
+            </Paper>
+          </Grid>
+        </Grid>
+
         <Paper elevation={2}>
           <TableContainer>
             <Table>
@@ -275,40 +309,6 @@ export default function TunnelDashboard() {
             </Table>
           </TableContainer>
         </Paper>
-
-        {/* Stats */}
-        <Grid container spacing={3} sx={{ mt: 3 }}>
-          <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" color="primary">
-                {sessions.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Sessions
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main">
-                {sessions.filter(s => s.status === 'active').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Active Sessions
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Paper sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main">
-                {sessions.filter(s => s.status === 'pending').length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Pending Sessions
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
       </Box>
 
       {/* Create Session Dialog */}

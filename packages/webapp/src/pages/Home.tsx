@@ -37,37 +37,62 @@ const AnimatedContainer = styled(Container)({
   animation: 'fadeIn 0.8s ease-out',
   position: 'relative',
   zIndex: 1,
-  paddingTop: '60px',
-  paddingBottom: '60px',
+  paddingTop: '40px',
+  paddingBottom: '40px',
 });
 
 /**
- * Logo container with frosted glass effect
+ * Logo and brand container - horizontal SaaS style with animation
+ */
+const LogoBrandContainer = styled(Box)({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '16px',
+  marginBottom: '24px',
+  position: 'relative',
+});
+
+/**
+ * Logo container - prominent size with animation
  */
 const LogoContainer = styled(Box)({
-  width: '120px',
-  height: '120px',
-  margin: '0 auto 30px',
+  width: '100px',
+  height: '100px',
   ...effects.frostedGlass,
-  borderRadius: '24px',
+  borderRadius: '20px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   padding: '20px',
+  animation: 'slideInLogo 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+  opacity: 0,
+  cursor: 'pointer',
+  transition: 'transform 0.3s ease',
+  '&:hover': {
+    transform: 'scale(1.05) rotate(5deg)',
+  },
 });
 
 /**
- * Main heading with gradient text
+ * Main heading with gradient text - inline with logo and animated
  */
 const GradientHeading = styled(Typography)({
   fontSize: '3em',
-  marginBottom: '20px',
   fontWeight: 700,
   letterSpacing: '-1px',
   background: gradients.text,
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   backgroundClip: 'text',
+  margin: 0,
+  animation: 'slideInText 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards',
+  opacity: 0,
+  cursor: 'pointer',
+  transition: 'transform 0.3s ease',
+  '&:hover': {
+    transform: 'scale(1.05)',
+  },
 });
 
 /**
@@ -75,10 +100,10 @@ const GradientHeading = styled(Typography)({
  */
 const NavCards = styled(Box)({
   display: 'flex',
-  gap: '24px',
+  gap: '20px',
   justifyContent: 'center',
-  marginTop: '40px',
-  marginBottom: '40px',
+  marginTop: '32px',
+  marginBottom: '32px',
   flexWrap: 'wrap',
 });
 
@@ -87,14 +112,14 @@ const NavCards = styled(Box)({
  */
 const NavCard = styled(Box)({
   ...effects.glassmorphism,
-  borderRadius: '16px',
-  padding: '24px',
+  borderRadius: '12px',
+  padding: '20px',
   cursor: 'pointer',
   transition: 'all 0.3s ease',
-  minWidth: '200px',
+  minWidth: '160px',
   '&:hover': {
-    transform: 'translateY(-4px) scale(1.02)',
-    boxShadow: '0 12px 40px rgba(0, 132, 255, 0.2)',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 24px rgba(0, 132, 255, 0.15)',
   },
 });
 
@@ -102,19 +127,70 @@ const NavCard = styled(Box)({
  * Example callsign chip
  */
 const CallsignChip = styled(Chip)({
-  padding: '8px 16px',
+  padding: '4px 12px',
   background: colors.bgSecondary,
-  borderRadius: '8px',
+  borderRadius: '6px',
   fontFamily: typography.mono,
-  fontSize: '0.9em',
+  fontSize: '0.8em',
   border: `1px solid ${colors.borderColor}`,
   color: colors.textPrimary,
-  margin: '4px',
+  margin: '2px',
+  height: '24px',
 });
 
-// Add fadeIn animation to document
+// Add animations to document
 const style = document.createElement('style');
-style.textContent = animations.fadeIn;
+style.textContent = `
+  ${animations.fadeIn}
+  
+  @keyframes slideInLogo {
+    0% {
+      transform: translateX(-60px) rotate(-10deg) scale(0.8);
+      opacity: 0;
+    }
+    60% {
+      transform: translateX(10px) rotate(2deg) scale(1.05);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(0) rotate(0deg) scale(1);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideInText {
+    0% {
+      transform: translateX(40px) scale(0.95);
+      opacity: 0;
+    }
+    60% {
+      transform: translateX(-5px) scale(1.02);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes pulseGlow {
+    0%, 100% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.1) drop-shadow(0 0 20px rgba(102, 126, 234, 0.4));
+    }
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+`;
 if (!document.querySelector('style[data-wingman-animations]')) {
   style.setAttribute('data-wingman-animations', 'true');
   document.head.appendChild(style);
@@ -128,25 +204,27 @@ export default function Home() {
 
   return (
     <GradientBackground>
-      <AnimatedContainer maxWidth="lg">
-        {/* Logo and Title */}
-        <LogoContainer>
-          <img 
-            src="/wingman.png" 
-            alt="Wingman"
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          />
-        </LogoContainer>
-        
-        <GradientHeading variant="h1">
-          Wingman
-        </GradientHeading>
+      <AnimatedContainer maxWidth="md">
+        {/* Logo and Title - Horizontal SaaS Style */}
+        <LogoBrandContainer>
+          <LogoContainer>
+            <img 
+              src="/wingman.png" 
+              alt="Wingman"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          </LogoContainer>
+          
+          <GradientHeading variant="h1">
+            Wingman
+          </GradientHeading>
+        </LogoBrandContainer>
         
         <Typography 
-          variant="h5" 
+          variant="h6" 
           sx={{ 
-            fontSize: '1.4em',
-            marginBottom: '40px',
+            fontSize: '1.1em',
+            marginBottom: '32px',
             color: colors.textSecondary,
             fontWeight: 300
           }}
@@ -190,42 +268,10 @@ export default function Home() {
         {/* Chrome Extension Section */}
         <ChromeExtension />
 
-        {/* Aviation Callsigns */}
-        <Box sx={{ mt: 6, mb: 4 }}>
-          <Typography variant="body2" sx={{ color: colors.textMuted, mb: 2 }}>
-            Example session IDs:
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 1 }}>
-            <CallsignChip label="ghost-whiskey" />
-            <CallsignChip label="falcon-tango" />
-            <CallsignChip label="eagle-foxtrot" />
-            <CallsignChip label="hawk-sierra" />
-          </Box>
-        </Box>
-
         {/* Footer */}
-        <Box sx={{ mt: 8, color: colors.textMuted, fontSize: '0.95em' }}>
-          <Typography variant="body2">
-            Server running at{' '}
-            <Box component="span" sx={{ color: colors.primary, fontWeight: 500 }}>
-              {window.location.origin}
-            </Box>
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1 }}>
-            <a 
-              href="https://github.com/glamp/wingman-ux" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{ 
-                color: colors.primary, 
-                textDecoration: 'none',
-                borderBottom: '1px solid transparent'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.borderBottomColor = colors.primary}
-              onMouseLeave={(e) => e.currentTarget.style.borderBottomColor = 'transparent'}
-            >
-              View on GitHub
-            </a>
+        <Box sx={{ mt: 8, textAlign: 'center' }}>
+          <Typography variant="body2" sx={{ color: colors.textMuted, fontSize: '0.85em' }}>
+            Wingman · {new Date().getFullYear()} · Made in USA 🇺🇸
           </Typography>
         </Box>
       </AnimatedContainer>
