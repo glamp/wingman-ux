@@ -2,47 +2,65 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Development Server Management
-
-Wingman uses an intelligent development server manager that prevents duplicate processes and provides clear status information.
+## Development Workflow
 
 ### Quick Start
 ```bash
-npm run dev        # Start all services (checks for existing processes)
-npm run dev:status # Check what's running
-npm run dev:stop   # Stop all services
-npm run dev:restart # Restart all services
+# Install dependencies
+npm install
+
+# Start all services (API, webapp, extension, react-app)
+npm run dev
+
+# Check what's running
+npm run dev:status
+
+# Stop everything
+npm run dev:stop
 ```
 
-### How It Works
-1. **Before Starting**: Checks if services are already running via PID files
-2. **Port Detection**: Verifies ports are available before attempting to start
-3. **Process Tracking**: Maintains PID files in `.wingman-dev/pids/`
-4. **Status Monitoring**: Run `npm run dev:status` to see what's running
-5. **Automatic Cleanup**: Removes PID files on normal exit
+### Service Management
+The monorepo uses `concurrently` to run multiple services in parallel:
+- **API** (blue): Backend server on port 8787
+- **Webapp** (cyan): Web interface on port 3001  
+- **Extension** (green): Chrome extension build watcher
+- **React-app** (yellow): Example React app on port 5173
 
-### For Claude Code Sessions
-- **ALWAYS** run `npm run dev:status` first to check current state
-- If services are already running, you'll see a clear status table
-- The system prevents duplicate processes automatically
-- PID files persist across Claude Code sessions
-- If you see "port already in use" errors, check status first
+### Individual Services
+```bash
+npm run dev:api        # Just the API server
+npm run dev:webapp     # Just the web app
+npm run dev:extension  # Just extension builds
+npm run dev:react-app  # Just the example React app
+npm run dev:backend    # API only (alias)
+npm run dev:frontend   # Webapp + Extension
+```
+
+### Environment Configuration
+- Copy `.env.defaults` to `.env` for custom configuration
+- Default ports and settings are in `.env.defaults`
+- Each package can have its own `.env` file
 
 ### Directory Structure
-- `.wingman-dev/` - Development server management (PID files, status)
-- `.wingman/` - Wingman feature data (annotations storage)
-
-### Troubleshooting
-- If a service crashes but PID file remains: `npm run dev:stop` then `npm run dev`
-- To force restart: `npm run dev:restart`
-- Check individual service logs in terminal output
+```
+packages/
+├── api/          # Backend server
+├── webapp/       # Web interface
+├── extension/    # Chrome extension
+├── sdk/          # React SDK
+└── cli/          # NPM CLI package
+examples/
+└── react-app/    # Demo application
+```
 
 ## Project Overview
 
-Wingman is a lightweight UX feedback assistant consisting of:
-- Chrome Extension for capturing screenshots and context
-- Optional Web SDK for React metadata
-- Local Relay Server that forwards feedback to Claude Code
+Wingman is a lightweight UX feedback assistant with simplified package naming:
+- **api**: Backend server with tunnel and MCP support
+- **webapp**: Web interface and landing pages
+- **extension**: Chrome extension for feedback capture
+- **sdk**: React SDK for enhanced metadata
+- **cli**: NPM package for `wingman` command
 
 ## Architecture
 
@@ -58,13 +76,11 @@ All packages share TypeScript types, with `WingmanAnnotation` as the single sour
 
 1. **Shared Types**: Never duplicate types across packages. The `WingmanAnnotation` interface is the single source of truth for the payload structure.
 
-2. **Build Approach**: Development starts from a demo React app, then Wingman functionality is built into it incrementally.
+2. **TypeScript**: Use strict TypeScript configuration for all packages.
 
-3. **TypeScript**: Use strict TypeScript configuration for all packages.
+3. **Simplicity**: Keep code as simple as possible while meeting requirements.
 
-4. **Simplicity**: Keep code as simple as possible while meeting requirements.
-
-5. **Incremental Development**: Work in small, testable steps. Get minimal functionality working first (e.g., just screenshot capture), then layer on features one at a time.
+4. **Incremental Development**: Work in small, testable steps. Get minimal functionality working first (e.g., just screenshot capture), then layer on features one at a time.
 
 ## Core Components
 
@@ -101,10 +117,28 @@ All packages share TypeScript types, with `WingmanAnnotation` as the single sour
 
 ## Development Commands
 
-### Build Commands
-- Each package has `npm run build` and `npm run dev` (watch mode with HMR for servers)
-- Root-level `npm run build` runs all sub-package builds
-- Use npm workspaces for monorepo management
+### Root-Level Commands
+```bash
+# Development
+npm run dev              # Start all services
+npm run dev:status       # Check running services
+npm run dev:stop         # Stop all services
+npm run dev:restart      # Restart services
+
+# Building
+npm run build            # Build all packages
+npm run build:extension  # Build Chrome extension only
+
+# Testing
+npm test                 # Run all tests
+npm run test:coverage    # With coverage report
+
+# Releases
+npm run release:build    # Build all releases
+npm run release:chrome   # Chrome extension only
+npm run release:cli      # CLI package only
+npm run release:sdk      # SDK package only
+```
 
 ### Testing
 
@@ -144,7 +178,7 @@ All packages share TypeScript types, with `WingmanAnnotation` as the single sour
 
 **For Personal Chrome Development (macOS)**:
 ```bash
-cd packages/chrome-extension
+cd packages/extension
 
 # Quick start: Build and launch Chrome with extension loaded
 npm run dev:chrome:personal
@@ -158,7 +192,7 @@ npm run dev:chrome:fresh
 
 **For Advanced Testing with Playwright MCP**:
 ```bash
-cd packages/chrome-extension
+cd packages/extension
 
 # One-time setup: Install Playwright MCP dependencies
 npm run dev:playwright:setup
@@ -171,15 +205,18 @@ npm run dev:playwright:test:ui
 ```
 
 #### Manual Loading (Fallback)
-- Load unpacked extension from `packages/chrome-extension/dist` in Chrome
-- Use `npm run dev` in chrome-extension package for development
+1. Build the extension: `cd packages/extension && npm run build`
+2. Open Chrome → `chrome://extensions/`
+3. Enable "Developer mode"
+4. Click "Load unpacked"
+5. Select `packages/extension/dist` folder
 
 #### Development Features
 - **Hot Reload**: The extension automatically reloads when you make changes
   - The development build includes hot-reload-extension-vite plugin
   - Changes to source files trigger automatic extension reload
   - No need to manually reload the extension in Chrome
-  - Requires NODE_ENV=development (automatically set by wingit)
+  - Requires NODE_ENV=development (automatically set by npm run dev)
 
 #### Chrome Extension Auto-Loading
 
@@ -189,11 +226,11 @@ npm run dev:playwright:test:ui
 - Supports file watching for automatic rebuilds
 - Handles Chrome process management gracefully
 
-**Available Scripts**:
+**Available Scripts** (in packages/extension):
 - `npm run dev:chrome:personal` - Build and launch personal Chrome with extension
 - `npm run dev:chrome:watch` - Enable file watching for auto-reload
 - `npm run dev:chrome:fresh` - Use temporary profile (clean slate)
-- `npm run dev:full` - Start both build watcher and Chrome launcher
+- `npm run dev` - Build watcher with hot reload
 
 **Playwright MCP Integration (Advanced testing)**:
 - Provides programmatic browser automation through Claude Code
@@ -213,7 +250,7 @@ Add to your Claude Code settings:
     "wingman-playwright": {
       "command": "node",
       "args": [".mcp/server.js"],
-      "cwd": "packages/chrome-extension"
+      "cwd": "packages/extension"
     }
   }
 }
@@ -226,9 +263,9 @@ Add to your Claude Code settings:
 
 **Troubleshooting**:
 - If Chrome fails to start: Check that all Chrome processes are closed first
-- Extension not loading: Verify `packages/chrome-extension/dist/development` exists
-- File watching not working: Ensure `chokidar` dependency is installed
-- MCP setup issues: Run `npm run dev:playwright:setup` to reinstall dependencies
+- Extension not loading: Verify `packages/extension/dist` exists (run `npm run build:extension` first)
+- Port conflicts: Check `.env` file or use `npm run dev:status`
+- Service crashes: Use `npm run dev:restart` to restart everything
 
 ## Code Search and Navigation
 
@@ -277,8 +314,8 @@ mcp__sah__search_query with query: "your search terms"
 ### Wingman-Specific Search Examples
 
 1. **Find the core annotation type**:
-   - Query: "WingmanAnnotation type interface shared"
-   - Expected: Links to `packages/shared/src/types.ts`
+   - Query: "WingmanAnnotation type interface"
+   - Expected: Links to type definitions in api or sdk packages
 
 2. **Locate error handling**:
    - Query: "error handler middleware Express server"
@@ -286,7 +323,7 @@ mcp__sah__search_query with query: "your search terms"
 
 3. **Find React integration points**:
    - Query: "React DevTools hook metadata extraction"
-   - Expected: Links to web SDK React introspector
+   - Expected: Links to SDK React introspector
 
 4. **Discover Chrome extension functionality**:
    - Query: "chrome tabs captureVisibleTab screenshot"
@@ -409,6 +446,28 @@ Add to Claude Code settings:
 **Prompts**:
 - `wingman_fix_ui` - Process and fix UI issues from annotations
 
+## Local Testing
+
+### Testing Subdomains Locally
+
+For subdomain-based tunnel testing on localhost:
+
+1. Edit `/etc/hosts` (requires sudo):
+   ```bash
+   sudo nano /etc/hosts
+   # Add lines like:
+   127.0.0.1   ghost-alpha.localhost
+   127.0.0.1   maverick-bravo.localhost
+   ```
+
+2. Access sessions at `http://ghost-alpha.localhost:8787`
+
+### Testing Shareable Links
+
+Shareable links work immediately without any setup:
+- Create share: Use Chrome extension "Create Share Link" button
+- Access: `http://localhost:8787/share/[token]`
+
 ## Important Notes
 
 - **Comments**: Comment code so it is easy to follow and read.
@@ -416,3 +475,12 @@ Add to Claude Code settings:
 - **Privacy**: Sanitize React props/state before including in payloads (remove functions, large objects, tokens/emails).
 - **Screenshot Strategy**: v1 captures visible tab only, no full-page stitching.
 - **Not in v1**: Session replay, desktop app, cross-origin iframe access, request/response bodies, screenshot masking.
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+
+      
+      IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context unless it is highly relevant to your task.

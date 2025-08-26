@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { createServer } from '@wingman/wingman-api';
+import { createServer } from '@wingman/api';
 import type { Server } from 'http';
 import WebSocket from 'ws';
 import * as http from 'http';

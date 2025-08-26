@@ -4,6 +4,8 @@ A lightweight UX feedback assistant for capturing and sharing feedback from web 
 
 ## Quick Start
 
+### For Users (NPM Package)
+
 ```bash
 # Start unified server (local mode)
 npx wingman-cli serve
@@ -13,6 +15,26 @@ npx wingman-cli serve --tunnel
 ```
 
 That's it! Your server is running at `http://localhost:8787` 🎉
+
+### For Development
+
+```bash
+# Clone the repository
+git clone https://github.com/glamp/wingman-ux.git
+cd wingman-ux
+
+# Install dependencies
+npm install
+
+# Start all services (API, webapp, extension, react-app)
+npm run dev
+
+# Check what's running
+npm run dev:status
+
+# Stop everything
+npm run dev:stop
+```
 
 ### What You Get
 - 🪶 Unified server with built-in WebSocket support
@@ -47,43 +69,75 @@ function App() {
 
 ## Development Setup
 
-### Clone and Build from Source
+### Prerequisites
+
+- Node.js 18+ and npm 9+
+- Chrome browser for extension testing
+
+### Project Structure
+
+```
+wingman-ux/
+├── packages/
+│   ├── api/          # Backend server & tunnel management
+│   ├── webapp/       # Web interface & landing pages
+│   ├── extension/    # Chrome extension
+│   ├── sdk/          # React SDK for web apps
+│   └── cli/          # NPM CLI package
+├── examples/
+│   └── react-app/    # Demo React application
+└── .env.defaults     # Default configuration
+```
+
+### Development Commands
 
 ```bash
-# Clone the repository
-git clone https://github.com/glamp/wingman-ux.git
-cd wingman-ux
+# Start everything (API, webapp, extension, react-app)
+npm run dev
 
-# Install dependencies and build packages
-npm install
+# Start individual services
+npm run dev:api        # API server only (port 8787)
+npm run dev:webapp     # Web app only (port 3001)
+npm run dev:extension  # Extension build watcher
+npm run dev:react-app  # Example React app (port 5173)
+
+# Utility commands
+npm run dev:status     # Check what's running
+npm run dev:stop       # Stop all services
+npm run dev:restart    # Restart everything
+
+# Build all packages
 npm run build
+
+# Run tests
+npm test
 ```
 
 ### Load Chrome Extension for Development
 
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode" (top right)
-3. Click "Load unpacked"
-4. Select the `packages/chrome-extension/dist/development` folder
+1. Build the extension first:
+   ```bash
+   cd packages/extension
+   npm run build
+   ```
 
-### Start Development Server
+2. Open Chrome and go to `chrome://extensions/`
+3. Enable "Developer mode" (top right)
+4. Click "Load unpacked"
+5. Select the `packages/extension/dist` folder
 
-Run all services in development mode:
+### Local Subdomain Testing (Optional)
 
-```bash
-# Start all development services
-npm run dev
+To test subdomain-based tunnels locally:
 
-# Check status
-npm run dev:status
+1. Edit `/etc/hosts` (macOS/Linux) or `C:\Windows\System32\drivers\etc\hosts` (Windows):
+   ```
+   127.0.0.1   ghost-alpha.localhost
+   127.0.0.1   maverick-bravo.localhost
+   # Add more as needed
+   ```
 
-# Stop services
-npm run dev:stop
-```
-
-The server provides:
-- **HTTP API** on port 8787 for Chrome extension
-- **MCP tools** via HTTP for Claude Code integration
+2. Access your sessions at `http://ghost-alpha.localhost:8787`
 
 ### 5. Capture Feedback
 
@@ -163,18 +217,21 @@ When using the `wingman_fix_ui` prompt, Claude will:
 - ✅ Validate the changes
 - 🗑️ Clean up the processed annotation
 
-## Development
+## Environment Configuration
+
+Copy `.env.defaults` to `.env` to customize your local setup:
 
 ```bash
-# Start all services in development mode
-npm run dev
-
-# Check service status
-npm run dev:status
-
-# Stop all services
-npm run dev:stop
+cp .env.defaults .env
 ```
+
+Key configuration options:
+- `API_PORT`: API server port (default: 8787)
+- `WEBAPP_PORT`: Web app port (default: 3001)
+- `TUNNEL_MODE`: local or remote
+- `NODE_ENV`: development or production
+
+See `.env.defaults` for all available options.
 
 ## Server Architecture
 

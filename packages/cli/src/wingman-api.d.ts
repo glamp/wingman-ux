@@ -1,5 +1,5 @@
-// Type declarations for @wingman/wingman-api
-declare module '@wingman/wingman-api' {
+// Type declarations for @wingman/api
+declare module '@wingman/api' {
   import { Server } from 'http';
   
   export interface ServerOptions {
