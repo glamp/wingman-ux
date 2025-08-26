@@ -174,12 +174,10 @@ export default function TunnelDashboard() {
         {/* Stats */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={4}>
-            <div style={{ 
-              backgroundColor: '#FFFFFF',
+            <WhiteCard sx={{ 
               padding: '24px',
               textAlign: 'center',
-              borderRadius: '4px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+              borderRadius: '4px'
             }}>
               <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>
                 {sessions.length}
@@ -187,15 +185,13 @@ export default function TunnelDashboard() {
               <Typography variant="body2" color="text.secondary">
                 Total Sessions
               </Typography>
-            </div>
+            </WhiteCard>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <div style={{ 
-              backgroundColor: '#FFFFFF',
+            <WhiteCard sx={{ 
               padding: '24px',
               textAlign: 'center',
-              borderRadius: '4px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+              borderRadius: '4px'
             }}>
               <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
                 {sessions.filter((s) => s.status === 'active').length}
@@ -203,15 +199,13 @@ export default function TunnelDashboard() {
               <Typography variant="body2" color="text.secondary">
                 Active Sessions
               </Typography>
-            </div>
+            </WhiteCard>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <div style={{ 
-              backgroundColor: '#FFFFFF',
+            <WhiteCard sx={{ 
               padding: '24px',
               textAlign: 'center',
-              borderRadius: '4px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+              borderRadius: '4px'
             }}>
               <Typography variant="h4" color="warning.main" sx={{ fontWeight: 700 }}>
                 {sessions.filter((s) => s.status === 'pending').length}
@@ -219,14 +213,12 @@ export default function TunnelDashboard() {
               <Typography variant="body2" color="text.secondary">
                 Pending Sessions
               </Typography>
-            </div>
+            </WhiteCard>
           </Grid>
         </Grid>
 
-        <div style={{ 
-          backgroundColor: '#FFFFFF',
+        <WhiteCard sx={{ 
           borderRadius: '4px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
           overflow: 'hidden'
         }}>
           <TableContainer>
@@ -328,7 +320,7 @@ export default function TunnelDashboard() {
               </TableBody>
             </Table>
           </TableContainer>
-        </div>
+        </WhiteCard>
       </Box>
 
       {/* Create Session Dialog */}
