@@ -10,7 +10,7 @@ Options:
   -h, --help       display help for command
 
 Commands:
-  serve [options]  Start the Wingman relay server
+  serve [options]  Start the Wingman unified server with automatic tunnel
   help [command]   display help for command
 "
 `;

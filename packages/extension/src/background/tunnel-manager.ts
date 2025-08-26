@@ -1,4 +1,4 @@
-import { Logger } from '../lib/logger';
+import { createLogger } from '../utils/logger';
 
 export interface TunnelSession {
   sessionId: string;
@@ -7,7 +7,7 @@ export interface TunnelSession {
   status: 'connecting' | 'active' | 'error';
 }
 
-const logger = new Logger('TunnelManager');
+const logger = createLogger('TunnelManager');
 
 export class TunnelManager {
   private ws: WebSocket | null = null;

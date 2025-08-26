@@ -100,7 +100,7 @@ describe('Relay Server', () => {
       });
       
       // Verify preview URL format
-      expect(response.body.previewUrl).toMatch(/^https?:\/\/.*\/preview\/\?id=test-annotation-123$/);
+      expect(response.body.previewUrl).toMatch(/^https?:\/\/.*\/annotations\?id=test-annotation-123$/);
       
       // Verify file was created
       const files = await fs.readdir(annotationsDir);

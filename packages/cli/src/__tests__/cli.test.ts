@@ -17,7 +17,7 @@ describe('wingman CLI', () => {
     expect(output).toMatchSnapshot();
     expect(output).toContain('CLI for Wingman');
     expect(output).toContain('serve [options]');
-    expect(output).toContain('Start the Wingman relay server');
+    expect(output).toContain('Start the Wingman unified server with automatic tunnel');
   });
 
   it('should show error for unknown command', async () => {

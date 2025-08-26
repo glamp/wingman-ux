@@ -3,11 +3,38 @@
 exports[`wingman serve command > should display help for serve command 1`] = `
 "Usage: wingman serve [options]
 
-Start the Wingman relay server
+Start the Wingman unified server with automatic tunnel
 
 Options:
-  -p, --port <number>   port to listen on (default: "8787")
-  -h, --host <address>  host/address to bind to (default: "localhost")
-  --help                display help for command
+  -p, --port <number>     port to listen on (default: "8787")
+  -h, --host <address>    host/address to bind to (default: "localhost")
+  --tunnel-port <number>  port to tunnel (defaults to server port)
+  --api-host <address>    tunnel API server host (default: "api.wingmanux.com")
+  --api-port <number>     tunnel API server port (defaults to 443 for secure,
+                          80 for insecure)
+  --local                 use local API server instead of remote (disables
+                          tunnel)
+  --no-tunnel             disable tunnel creation (local server only)
+  --insecure              use HTTP instead of HTTPS for API connections
+  --status                show server and tunnel status then exit
+  --help                  display help for command
+
+
+Examples:
+  $ wingman serve --tunnel-port 3000
+    Create secure tunnel to api.wingmanux.com, forward to localhost:3000
+
+  $ wingman serve --local --tunnel-port 3000  
+    Local development only, no tunnel (localhost:8787)
+
+  $ wingman serve --no-tunnel --port 8080
+    Local server on port 8080, no tunnel
+
+  $ wingman serve --insecure --api-host custom.example.com
+    Use custom API server with HTTP instead of HTTPS
+
+  $ wingman serve --status
+    Show current tunnel status and exit
+
 "
 `;
