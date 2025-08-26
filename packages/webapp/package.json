@@ -1,5 +1,5 @@
 {
-  "name": "@wingman/wingman-app",
+  "name": "@wingman/webapp",
   "version": "1.0.0",
   "private": true,
   "type": "module",

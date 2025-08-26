@@ -18,3 +18,11 @@ coverage/
 .nyc_output/
 *.lcov
 packages/relay-server/wingman/
+
+# Package files
+*.tgz
+*.zip
+
+# Test artifacts
+test-*.json
+test-*/

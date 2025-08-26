@@ -1,4 +1,5 @@
-# fly.toml app configuration for Wingman App (Frontend)
+# fly.toml for Wingman App (Frontend)
+# Deploy with: fly deploy --config packages/wingman-app/fly.toml
 
 app = 'wingman-app'
 primary_region = 'iad'
@@ -11,7 +12,7 @@ kill_timeout = '5s'
 # Build section removed - specify dockerfile via CLI
 
 [env]
-  # Frontend served by nginx, no custom env needed
+  PORT = '80'
 
 [[services]]
   protocol = 'tcp'
@@ -29,24 +30,18 @@ kill_timeout = '5s'
 
   [services.concurrency]
     type = 'connections'
-    hard_limit = 250
-    soft_limit = 200
-
-  [[services.tcp_checks]]
-    interval = '15s'
-    timeout = '2s'
-    grace_period = '5s'
+    hard_limit = 1000
+    soft_limit = 800
 
   [[services.http_checks]]
     interval = '30s'
-    timeout = '2s'
+    timeout = '3s'
     grace_period = '5s'
     method = 'GET'
-    path = '/'
+    path = '/health'
     protocol = 'http'
-    tls_skip_verify = false
 
 [[vm]]
-  memory = '512mb'
+  memory = '256mb'
   cpu_kind = 'shared'
   cpus = 1
