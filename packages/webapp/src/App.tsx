@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline, Box } from '@mui/material';
+import { ThemeProvider, CssBaseline, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import Home from './pages/Home';
 import AnnotationPreviewPage from './pages/AnnotationPreview';
@@ -7,7 +7,8 @@ import SessionLanding from './pages/SessionLanding';
 import ShareLanding from './pages/ShareLanding';
 import TunnelDashboard from './pages/TunnelDashboard';
 import Navigation from './components/Navigation';
-import { colors, gradients, typography } from './styles/theme';
+import { gradients, typography } from './styles/theme';
+import { theme } from './theme';
 
 /**
  * Global gradient background for all pages
@@ -33,67 +34,6 @@ const GradientBackground = styled(Box)({
   },
 });
 
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: colors.primary,
-      dark: colors.primaryHover,
-      light: '#4da3ff',
-    },
-    secondary: {
-      main: colors.purple,
-      dark: colors.purpleHover,
-      light: '#a78bfa',
-    },
-    success: {
-      main: colors.success,
-      dark: colors.successHover,
-      light: colors.emerald,
-    },
-    warning: {
-      main: colors.warning,
-      dark: colors.warningHover,
-      light: colors.amber,
-    },
-    error: {
-      main: colors.error,
-      dark: colors.errorHover,
-      light: '#f87171',
-    },
-    info: {
-      main: colors.info,
-      dark: colors.infoHover,
-      light: '#22d3ee',
-    },
-    background: {
-      paper: colors.bgPrimary,
-      default: colors.bgPrimary,
-    },
-  },
-  components: {
-    MuiPaper: {
-      defaultProps: {
-        elevation: 0,
-      },
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-          backgroundColor: '#ffffff',
-        },
-        elevation0: {
-          backgroundColor: '#ffffff',
-        },
-        elevation1: {
-          backgroundColor: '#ffffff',
-        },
-      },
-    },
-  },
-  typography: {
-    fontFamily: `'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`,
-  },
-});
 
 /**
  * Layout wrapper that conditionally shows navigation

@@ -98,8 +98,71 @@ export const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundImage: 'none',
-          backgroundColor: colors.bgPrimary,
+          backgroundImage: 'none !important',
+          backgroundColor: '#ffffff !important',
+          background: '#ffffff !important',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none !important',
+          backgroundColor: '#ffffff !important',
+          background: '#ffffff !important',
+        },
+      },
+    },
+    MuiTableContainer: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#ffffff !important',
+          background: '#ffffff !important',
+          backgroundImage: 'none !important',
+        },
+      },
+    },
+    MuiTable: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#ffffff !important',
+          background: '#ffffff !important',
+          backgroundImage: 'none !important',
+        },
+      },
+    },
+    MuiTableHead: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#ffffff !important',
+          background: '#ffffff !important',
+        },
+      },
+    },
+    MuiTableBody: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#ffffff !important',
+          background: '#ffffff !important',
+        },
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#ffffff !important',
+          background: '#ffffff !important',
+          '&:hover': {
+            backgroundColor: '#f8fafc !important',
+          },
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'transparent !important',
+          borderBottom: '1px solid #e2e8f0',
         },
       },
     },
