@@ -11,12 +11,16 @@ import type { WingmanAnnotation } from '@wingman/shared';
 import { createLogger, createTemplateEngine, defaultTemplate } from '@wingman/shared';
 import { getEnvironmentConfig } from '../utils/config';
 import type { EnvironmentConfig } from '../types/env';
+import { TunnelManager } from './tunnel-manager';
 
 // Global config reference
 let extensionConfig: EnvironmentConfig | null = null;
 
 // Create logger instance for background script
 const logger = createLogger('Wingman:Background');
+
+// Global tunnel manager instance
+const tunnelManager = new TunnelManager();
 
 // Template engine instance (will be initialized with config)
 let templateEngine: any;
@@ -169,12 +173,13 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 interface MessageRequest {
-  type: 'CAPTURE_SCREENSHOT' | 'SUBMIT_ANNOTATION' | 'ACTIVATE_WINGMAN';
+  type: 'CAPTURE_SCREENSHOT' | 'SUBMIT_ANNOTATION' | 'ACTIVATE_WINGMAN' | 'TUNNEL_CREATE' | 'TUNNEL_STOP' | 'TUNNEL_STATUS';
   payload?: any;
+  targetPort?: number;
 }
 
 chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendResponse) => {
-  logger.debug('Message received:', request.type);
+  logger.debug('Message received:', request.type, request);
 
   if (request.type === 'CAPTURE_SCREENSHOT') {
     logger.debug('Capturing screenshot...');
@@ -202,6 +207,71 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
         sendResponse({ error: error.message });
       });
     return true;
+  }
+
+  // Handle tunnel messages
+  if (request.type === 'TUNNEL_CREATE') {
+    logger.info('Tunnel create request received with port:', request.targetPort);
+    
+    if (!request.targetPort) {
+      logger.error('TUNNEL_CREATE: No target port provided');
+      sendResponse({ success: false, error: 'No target port provided' });
+      return false;
+    }
+
+    // Get relay URL from storage to pass to tunnel manager
+    chrome.storage.local.get(['relayUrl']).then(({ relayUrl }) => {
+      const finalRelayUrl = relayUrl || extensionConfig?.relayUrl || 'http://localhost:8787';
+      logger.debug('Using relay URL for tunnel:', finalRelayUrl);
+      
+      return tunnelManager.createTunnel(request.targetPort, finalRelayUrl);
+    })
+    .then((tunnel) => {
+      logger.info('Tunnel created successfully:', tunnel);
+      sendResponse({ success: true, tunnel });
+    })
+    .catch((error) => {
+      logger.error('Failed to create tunnel:', error);
+      sendResponse({ 
+        success: false, 
+        error: error.message || 'Failed to create tunnel' 
+      });
+    });
+    return true; // Will respond asynchronously
+  }
+
+  if (request.type === 'TUNNEL_STOP') {
+    logger.info('Tunnel stop request received');
+    
+    try {
+      tunnelManager.stopTunnel();
+      logger.info('Tunnel stopped successfully');
+      sendResponse({ success: true });
+    } catch (error: any) {
+      logger.error('Failed to stop tunnel:', error);
+      sendResponse({ 
+        success: false, 
+        error: error.message || 'Failed to stop tunnel' 
+      });
+    }
+    return false; // Synchronous response
+  }
+
+  if (request.type === 'TUNNEL_STATUS') {
+    logger.debug('Tunnel status request received');
+    
+    try {
+      const tunnel = tunnelManager.getCurrentTunnel();
+      logger.debug('Current tunnel status:', tunnel);
+      sendResponse({ success: true, tunnel });
+    } catch (error: any) {
+      logger.error('Failed to get tunnel status:', error);
+      sendResponse({ 
+        success: false, 
+        error: error.message || 'Failed to get tunnel status' 
+      });
+    }
+    return false; // Synchronous response
   }
 });
 

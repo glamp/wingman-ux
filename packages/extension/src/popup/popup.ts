@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       try {
         // Get relay URL from storage
-        const { relayUrl } = await chrome.storage.sync.get({ relayUrl: 'http://localhost:8787' });
+        const { relayUrl } = await chrome.storage.local.get({ relayUrl: 'http://localhost:8787' });
         
         const response = await fetch(`${relayUrl}/tunnel/share`, {
           method: 'POST',
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       revokeShareLinkBtn.disabled = true;
       
       try {
-        const { relayUrl } = await chrome.storage.sync.get({ relayUrl: 'http://localhost:8787' });
+        const { relayUrl } = await chrome.storage.local.get({ relayUrl: 'http://localhost:8787' });
         
         const response = await fetch(`${relayUrl}/tunnel/share/${activeShareToken}`, {
           method: 'DELETE'
@@ -594,6 +594,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function startTunnel() {
     // Get the target port from current tab URL or manual input
     const port = await getTargetPort();
+    console.log('[Popup] Starting tunnel for port:', port);
 
     tunnelActionBtn.disabled = true;
     tunnelActionBtn.textContent = 'Starting...';
@@ -604,12 +605,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     tunnelStatus.style.color = 'var(--warning-color)';
 
     try {
+      console.log('[Popup] Sending TUNNEL_CREATE message to background script');
+      
       // Send message to background script to create tunnel
       const response = await new Promise<any>((resolve, reject) => {
         chrome.runtime.sendMessage(
           { type: 'TUNNEL_CREATE', targetPort: port },
           (response) => {
+            console.log('[Popup] Received response from background:', response);
+            
             if (chrome.runtime.lastError) {
+              console.error('[Popup] Chrome runtime error:', chrome.runtime.lastError);
               reject(new Error(chrome.runtime.lastError.message));
             } else {
               resolve(response);

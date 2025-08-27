@@ -15,22 +15,29 @@ export class TunnelManager {
   private reconnectAttempts: number = 0;
   private readonly maxReconnectAttempts: number = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private currentRelayUrl: string = '';
+  private isLocalRelay: boolean = false;
 
   constructor() {
     // TunnelManager will be used by the main message listener
   }
 
-  async createTunnel(targetPort: number): Promise<TunnelSession> {
+  async createTunnel(targetPort: number, relayUrl?: string): Promise<TunnelSession> {
+    logger.info(`[TunnelManager] createTunnel called with port: ${targetPort}, relay: ${relayUrl}`);
+    
     // Validate port number
     if (!targetPort || targetPort <= 0 || targetPort > 65535) {
-      throw new Error(`Invalid port number: ${targetPort}. Port must be between 1 and 65535.`);
+      const errorMsg = `Invalid port number: ${targetPort}. Port must be between 1 and 65535.`;
+      logger.error(`[TunnelManager] ${errorMsg}`);
+      throw new Error(errorMsg);
     }
     
     try {
       // Stop existing tunnel if any
+      logger.debug(`[TunnelManager] Stopping any existing tunnel...`);
       this.stopTunnel();
 
-      logger.info(`Creating tunnel for port ${targetPort}`);
+      logger.info(`[TunnelManager] Creating tunnel for port ${targetPort}`);
       
       // Update status to connecting
       this.currentTunnel = {
@@ -41,38 +48,66 @@ export class TunnelManager {
       };
       this.updateBadge();
 
-      // Create tunnel session via API
-      const response = await fetch('https://api.wingmanux.com/tunnel/create', {
+      // Determine which server to use
+      const baseUrl = relayUrl || 'http://localhost:8787';
+      const isLocalRelay = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+      
+      // Store for reconnection
+      this.currentRelayUrl = baseUrl;
+      this.isLocalRelay = isLocalRelay;
+      
+      // Use local relay for tunnel creation if available, otherwise fall back to external
+      const apiUrl = isLocalRelay 
+        ? `${baseUrl}/tunnel/create`
+        : 'https://api.wingmanux.com/tunnel/create';
+      
+      const requestBody = JSON.stringify({
+        targetPort,
+        enableP2P: false
+      });
+      
+      logger.debug(`[TunnelManager] Using ${isLocalRelay ? 'LOCAL' : 'EXTERNAL'} relay`);
+      logger.debug(`[TunnelManager] Sending POST request to ${apiUrl}`);
+      logger.debug(`[TunnelManager] Request body: ${requestBody}`);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          targetPort,
-          enableP2P: false
-        })
+        body: requestBody
       });
 
+      logger.debug(`[TunnelManager] Response status: ${response.status}`);
+      
       if (!response.ok) {
-        throw new Error(`Failed to create tunnel: ${await response.text()}`);
+        const errorText = await response.text();
+        logger.error(`[TunnelManager] API error response: ${errorText}`);
+        throw new Error(`Failed to create tunnel: ${errorText}`);
       }
 
       const data = await response.json();
+      logger.debug(`[TunnelManager] API response data:`, data);
+      
       this.currentTunnel.sessionId = data.sessionId;
       this.currentTunnel.tunnelUrl = data.tunnelUrl;
       
-      logger.info(`Tunnel created: ${data.tunnelUrl}`);
+      logger.info(`[TunnelManager] Tunnel created: ${data.tunnelUrl} (session: ${data.sessionId})`);
 
       // Connect WebSocket for developer registration
-      await this.connectWebSocket();
+      logger.debug(`[TunnelManager] Connecting WebSocket...`);
+      await this.connectWebSocket(baseUrl, isLocalRelay);
       
       // Update status to active
       this.currentTunnel.status = 'active';
       this.updateBadge();
       
+      logger.info(`[TunnelManager] Tunnel successfully activated`);
       return this.currentTunnel;
-    } catch (error) {
-      logger.error('Failed to create tunnel:', error);
+    } catch (error: any) {
+      logger.error(`[TunnelManager] Failed to create tunnel:`, error);
+      logger.error(`[TunnelManager] Error stack:`, error.stack);
+      
       if (this.currentTunnel) {
         this.currentTunnel.status = 'error';
         this.updateBadge();
@@ -81,63 +116,88 @@ export class TunnelManager {
     }
   }
 
-  private async connectWebSocket(): Promise<void> {
+  private async connectWebSocket(relayUrl: string, isLocalRelay: boolean): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.currentTunnel) {
-        reject(new Error('No tunnel session'));
+        const error = new Error('No tunnel session');
+        logger.error(`[TunnelManager] WebSocket connect failed: ${error.message}`);
+        reject(error);
         return;
       }
 
-      logger.info('Connecting to tunnel WebSocket...');
+      // Use appropriate WebSocket URL based on relay type
+      const wsUrl = isLocalRelay
+        ? relayUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws'
+        : 'wss://api.wingmanux.com/ws';
       
-      this.ws = new WebSocket('wss://api.wingmanux.com/ws');
+      logger.info(`[TunnelManager] Connecting to WebSocket at ${wsUrl}... (${isLocalRelay ? 'LOCAL' : 'EXTERNAL'})`);
+      
+      try {
+        this.ws = new WebSocket(wsUrl);
+        logger.debug(`[TunnelManager] WebSocket object created`);
+      } catch (error: any) {
+        logger.error(`[TunnelManager] Failed to create WebSocket:`, error);
+        reject(error);
+        return;
+      }
       
       const timeout = setTimeout(() => {
+        logger.error(`[TunnelManager] WebSocket connection timeout after 10 seconds`);
         reject(new Error('WebSocket connection timeout'));
       }, 10000);
 
       this.ws.onopen = () => {
         clearTimeout(timeout);
-        logger.info('WebSocket connected');
+        logger.info(`[TunnelManager] WebSocket connected successfully`);
         
         // Register as developer
         if (this.ws && this.currentTunnel) {
-          this.ws.send(JSON.stringify({
+          const registerMessage = JSON.stringify({
             type: 'register',
             role: 'developer',
             sessionId: this.currentTunnel.sessionId
-          }));
+          });
+          logger.debug(`[TunnelManager] Sending registration: ${registerMessage}`);
+          this.ws.send(registerMessage);
+        } else {
+          logger.error(`[TunnelManager] Cannot register - WebSocket or tunnel missing`);
         }
       };
 
       this.ws.onmessage = (event) => {
+        logger.debug(`[TunnelManager] WebSocket message received: ${event.data}`);
+        
         try {
           const message = JSON.parse(event.data);
           
           if (message.type === 'registered' && message.role === 'developer') {
-            logger.info('Registered as developer');
+            logger.info(`[TunnelManager] Successfully registered as developer`);
             this.reconnectAttempts = 0;
             resolve();
           } else if (message.type === 'error') {
-            logger.error('WebSocket error:', message.error);
+            logger.error(`[TunnelManager] WebSocket error message:`, message.error);
             reject(new Error(message.error));
           } else if (message.type === 'request') {
-            logger.info(`Tunnel request: ${message.request?.method} ${message.request?.path}`);
+            logger.info(`[TunnelManager] Tunnel request: ${message.request?.method} ${message.request?.path}`);
+          } else {
+            logger.debug(`[TunnelManager] Unhandled message type: ${message.type}`);
           }
         } catch (error) {
-          logger.error('Error parsing WebSocket message:', error);
+          logger.error(`[TunnelManager] Error parsing WebSocket message:`, error);
+          logger.error(`[TunnelManager] Raw message: ${event.data}`);
         }
       };
 
       this.ws.onerror = (error) => {
         clearTimeout(timeout);
-        logger.error('WebSocket error:', error);
+        logger.error(`[TunnelManager] WebSocket error event:`, error);
         reject(error);
       };
 
-      this.ws.onclose = () => {
-        logger.info('WebSocket connection closed');
+      this.ws.onclose = (event) => {
+        logger.info(`[TunnelManager] WebSocket closed - Code: ${event.code}, Reason: ${event.reason}`);
         if (this.currentTunnel && this.currentTunnel.status === 'active') {
+          logger.debug(`[TunnelManager] Will attempt to reconnect...`);
           this.scheduleReconnect();
         }
       };
@@ -161,7 +221,7 @@ export class TunnelManager {
     
     this.reconnectTimeout = window.setTimeout(() => {
       if (this.currentTunnel) {
-        this.connectWebSocket().catch(error => {
+        this.connectWebSocket(this.currentRelayUrl, this.isLocalRelay).catch(error => {
           logger.error('Reconnect failed:', error);
           this.scheduleReconnect();
         });

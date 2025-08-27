@@ -34,8 +34,9 @@ export function createSubdomainProxyMiddleware(
       const possibleSessionId = hostParts[0] || '';
       
       // Check if this matches our session ID pattern
-      // Session IDs are uppercase alphanumeric with hyphens (e.g., ALPHA-BRAVO-123)
-      if (possibleSessionId && /^[A-Z0-9][A-Z0-9-]+[A-Z0-9]$/i.test(possibleSessionId)) {
+      // Session IDs are alphanumeric with hyphens (e.g., alpha-bravo-123)
+      // Allow both uppercase and lowercase
+      if (possibleSessionId && /^[a-z0-9][a-z0-9-]+[a-z0-9]$/i.test(possibleSessionId)) {
         logger.debug(`Checking session: ${possibleSessionId}`);
         
         // Check if session exists
