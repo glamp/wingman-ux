@@ -74,8 +74,93 @@ export function createServer(options: ServerOptions = {}) {
   logger.debug('NODE_ENV:', process.env.NODE_ENV);
   logger.debug('CORS_ORIGIN:', process.env.CORS_ORIGIN);
 
-  // API-only server - no webapp serving
-  // The webapp is deployed separately as wingman-app
+  // Serve webapp in production, provide helpful message in development
+  const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+  const webappDevUrl = process.env.WEBAPP_DEV_URL || 'http://localhost:3001';
+  
+  if (isDevelopment) {
+    // In development, show helpful message for root access
+    app.get('/', (req, res) => {
+      // Check if this is a browser request (accepts HTML)
+      if (req.accepts('html')) {
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Wingman API Server</title>
+            <style>
+              body { font-family: system-ui; max-width: 600px; margin: 50px auto; padding: 20px; }
+              h1 { color: #333; }
+              .info { background: #f0f8ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
+              .links { margin: 20px 0; }
+              a { color: #0066cc; text-decoration: none; padding: 10px 15px; display: inline-block; background: #f5f5f5; border-radius: 3px; margin: 5px; }
+              a:hover { background: #e0e0e0; }
+              code { background: #f5f5f5; padding: 2px 5px; border-radius: 3px; }
+            </style>
+          </head>
+          <body>
+            <h1>🦅 Wingman API Server</h1>
+            <div class="info">
+              <p>This is the API server running on port <strong>${port}</strong></p>
+              <p>The web interface is available at:</p>
+              <div class="links">
+                <a href="${webappDevUrl}">Open Wingman UI</a>
+                <a href="${webappDevUrl}/annotations">View Annotations</a>
+                <a href="${webappDevUrl}/tunnels">Manage Tunnels</a>
+              </div>
+            </div>
+            <div class="info">
+              <p><strong>API Endpoints:</strong></p>
+              <ul>
+                <li><code>POST /annotations</code> - Submit annotation</li>
+                <li><code>GET /annotations/:id</code> - Get annotation</li>
+                <li><code>GET /health</code> - Health check</li>
+                <li><code>WS /ws</code> - WebSocket connection</li>
+              </ul>
+            </div>
+            <div class="info">
+              <p>To view a specific annotation preview, use:</p>
+              <code>${webappDevUrl}/annotations?id=YOUR_ANNOTATION_ID</code>
+            </div>
+          </body>
+          </html>
+        `);
+      } else {
+        res.json({ 
+          message: 'Wingman API Server',
+          webapp: webappDevUrl,
+          endpoints: {
+            annotations: '/annotations',
+            health: '/health',
+            tunnel: '/tunnel',
+            mcp: '/mcp',
+            websocket: '/ws'
+          }
+        });
+      }
+    });
+  } else {
+    // In production, serve the built webapp
+    const webappPath = path.join(__dirname, '../../webapp/dist');
+    if (require('fs').existsSync(webappPath)) {
+      // Serve static files
+      app.use(express.static(webappPath));
+      
+      // Catch-all route for client-side routing
+      app.get('*', (req, res, next) => {
+        // Skip API routes
+        if (req.path.startsWith('/api') || 
+            req.path.startsWith('/annotations') || 
+            req.path.startsWith('/tunnel') || 
+            req.path.startsWith('/mcp') || 
+            req.path.startsWith('/health') ||
+            req.path.startsWith('/ws')) {
+          return next();
+        }
+        res.sendFile(path.join(webappPath, 'index.html'));
+      });
+    }
+  }
   
   // Legacy redirect for old preview URLs
   app.get('/preview', (_req, res) => {
