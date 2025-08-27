@@ -104,9 +104,10 @@ export default function AnnotationPreviewPage() {
   };
 
   const filteredAnnotations = annotations.filter(
-    (annotation) =>
-      (annotation.annotation?.comment || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (annotation.annotation?.url || '').toLowerCase().includes(searchQuery.toLowerCase())
+    (item) =>
+      (item.annotation?.note || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.annotation?.page?.url || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.annotation?.page?.title || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatDate = (dateString: string) => {
@@ -214,44 +215,75 @@ export default function AnnotationPreviewPage() {
               <TableRow>
                 <TableCell>Note</TableCell>
                 <TableCell>Page</TableCell>
-                <TableCell>Type</TableCell>
+                <TableCell>Target</TableCell>
                 <TableCell>Created</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredAnnotations.map((annotation) => (
-                <TableRow key={annotation.id} hover>
+              {filteredAnnotations.map((item) => (
+                <TableRow key={item.id} hover>
                   <TableCell>
-                    <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-                      {annotation.annotation?.comment || 'No comment'}
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        maxWidth: 300,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                      title={item.annotation?.note || 'No note'}
+                    >
+                      {item.annotation?.note || 'No note'}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     <Box>
-                      <Typography variant="body2" noWrap sx={{ maxWidth: 250 }}>
-                        {annotation.annotation?.url || 'No URL'}
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          fontWeight: 500,
+                          maxWidth: 250,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                        title={item.annotation?.page?.title || 'Untitled'}
+                      >
+                        {item.annotation?.page?.title || 'Untitled'}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" noWrap>
-                        {annotation.annotation?.element?.text || 'No element'}
+                      <Typography 
+                        variant="caption" 
+                        color="text.secondary"
+                        sx={{ 
+                          maxWidth: 250,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          display: 'block'
+                        }}
+                        title={item.annotation?.page?.url || ''}
+                      >
+                        {item.annotation?.page?.url || 'No URL'}
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={annotation.annotation?.type || 'click'}
+                      label={item.annotation?.target?.mode || 'unknown'}
                       size="small"
                       variant="outlined"
+                      color={item.annotation?.target?.mode === 'element' ? 'primary' : 'secondary'}
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">{formatDate(annotation.receivedAt)}</Typography>
+                    <Typography variant="body2">{formatDate(item.receivedAt)}</Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="right">
                     <Button
                       startIcon={<Visibility />}
                       size="small"
-                      onClick={() => navigate(`/annotations?id=${annotation.id}`)}
+                      onClick={() => navigate(`/annotations?id=${item.id}`)}
                     >
                       View
                     </Button>
