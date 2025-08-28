@@ -169,110 +169,123 @@ export class TunnelProxy {
     console.log(`[TunnelProxy] Request data prepared for ${requestId}, sending to Chrome extension`);
     logger.debug(`[TunnelProxy] Request data size: headers=${JSON.stringify(req.headers).length}, body=${req.body ? JSON.stringify(req.body).length : 0}`);
     
-    // Set up response handler
+    // State for handling binary protocol (metadata + body)
+    let responseMetadata: any = null;
+    let responseBody: Buffer | null = null;
+    let responseComplete = false;
+    
+    // Set up response handler for new binary protocol
     const handleResponse = (data: any) => {
+      if (responseComplete) return;
+      
       try {
-        const message = JSON.parse(data.toString());
-        if (message.type === 'response' && message.requestId === requestId) {
-          // Clear timeout and remove listener
-          clearTimeout(timeout);
-          developerWs.off('message', handleResponse);
-          
-          // Send response back to client
-          const response = message.response;
-          
-          // Enhanced logging with console.log for production visibility
-          console.log(`[TunnelProxy] Received response for ${requestId}: status=${response.statusCode}, bodySize=${response.body?.length || 0}, isBase64=${response.isBase64 || false}`);
-          console.log(`[TunnelProxy] Response headers for ${requestId}:`, Object.keys(response.headers || {}));
-          
-          logger.debug(`[TunnelProxy] Received response for ${requestId}: status=${response.statusCode}, bodySize=${response.body?.length || 0}, headers=${JSON.stringify(Object.keys(response.headers || {}))}`);
-          
-          
-          // Only process response if headers haven't been sent
-          if (!res.headersSent) {
-            // Set status code
-            res.status(response.statusCode || 200);
-            
-            // Set headers, skipping problematic ones
-            if (response.headers) {
-              Object.keys(response.headers).forEach(key => {
-                const lowerKey = key.toLowerCase();
-                // Skip headers that can cause issues
-                if (!['content-length', 'transfer-encoding', 'connection'].includes(lowerKey)) {
-                  try {
-                    res.setHeader(key, response.headers[key]);
-                  } catch (headerError) {
-                    console.log(`[TunnelProxy] Failed to set header ${key}:`, headerError);
-                    logger.warn(`Failed to set header ${key}:`, headerError);
-                  }
-                }
-              });
-            }
-            
-            // Handle response body - decode base64 if needed
-            if (response.body) {
-              if (response.isBase64) {
-                // Decode base64 content back to original bytes
-                console.log(`[TunnelProxy] Decoding base64 content for ${requestId}`);
-                try {
-                  const binaryString = atob(response.body);
-                  const bytes = new Uint8Array(binaryString.length);
-                  for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                  }
-                  res.send(Buffer.from(bytes));
-                } catch (decodeError) {
-                  console.error(`[TunnelProxy] Failed to decode base64 for ${requestId}:`, decodeError);
-                  res.status(500).json({
-                    error: 'Failed to decode response content',
-                    details: 'Base64 decoding failed',
-                    requestId
-                  });
-                }
-              } else {
-                // Send as text
-                console.log(`[TunnelProxy] Sending text content for ${requestId}`);
-                res.send(response.body);
+        // Try to parse as JSON first (metadata)
+        if (typeof data === 'string' || (data instanceof Buffer && data.length < 10000)) {
+          try {
+            const message = JSON.parse(data.toString());
+            if (message.type === 'response' && message.requestId === requestId) {
+              // This is the metadata message
+              responseMetadata = message.response;
+              console.log(`[TunnelProxy] Received response metadata for ${requestId}: status=${responseMetadata.statusCode}, bodyLength=${responseMetadata.bodyLength}`);
+              
+              // If there's no body, send the response immediately
+              if (!responseMetadata.bodyLength || responseMetadata.bodyLength === 0) {
+                sendCompleteResponse();
               }
-            } else {
-              console.log(`[TunnelProxy] Sending empty response for ${requestId}`);
-              res.end();
+              // Otherwise wait for the binary body frame
+              return;
             }
-          } else {
-            console.log(`[TunnelProxy] Headers already sent for request ${requestId}`);
-            logger.warn(`Headers already sent for request ${requestId}`);
+          } catch (parseError) {
+            // Not JSON, continue to binary handling
           }
         }
-      } catch (error: any) {
-        // Enhanced error logging with console.log for production visibility
-        console.error(`[TunnelProxy] ERROR handling WebSocket response for ${requestId}:`, error);
-        console.error(`[TunnelProxy] ERROR details:`, {
-          message: error.message,
-          stack: error.stack,
-          requestId,
-          sessionId
-        });
         
-        logger.error(`[TunnelProxy] Error handling WebSocket response for ${requestId}:`, error);
-        logger.error(`[TunnelProxy] Error details:`, {
-          message: error.message,
-          stack: error.stack,
-          requestId,
-          sessionId
-        });
-        
-        // Send 500 error if we haven't sent response yet
-        if (!res.headersSent) {
-          console.log(`[TunnelProxy] Sending 500 error response for ${requestId}`);
-          res.status(500).json({
-            error: 'Internal Server Error',
-            details: 'Failed to process tunnel response',
-            message: error.message,
-            requestId
-          });
-        } else {
-          console.log(`[TunnelProxy] Cannot send error response for ${requestId} - headers already sent`);
+        // Handle binary body frame
+        if (responseMetadata && data instanceof Buffer) {
+          responseBody = data;
+          console.log(`[TunnelProxy] Received binary body for ${requestId}: ${data.length} bytes`);
+          sendCompleteResponse();
+          return;
         }
+        
+      } catch (error: any) {
+        console.error(`[TunnelProxy] ERROR handling WebSocket response for ${requestId}:`, error);
+        sendErrorResponse(error);
+      }
+    };
+    
+    const sendCompleteResponse = () => {
+      if (responseComplete || !responseMetadata) return;
+      responseComplete = true;
+      
+      // Clear timeout and remove listener
+      clearTimeout(timeout);
+      developerWs.off('message', handleResponse);
+      
+      const response = responseMetadata;
+      
+      // Enhanced logging with console.log for production visibility  
+      console.log(`[TunnelProxy] Sending complete response for ${requestId}: status=${response.statusCode}, bodySize=${responseBody?.length || 0}`);
+      console.log(`[TunnelProxy] Response headers for ${requestId}:`, Object.keys(response.headers || {}));
+      
+      logger.debug(`[TunnelProxy] Sending response for ${requestId}: status=${response.statusCode}, bodySize=${responseBody?.length || 0}, headers=${JSON.stringify(Object.keys(response.headers || {}))}`);
+      
+      // Only process response if headers haven't been sent
+      if (!res.headersSent) {
+        // Set status code
+        res.status(response.statusCode || 200);
+        
+        // Set headers, skipping problematic ones
+        if (response.headers) {
+          Object.keys(response.headers).forEach(key => {
+            const lowerKey = key.toLowerCase();
+            // Skip headers that can cause issues
+            if (!['content-length', 'transfer-encoding', 'connection'].includes(lowerKey)) {
+              try {
+                res.setHeader(key, response.headers[key]);
+              } catch (headerError) {
+                console.log(`[TunnelProxy] Failed to set header ${key}:`, headerError);
+                logger.warn(`Failed to set header ${key}:`, headerError);
+              }
+            }
+          });
+        }
+        
+        // Send binary response body directly (no encoding/decoding needed!)
+        if (responseBody && responseBody.length > 0) {
+          console.log(`[TunnelProxy] Sending binary content for ${requestId}`);
+          res.send(responseBody);
+        } else {
+          console.log(`[TunnelProxy] Sending empty response for ${requestId}`);
+          res.end();
+        }
+      } else {
+        console.log(`[TunnelProxy] Headers already sent for request ${requestId}`);
+        logger.warn(`Headers already sent for request ${requestId}`);
+      }
+    };
+    
+    const sendErrorResponse = (error: any) => {
+      if (responseComplete) return;
+      responseComplete = true;
+      
+      clearTimeout(timeout);
+      developerWs.off('message', handleResponse);
+      
+      console.error(`[TunnelProxy] ERROR handling WebSocket response for ${requestId}:`, error);
+      logger.error(`[TunnelProxy] Error handling WebSocket response for ${requestId}:`, error);
+      
+      // Send 500 error if we haven't sent response yet
+      if (!res.headersSent) {
+        console.log(`[TunnelProxy] Sending 500 error response for ${requestId}`);
+        res.status(500).json({
+          error: 'Internal Server Error',
+          details: 'Failed to process tunnel response',
+          message: error.message,
+          requestId
+        });
+      } else {
+        console.log(`[TunnelProxy] Cannot send error response for ${requestId} - headers already sent`);
       }
     };
     

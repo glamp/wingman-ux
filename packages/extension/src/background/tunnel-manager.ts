@@ -249,37 +249,10 @@ export class TunnelManager {
       // Forward request to localhost
       const response = await fetch(targetUrl, fetchOptions);
       
-      // Get content type to determine how to handle the response body
-      const contentType = response.headers.get('content-type') || '';
+      // Get response body as binary data (works for all content types)
+      const responseBodyBuffer = await response.arrayBuffer();
       
-      // JavaScript files need special handling to avoid corruption, so use base64 for them
-      const isJavaScriptContent = contentType.includes('application/javascript') ||
-                                  contentType.includes('text/javascript') ||
-                                  contentType.includes('application/x-javascript');
-      
-      // Pure text content that doesn't need special handling
-      const isSafeTextContent = (contentType.includes('text/html') || 
-                                contentType.includes('text/css') ||
-                                contentType.includes('text/plain') ||
-                                contentType.includes('application/json') || 
-                                contentType.includes('application/xml')) &&
-                               !isJavaScriptContent;
-      
-      let responseBody: string;
-      let isBase64 = false;
-      
-      if (isSafeTextContent) {
-        // For safe text content (HTML, CSS, plain text, JSON, XML), use text()
-        responseBody = await response.text();
-        logger.debug(`[TunnelManager] Using text encoding for ${contentType}`);
-      } else {
-        // For JavaScript, binary content, or unknown content types, use base64 encoding
-        // to preserve exact byte content and avoid corruption
-        const buffer = await response.arrayBuffer();
-        responseBody = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-        isBase64 = true;
-        logger.debug(`[TunnelManager] Using base64 encoding for ${contentType} (isJS: ${isJavaScriptContent})`);
-      }
+      logger.debug(`[TunnelManager] Response body: ${responseBodyBuffer.byteLength} bytes, content-type: ${response.headers.get('content-type') || 'unknown'}`);
       
       // Collect response headers
       const responseHeaders: Record<string, string> = {};
@@ -287,42 +260,53 @@ export class TunnelManager {
         responseHeaders[key] = value;
       });
       
-      // Send response back through WebSocket
-      const responseMessage = {
+      // Send response metadata as JSON first
+      const responseMetadata = {
         type: 'response',
         requestId,
         sessionId,
         response: {
           statusCode: response.status,
           headers: responseHeaders,
-          body: responseBody,
-          isBase64: isBase64
+          bodyLength: responseBodyBuffer.byteLength
         }
       };
       
-      logger.debug(`[TunnelManager] Sending response for request ${requestId}: ${response.status}`);
-      this.ws.send(JSON.stringify(responseMessage));
+      logger.debug(`[TunnelManager] Sending binary response for request ${requestId}: ${response.status} (${responseBodyBuffer.byteLength} bytes)`);
+      
+      // Send metadata first
+      this.ws.send(JSON.stringify(responseMetadata));
+      
+      // Send response body as binary WebSocket frame
+      if (responseBodyBuffer.byteLength > 0) {
+        this.ws.send(responseBodyBuffer);
+      }
       
     } catch (error: any) {
       logger.error(`[TunnelManager] Error forwarding request:`, error);
       
-      // Send error response back through WebSocket
-      const errorResponse = {
+      // Send error response back through WebSocket using new binary format
+      const errorBody = JSON.stringify({
+        error: 'Failed to forward request',
+        details: error.message,
+        targetPort: this.currentTunnel?.targetPort
+      });
+      
+      const errorBodyBuffer = new TextEncoder().encode(errorBody);
+      
+      const errorMetadata = {
         type: 'response',
         requestId,
         sessionId,
         response: {
           statusCode: 502,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            error: 'Failed to forward request',
-            details: error.message,
-            targetPort: this.currentTunnel.targetPort
-          })
+          bodyLength: errorBodyBuffer.byteLength
         }
       };
       
-      this.ws.send(JSON.stringify(errorResponse));
+      this.ws.send(JSON.stringify(errorMetadata));
+      this.ws.send(errorBodyBuffer);
     }
   }
 
