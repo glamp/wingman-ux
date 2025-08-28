@@ -168,25 +168,45 @@ export class TunnelProxy {
           // Send response back to client
           const response = message.response;
           
-          // Set status code
-          res.status(response.statusCode || 200);
-          
-          // Set headers
-          if (response.headers) {
-            Object.keys(response.headers).forEach(key => {
-              res.setHeader(key, response.headers[key]);
-            });
-          }
-          
-          // Send body
-          if (response.body) {
-            res.send(response.body);
+          // Only process response if headers haven't been sent
+          if (!res.headersSent) {
+            // Set status code
+            res.status(response.statusCode || 200);
+            
+            // Set headers, skipping problematic ones
+            if (response.headers) {
+              Object.keys(response.headers).forEach(key => {
+                const lowerKey = key.toLowerCase();
+                // Skip headers that can cause issues
+                if (!['content-length', 'transfer-encoding', 'connection'].includes(lowerKey)) {
+                  try {
+                    res.setHeader(key, response.headers[key]);
+                  } catch (headerError) {
+                    logger.warn(`Failed to set header ${key}:`, headerError);
+                  }
+                }
+              });
+            }
+            
+            // Send body
+            if (response.body) {
+              res.send(response.body);
+            } else {
+              res.end();
+            }
           } else {
-            res.end();
+            logger.warn(`Headers already sent for request ${requestId}`);
           }
         }
       } catch (error) {
         logger.error(`Error handling WebSocket response:`, error);
+        // Send 500 error if we haven't sent response yet
+        if (!res.headersSent) {
+          res.status(500).json({
+            error: 'Internal Server Error',
+            details: 'Failed to process tunnel response'
+          });
+        }
       }
     };
     
