@@ -81,13 +81,35 @@ export class TunnelProxy {
         });
       }
 
-      // Always prefer direct proxy when targetPort is available
-      // This provides the best performance and reliability
-      if (session.targetPort) {
+      // Check if we're in production/cloud environment
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.FLY_APP_NAME;
+      
+      // In production, we can't proxy to localhost - need WebSocket forwarding
+      if (session.targetPort && !isProduction) {
+        // Local environment: direct proxy to localhost:targetPort works
         logger.debug(`Using direct proxy for ${subdomain} to port ${session.targetPort}`);
         
         const proxy = this.createProxy(subdomain, session.targetPort);
         proxy(req, res, next);
+      } else if (session.targetPort && isProduction) {
+        // Production environment: need WebSocket forwarding
+        const developerWs = this.connectionManager.getDeveloperConnection(subdomain);
+        
+        if (developerWs) {
+          // Developer connected via WebSocket - forward the request
+          logger.debug(`Using WebSocket forwarding for ${subdomain} in production`);
+          
+          // Forward the HTTP request through WebSocket
+          this.forwardRequestViaWebSocket(req, res, subdomain, developerWs);
+        } else {
+          // No developer connected
+          logger.debug(`No developer connected for ${subdomain} in production`);
+          res.status(502).json({
+            error: 'Tunnel not connected',
+            code: 'DEVELOPER_NOT_CONNECTED',
+            details: 'The tunnel exists but the developer is not connected. Please ensure the Chrome extension is running and connected.'
+          });
+        }
       } else {
         // No target port configured - check if developer is connected via WebSocket
         const developerWs = this.connectionManager.getDeveloperConnection(subdomain);
@@ -111,6 +133,78 @@ export class TunnelProxy {
         }
       }
     };
+  }
+
+  /**
+   * Forward HTTP request through WebSocket to developer
+   */
+  private forwardRequestViaWebSocket(req: Request, res: Response, sessionId: string, developerWs: any): void {
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Prepare request data to send to developer
+    const requestData = {
+      type: 'request',
+      requestId,
+      sessionId,
+      request: {
+        method: req.method,
+        path: req.path,
+        url: req.url,
+        headers: req.headers,
+        query: req.query,
+        body: req.body
+      }
+    };
+    
+    // Set up response handler
+    const handleResponse = (data: any) => {
+      try {
+        const message = JSON.parse(data.toString());
+        if (message.type === 'response' && message.requestId === requestId) {
+          // Clear timeout and remove listener
+          clearTimeout(timeout);
+          developerWs.off('message', handleResponse);
+          
+          // Send response back to client
+          const response = message.response;
+          
+          // Set status code
+          res.status(response.statusCode || 200);
+          
+          // Set headers
+          if (response.headers) {
+            Object.keys(response.headers).forEach(key => {
+              res.setHeader(key, response.headers[key]);
+            });
+          }
+          
+          // Send body
+          if (response.body) {
+            res.send(response.body);
+          } else {
+            res.end();
+          }
+        }
+      } catch (error) {
+        logger.error(`Error handling WebSocket response:`, error);
+      }
+    };
+    
+    // Set timeout for response
+    const timeout = setTimeout(() => {
+      developerWs.off('message', handleResponse);
+      res.status(504).json({
+        error: 'Gateway Timeout',
+        code: 'WEBSOCKET_TIMEOUT',
+        details: 'The developer did not respond in time'
+      });
+    }, 30000); // 30 second timeout
+    
+    // Listen for response
+    developerWs.on('message', handleResponse);
+    
+    // Send request to developer
+    developerWs.send(JSON.stringify(requestData));
   }
 
   /**
