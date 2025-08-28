@@ -676,22 +676,14 @@
         </style>
 
         <div class="input-group">
-          <label class="input-label" for="relayUrl">Relay Server URL</label>
+          <label class="input-label" for="relayUrl">Server URL</label>
           <input
             type="text"
             id="relayUrl"
             class="input-field"
-            placeholder="http://localhost:8787"
+            placeholder="https://api.wingmanux.com"
           />
           <div class="preset-buttons">
-            <button
-              class="preset-btn"
-              data-url="http://localhost:8787"
-              title="Send to local relay server on port 8787"
-            >
-              <span class="preset-icon">🏠</span>
-              <span class="preset-text">Local</span>
-            </button>
             <button
               class="preset-btn"
               data-url="https://api.wingmanux.com"
@@ -699,6 +691,14 @@
             >
               <span class="preset-icon">🌐</span>
               <span class="preset-text">Remote</span>
+            </button>
+            <button
+              class="preset-btn"
+              data-url="http://localhost:8787"
+              title="Send to local relay server on port 8787"
+            >
+              <span class="preset-icon">🏠</span>
+              <span class="preset-text">Local</span>
             </button>
             <button
               class="preset-btn"

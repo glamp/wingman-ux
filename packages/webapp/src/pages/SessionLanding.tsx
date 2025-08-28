@@ -16,6 +16,7 @@ import {
   HourglassEmpty,
   Flight
 } from '@mui/icons-material';
+import { wsUrl } from '../config/api';
 
 interface SessionData {
   id: string;
@@ -65,8 +66,7 @@ export default function SessionLanding() {
     fetchSession();
 
     // Connect WebSocket for real-time updates
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    const ws = new WebSocket(wsUrl('ws'));
 
     ws.onopen = () => {
       setWsStatus('connected');
