@@ -251,17 +251,25 @@ export class TunnelManager {
       
       // Get content type to determine how to handle the response body
       const contentType = response.headers.get('content-type') || '';
-      const isTextContent = contentType.includes('text/') || 
-                           contentType.includes('application/json') || 
-                           contentType.includes('application/xml') ||
-                           contentType.includes('application/javascript') ||
-                           contentType.includes('text/javascript');
+      
+      // JavaScript files need special handling to avoid corruption, so use base64 for them
+      const isJavaScriptContent = contentType.includes('application/javascript') ||
+                                  contentType.includes('text/javascript') ||
+                                  contentType.includes('application/x-javascript');
+      
+      // Pure text content that doesn't need special handling
+      const isSafeTextContent = (contentType.includes('text/html') || 
+                                contentType.includes('text/css') ||
+                                contentType.includes('text/plain') ||
+                                contentType.includes('application/json') || 
+                                contentType.includes('application/xml')) &&
+                               !isJavaScriptContent;
       
       let responseBody: string;
       let isBase64 = false;
       
-      if (isTextContent && !contentType.includes('javascript')) {
-        // For pure text content (HTML, CSS, plain text, JSON), use text()
+      if (isSafeTextContent) {
+        // For safe text content (HTML, CSS, plain text, JSON, XML), use text()
         responseBody = await response.text();
         logger.debug(`[TunnelManager] Using text encoding for ${contentType}`);
       } else {
@@ -270,7 +278,7 @@ export class TunnelManager {
         const buffer = await response.arrayBuffer();
         responseBody = btoa(String.fromCharCode(...new Uint8Array(buffer)));
         isBase64 = true;
-        logger.debug(`[TunnelManager] Using base64 encoding for ${contentType}`);
+        logger.debug(`[TunnelManager] Using base64 encoding for ${contentType} (isJS: ${isJavaScriptContent})`);
       }
       
       // Collect response headers
