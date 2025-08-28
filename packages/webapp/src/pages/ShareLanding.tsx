@@ -25,6 +25,7 @@ import {
   Visibility,
   Code
 } from '@mui/icons-material';
+import { API_BASE_URL } from '../config/api';
 
 interface ShareInfo {
   sessionId: string;
@@ -58,11 +59,7 @@ export default function ShareLanding() {
     // Fetch share data
     const fetchShareData = async () => {
       try {
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? 'https://wingman-tunnel.fly.dev'
-          : 'http://localhost:8787';
-          
-        const response = await fetch(`${baseUrl}/tunnel/share/${shareToken}`);
+        const response = await fetch(`${API_BASE_URL}/tunnel/share/${shareToken}`);
         
         if (!response.ok) {
           if (response.status === 404) {

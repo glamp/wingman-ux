@@ -16,7 +16,7 @@ import {
   HourglassEmpty,
   Flight
 } from '@mui/icons-material';
-import { wsUrl } from '../config/api';
+import { wsUrl, apiFetch } from '../config/api';
 
 interface SessionData {
   id: string;
@@ -43,7 +43,7 @@ export default function SessionLanding() {
     // Fetch initial session data
     const fetchSession = async () => {
       try {
-        const response = await fetch(`/api/sessions/${sessionId}`);
+        const response = await apiFetch(`api/sessions/${sessionId}`);
         if (!response.ok) {
           if (response.status === 404) {
             setError('Session not found. Please check the URL and try again.');

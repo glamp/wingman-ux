@@ -23,6 +23,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import WhiteCard from '../components/WhiteCard';
+import { apiFetch } from '../config/api';
 
 interface Session {
   id: string;
@@ -48,7 +49,7 @@ export default function TunnelDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/sessions');
+      const response = await apiFetch('api/sessions');
       if (!response.ok) {
         throw new Error('Failed to fetch sessions');
       }
@@ -70,7 +71,7 @@ export default function TunnelDashboard() {
 
   const handleCreateSession = async () => {
     try {
-      const response = await fetch('/api/sessions', {
+      const response = await apiFetch('api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,7 +104,7 @@ export default function TunnelDashboard() {
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      const response = await fetch(`/api/sessions/${sessionId}`, {
+      const response = await apiFetch(`api/sessions/${sessionId}`, {
         method: 'DELETE',
       });
 
