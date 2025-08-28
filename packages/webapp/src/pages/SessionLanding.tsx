@@ -8,13 +8,18 @@ import {
   CircularProgress,
   Alert,
   Chip,
-  Grid
+  Grid,
+  Button,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { 
   CheckCircle, 
   Error as ErrorIcon, 
   HourglassEmpty,
-  Flight
+  Flight,
+  OpenInNew,
+  ContentCopy
 } from '@mui/icons-material';
 import { wsUrl, apiFetch } from '../config/api';
 
@@ -258,15 +263,56 @@ export default function SessionLanding() {
           )}
 
           {session?.status === 'active' && (
-            <Alert severity="success" sx={{ mt: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Connection established!
-              </Typography>
-              <Typography variant="body2">
-                The developer's local server on port {session?.targetPort} is now accessible through this tunnel.
-                You can interact with their application in real-time.
-              </Typography>
-            </Alert>
+            <>
+              <Alert severity="success" sx={{ mt: 3 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Connection established!
+                </Typography>
+                <Typography variant="body2">
+                  The developer's local server on port {session?.targetPort} is now accessible through this tunnel.
+                  You can interact with their application in real-time.
+                </Typography>
+              </Alert>
+
+              {/* Tunnel Access */}
+              {session?.tunnelUrl && (
+                <Box sx={{ mt: 3, p: 3, bgcolor: 'grey.50', borderRadius: 2, textAlign: 'center' }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Tunnel URL
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: 1,
+                    mb: 2
+                  }}>
+                    <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                      {session.tunnelUrl}
+                    </Typography>
+                    <Tooltip title="Copy URL">
+                      <IconButton 
+                        size="small"
+                        onClick={() => {
+                          navigator.clipboard.writeText(session.tunnelUrl!);
+                        }}
+                      >
+                        <ContentCopy fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<OpenInNew />}
+                    onClick={() => window.open(session.tunnelUrl, '_blank')}
+                    sx={{ mt: 1 }}
+                  >
+                    Access Application
+                  </Button>
+                </Box>
+              )}
+            </>
           )}
 
           {session?.status === 'expired' && (
