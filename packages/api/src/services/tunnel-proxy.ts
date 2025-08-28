@@ -117,34 +117,52 @@ export class TunnelProxy {
    * Extract subdomain from host header
    */
   private extractSubdomain(host: string): string | null {
+    if (!host) return null;
+    
     // Remove port if present
     const hostname = host.split(':')[0];
+    if (!hostname) return null;
     
-    // Check for subdomain patterns
-    // Examples: 
-    // - thunder-xray.wingmanux.com -> thunder-xray
-    // - thunder-xray.localhost -> thunder-xray
-    // - thunder-xray.wingman-tunnel.fly.dev -> thunder-xray
-    
-    const patterns = [
-      /^([a-z0-9-]+)\.wingmanux\.com$/i,
-      /^([a-z0-9-]+)\.localhost$/i,
-      /^([a-z0-9-]+)\.wingman-tunnel\.fly\.dev$/i,
-      /^([a-z0-9-]+)\..+$/i // Generic subdomain pattern
+    // Reserved subdomains that should NOT be treated as tunnels
+    const RESERVED_SUBDOMAINS = [
+      'api',      // API endpoints
+      'www',      // Main website
+      'app',      // Web application
+      'admin',    // Admin panel
+      'dashboard', // Dashboard
+      'docs',     // Documentation
+      'blog',     // Blog
+      'status'    // Status page
     ];
     
-    for (const pattern of patterns) {
-      const match = hostname?.match(pattern);
-      if (match && match[1]) {
-        // Validate it looks like a session ID
-        const possibleSessionId = match[1];
-        if (/^[a-z0-9][a-z0-9-]+[a-z0-9]$/i.test(possibleSessionId)) {
-          return possibleSessionId;
-        }
-      }
+    // Extract the first part as potential subdomain
+    const parts = hostname.split('.');
+    if (parts.length < 2) return null;
+    
+    const subdomain = parts[0]?.toLowerCase();
+    if (!subdomain) return null;
+    
+    // Skip if it's a reserved subdomain
+    if (RESERVED_SUBDOMAINS.includes(subdomain)) {
+      return null;
     }
     
-    return null;
+    // Aviation-themed session IDs are always in format: word-word
+    // Examples: thunder-xray, ghost-alpha, maverick-bravo
+    // This prevents false positives like "api" or "www"
+    if (!/^[a-z]+-[a-z]+$/i.test(subdomain)) {
+      return null;
+    }
+    
+    // Additional validation: must be at least 3 chars on each side of hyphen
+    const sessionParts = subdomain.split('-');
+    if (sessionParts.length !== 2 || 
+        !sessionParts[0] || sessionParts[0].length < 3 || 
+        !sessionParts[1] || sessionParts[1].length < 3) {
+      return null;
+    }
+    
+    return subdomain;
   }
 
   /**

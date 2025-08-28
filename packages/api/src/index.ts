@@ -192,11 +192,22 @@ export function createServer(options: ServerOptions = {}) {
       server.on('upgrade', (request, socket, head) => {
         // Check if this is a tunnel WebSocket upgrade
         const host = request.headers.host || '';
-        if (host.includes('.')) {
-          // This might be a subdomain tunnel WebSocket
-          const handler = tunnelProxy.handleUpgrade();
-          handler(request, socket, head);
+        
+        // Extract and validate subdomain using the same logic as HTTP
+        const hostname = host.split(':')[0];
+        const parts = hostname?.split('.') || [];
+        
+        if (parts.length >= 2) {
+          const subdomain = parts[0]?.toLowerCase();
+          
+          // Check if it's a valid tunnel session ID (word-word format)
+          // This prevents api.wingmanux.com from being intercepted
+          if (subdomain && /^[a-z]+-[a-z]+$/i.test(subdomain)) {
+            const handler = tunnelProxy.handleUpgrade();
+            handler(request, socket, head);
+          }
         }
+        // Let all other requests (including api.wingmanux.com) pass through to main WebSocket server
       });
       
       /**
