@@ -141,6 +141,8 @@ export class TunnelProxy {
   private forwardRequestViaWebSocket(req: Request, res: Response, sessionId: string, developerWs: any): void {
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    logger.info(`[TunnelProxy] Forwarding request ${requestId}: ${req.method} ${req.url} for session ${sessionId}`);
+    
     // Prepare request data to send to developer
     const requestData = {
       type: 'request',
@@ -156,6 +158,8 @@ export class TunnelProxy {
       }
     };
     
+    logger.debug(`[TunnelProxy] Request data size: headers=${JSON.stringify(req.headers).length}, body=${req.body ? JSON.stringify(req.body).length : 0}`);
+    
     // Set up response handler
     const handleResponse = (data: any) => {
       try {
@@ -167,6 +171,9 @@ export class TunnelProxy {
           
           // Send response back to client
           const response = message.response;
+          
+          logger.debug(`[TunnelProxy] Received response for ${requestId}: status=${response.statusCode}, bodySize=${response.body?.length || 0}, headers=${JSON.stringify(Object.keys(response.headers || {}))}`);
+          
           
           // Only process response if headers haven't been sent
           if (!res.headersSent) {
@@ -198,13 +205,21 @@ export class TunnelProxy {
             logger.warn(`Headers already sent for request ${requestId}`);
           }
         }
-      } catch (error) {
-        logger.error(`Error handling WebSocket response:`, error);
+      } catch (error: any) {
+        logger.error(`[TunnelProxy] Error handling WebSocket response for ${requestId}:`, error);
+        logger.error(`[TunnelProxy] Error details:`, {
+          message: error.message,
+          stack: error.stack,
+          requestId,
+          sessionId
+        });
+        
         // Send 500 error if we haven't sent response yet
         if (!res.headersSent) {
           res.status(500).json({
             error: 'Internal Server Error',
-            details: 'Failed to process tunnel response'
+            details: 'Failed to process tunnel response',
+            message: error.message
           });
         }
       }
