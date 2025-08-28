@@ -141,6 +141,11 @@ export class TunnelProxy {
   private forwardRequestViaWebSocket(req: Request, res: Response, sessionId: string, developerWs: any): void {
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    // Enhanced logging with console.log for production visibility
+    console.log(`[TunnelProxy] FORWARDING REQUEST ${requestId}: ${req.method} ${req.url} for session ${sessionId}`);
+    console.log(`[TunnelProxy] Request headers for ${requestId}:`, Object.keys(req.headers));
+    console.log(`[TunnelProxy] Request content-type:`, req.headers['content-type'] || 'none');
+    
     logger.info(`[TunnelProxy] Forwarding request ${requestId}: ${req.method} ${req.url} for session ${sessionId}`);
     
     // Prepare request data to send to developer
@@ -158,6 +163,7 @@ export class TunnelProxy {
       }
     };
     
+    console.log(`[TunnelProxy] Request data prepared for ${requestId}, sending to Chrome extension`);
     logger.debug(`[TunnelProxy] Request data size: headers=${JSON.stringify(req.headers).length}, body=${req.body ? JSON.stringify(req.body).length : 0}`);
     
     // Set up response handler
@@ -171,6 +177,10 @@ export class TunnelProxy {
           
           // Send response back to client
           const response = message.response;
+          
+          // Enhanced logging with console.log for production visibility
+          console.log(`[TunnelProxy] Received response for ${requestId}: status=${response.statusCode}, bodySize=${response.body?.length || 0}, isBase64=${response.isBase64 || false}`);
+          console.log(`[TunnelProxy] Response headers for ${requestId}:`, Object.keys(response.headers || {}));
           
           logger.debug(`[TunnelProxy] Received response for ${requestId}: status=${response.statusCode}, bodySize=${response.body?.length || 0}, headers=${JSON.stringify(Object.keys(response.headers || {}))}`);
           
@@ -189,23 +199,57 @@ export class TunnelProxy {
                   try {
                     res.setHeader(key, response.headers[key]);
                   } catch (headerError) {
+                    console.log(`[TunnelProxy] Failed to set header ${key}:`, headerError);
                     logger.warn(`Failed to set header ${key}:`, headerError);
                   }
                 }
               });
             }
             
-            // Send body
+            // Handle response body - decode base64 if needed
             if (response.body) {
-              res.send(response.body);
+              if (response.isBase64) {
+                // Decode base64 content back to original bytes
+                console.log(`[TunnelProxy] Decoding base64 content for ${requestId}`);
+                try {
+                  const binaryString = atob(response.body);
+                  const bytes = new Uint8Array(binaryString.length);
+                  for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                  }
+                  res.send(Buffer.from(bytes));
+                } catch (decodeError) {
+                  console.error(`[TunnelProxy] Failed to decode base64 for ${requestId}:`, decodeError);
+                  res.status(500).json({
+                    error: 'Failed to decode response content',
+                    details: 'Base64 decoding failed',
+                    requestId
+                  });
+                }
+              } else {
+                // Send as text
+                console.log(`[TunnelProxy] Sending text content for ${requestId}`);
+                res.send(response.body);
+              }
             } else {
+              console.log(`[TunnelProxy] Sending empty response for ${requestId}`);
               res.end();
             }
           } else {
+            console.log(`[TunnelProxy] Headers already sent for request ${requestId}`);
             logger.warn(`Headers already sent for request ${requestId}`);
           }
         }
       } catch (error: any) {
+        // Enhanced error logging with console.log for production visibility
+        console.error(`[TunnelProxy] ERROR handling WebSocket response for ${requestId}:`, error);
+        console.error(`[TunnelProxy] ERROR details:`, {
+          message: error.message,
+          stack: error.stack,
+          requestId,
+          sessionId
+        });
+        
         logger.error(`[TunnelProxy] Error handling WebSocket response for ${requestId}:`, error);
         logger.error(`[TunnelProxy] Error details:`, {
           message: error.message,
@@ -216,11 +260,15 @@ export class TunnelProxy {
         
         // Send 500 error if we haven't sent response yet
         if (!res.headersSent) {
+          console.log(`[TunnelProxy] Sending 500 error response for ${requestId}`);
           res.status(500).json({
             error: 'Internal Server Error',
             details: 'Failed to process tunnel response',
-            message: error.message
+            message: error.message,
+            requestId
           });
+        } else {
+          console.log(`[TunnelProxy] Cannot send error response for ${requestId} - headers already sent`);
         }
       }
     };

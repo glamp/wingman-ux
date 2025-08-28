@@ -6,6 +6,9 @@ primary_region = 'iad'
 kill_signal = 'SIGTERM'
 kill_timeout = '30s'
 
+[build]
+  dockerfile = "Dockerfile"
+
 [experimental]
   auto_rollback = true
 
