@@ -15,6 +15,7 @@ import { StorageService } from './services/storage';
 import { SessionManager } from './services/session-manager';
 import { ConnectionManager } from './services/connection-manager';
 import { ProxyHandler } from './services/proxy-handler';
+import { TunnelProxy } from './services/tunnel-proxy';
 import { ShareManager } from './services/share-manager';
 import { createLogger } from '@wingman/shared';
 
@@ -32,8 +33,10 @@ export function createServer(options: ServerOptions = {}) {
   const app = express();
   const port = options.port ?? 8787;
   const host = options.host || 'localhost';
-  const storagePath = options.storagePath || './.wingman/annotations';
-  const sessionsPath = path.join(path.dirname(storagePath), 'sessions');
+  // Use environment variable for storage path in production
+  const baseStoragePath = process.env.STORAGE_PATH || options.storagePath || './.wingman';
+  const storagePath = path.join(baseStoragePath, 'annotations');
+  const sessionsPath = path.join(baseStoragePath, 'sessions');
   const enableTunnel = options.enableTunnel || false;
   const tunnelPort = options.tunnelPort || port;
 
@@ -42,6 +45,7 @@ export function createServer(options: ServerOptions = {}) {
   const sessionManager = new SessionManager(sessionsPath);
   const connectionManager = new ConnectionManager();
   const proxyHandler = new ProxyHandler(connectionManager, sessionManager);
+  const tunnelProxy = new TunnelProxy(sessionManager, connectionManager);
   const shareManager = new ShareManager(path.join(path.dirname(storagePath), 'shares'));
 
   // CORS Middleware - configured for browser extensions
@@ -52,7 +56,8 @@ export function createServer(options: ServerOptions = {}) {
 
   // Subdomain-based tunnel routing - MUST come before other routes
   // This handles requests like session-id.wingmanux.com
-  app.use(createSubdomainProxyMiddleware(sessionManager, proxyHandler));
+  // Using new improved tunnel proxy with proper timeouts
+  app.use(tunnelProxy.middleware());
 
   // Rate limiting
   const limiter = rateLimit({
@@ -182,6 +187,17 @@ export function createServer(options: ServerOptions = {}) {
       
       // Initialize WebSocket server
       const wss = new WebSocketServer({ server, path: '/ws' });
+      
+      // Handle WebSocket upgrade for tunnel subdomains
+      server.on('upgrade', (request, socket, head) => {
+        // Check if this is a tunnel WebSocket upgrade
+        const host = request.headers.host || '';
+        if (host.includes('.')) {
+          // This might be a subdomain tunnel WebSocket
+          const handler = tunnelProxy.handleUpgrade();
+          handler(request, socket, head);
+        }
+      });
       
       /**
        * WebSocket connection handler.

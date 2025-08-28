@@ -114,8 +114,19 @@ export class SessionManager {
     }
   }
 
+  private async ensureStorageDirectoryExists() {
+    try {
+      await fs.mkdir(this.storagePath, { recursive: true });
+    } catch (error) {
+      // Directory might already exist, ignore
+    }
+  }
+
   private async saveSession(session: TunnelSession) {
     try {
+      // Ensure directory exists
+      await this.ensureStorageDirectoryExists();
+      
       const filePath = path.join(this.storagePath, `${session.id}.json`);
       const tempPath = `${filePath}.tmp`;
       

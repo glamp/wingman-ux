@@ -38,8 +38,9 @@ RUN npm ci --workspace=@wingman/api --workspace=@wingman/shared --omit=dev
 COPY --from=builder /app/packages/api/dist ./packages/api/dist
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
-# Create wingman storage directory
-RUN mkdir -p /data/.wingman/annotations /data/.wingman/sessions
+# Create wingman storage directories with proper permissions
+RUN mkdir -p /data/.wingman/annotations /data/.wingman/sessions /data/.wingman/shares && \
+    chmod -R 755 /data/.wingman
 
 # Set environment variables
 ENV NODE_ENV=production
