@@ -179,6 +179,7 @@ export class TunnelManager {
             reject(new Error(message.error));
           } else if (message.type === 'request') {
             logger.info(`[TunnelManager] Tunnel request: ${message.request?.method} ${message.request?.path}`);
+            this.handleTunnelRequest(message);
           } else {
             logger.debug(`[TunnelManager] Unhandled message type: ${message.type}`);
           }
@@ -202,6 +203,97 @@ export class TunnelManager {
         }
       };
     });
+  }
+
+  /**
+   * Handle incoming tunnel requests by forwarding them to localhost
+   */
+  private async handleTunnelRequest(message: any): Promise<void> {
+    const { requestId, request, sessionId } = message;
+    
+    if (!this.currentTunnel || !this.ws) {
+      logger.error('[TunnelManager] Cannot handle request - no active tunnel or WebSocket');
+      return;
+    }
+    
+    try {
+      // Build target URL for user's localhost
+      const targetUrl = `http://localhost:${this.currentTunnel.targetPort}${request.path || '/'}`;
+      logger.debug(`[TunnelManager] Forwarding request to: ${targetUrl}`);
+      
+      // Filter out problematic headers that Chrome extension can't set
+      const headers: Record<string, string> = {};
+      if (request.headers) {
+        Object.entries(request.headers).forEach(([key, value]) => {
+          const lowerKey = key.toLowerCase();
+          // Skip headers that Chrome extensions can't set
+          if (!['host', 'connection', 'content-length', 'accept-encoding'].includes(lowerKey)) {
+            headers[key] = value as string;
+          }
+        });
+      }
+      
+      // Prepare fetch options
+      const fetchOptions: RequestInit = {
+        method: request.method || 'GET',
+        headers
+      };
+      
+      // Add body for non-GET requests
+      if (request.body && request.method !== 'GET' && request.method !== 'HEAD') {
+        fetchOptions.body = typeof request.body === 'string' 
+          ? request.body 
+          : JSON.stringify(request.body);
+      }
+      
+      // Forward request to localhost
+      const response = await fetch(targetUrl, fetchOptions);
+      
+      // Get response body
+      const responseBody = await response.text();
+      
+      // Collect response headers
+      const responseHeaders: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+      
+      // Send response back through WebSocket
+      const responseMessage = {
+        type: 'response',
+        requestId,
+        sessionId,
+        response: {
+          statusCode: response.status,
+          headers: responseHeaders,
+          body: responseBody
+        }
+      };
+      
+      logger.debug(`[TunnelManager] Sending response for request ${requestId}: ${response.status}`);
+      this.ws.send(JSON.stringify(responseMessage));
+      
+    } catch (error: any) {
+      logger.error(`[TunnelManager] Error forwarding request:`, error);
+      
+      // Send error response back through WebSocket
+      const errorResponse = {
+        type: 'response',
+        requestId,
+        sessionId,
+        response: {
+          statusCode: 502,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            error: 'Failed to forward request',
+            details: error.message,
+            targetPort: this.currentTunnel.targetPort
+          })
+        }
+      };
+      
+      this.ws.send(JSON.stringify(errorResponse));
+    }
   }
 
   private scheduleReconnect(): void {
