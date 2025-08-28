@@ -73,7 +73,20 @@ export function createServer(options: ServerOptions = {}) {
   app.use('/tunnel', tunnelRouter(sessionManager, connectionManager, shareManager));
   app.use('/api', createSessionsRouter(sessionManager));
   
-  // Debug endpoint to check tunnel proxy behavior
+  // Store console output for debugging (since logs aren't accessible)
+  const consoleOutput: string[] = [];
+  const originalConsoleLog = console.log;
+  console.log = (...args) => {
+    const message = args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg)).join(' ');
+    consoleOutput.push(`${new Date().toISOString()}: ${message}`);
+    // Keep last 50 messages
+    if (consoleOutput.length > 50) {
+      consoleOutput.shift();
+    }
+    originalConsoleLog(...args);
+  };
+
+  // Debug endpoint to check tunnel proxy behavior and see console output
   app.get('/debug/tunnel-proxy', (req, res) => {
     const host = req.headers.host || '';
     console.log('[DEBUG] /debug/tunnel-proxy accessed');
@@ -87,6 +100,7 @@ export function createServer(options: ServerOptions = {}) {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       tunnelBaseUrl: process.env.TUNNEL_BASE_URL,
+      consoleOutput: consoleOutput.slice(-20), // Last 20 messages
       request: {
         path: req.path,
         method: req.method,
