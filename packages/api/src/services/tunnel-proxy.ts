@@ -300,6 +300,16 @@ export class TunnelProxy {
     const hostname = host.split(':')[0];
     if (!hostname) return null;
     
+    // Only process tunnel requests for the configured tunnel domain
+    const tunnelBaseUrl = process.env.TUNNEL_BASE_URL || 'wingmanux.com';
+    
+    // Check if this request is to the tunnel domain (e.g., *.wingmanux.com)
+    if (!hostname.endsWith(`.${tunnelBaseUrl}`)) {
+      // This is not a tunnel request (e.g., wingman-tunnel.fly.dev)
+      console.log(`[TunnelProxy] Skipping non-tunnel domain: ${hostname} (expected *.${tunnelBaseUrl})`);
+      return null;
+    }
+    
     // Reserved subdomains that should NOT be treated as tunnels
     const RESERVED_SUBDOMAINS = [
       'api',      // API endpoints
@@ -314,13 +324,14 @@ export class TunnelProxy {
     
     // Extract the first part as potential subdomain
     const parts = hostname.split('.');
-    if (parts.length < 2) return null;
+    if (parts.length < 3) return null; // Need at least subdomain.domain.tld
     
     const subdomain = parts[0]?.toLowerCase();
     if (!subdomain) return null;
     
     // Skip if it's a reserved subdomain
     if (RESERVED_SUBDOMAINS.includes(subdomain)) {
+      console.log(`[TunnelProxy] Skipping reserved subdomain: ${subdomain}`);
       return null;
     }
     
@@ -328,6 +339,7 @@ export class TunnelProxy {
     // Examples: thunder-xray, ghost-alpha, maverick-bravo
     // This prevents false positives like "api" or "www"
     if (!/^[a-z]+-[a-z]+$/i.test(subdomain)) {
+      console.log(`[TunnelProxy] Subdomain doesn't match session pattern: ${subdomain}`);
       return null;
     }
     
@@ -336,9 +348,11 @@ export class TunnelProxy {
     if (sessionParts.length !== 2 || 
         !sessionParts[0] || sessionParts[0].length < 3 || 
         !sessionParts[1] || sessionParts[1].length < 3) {
+      console.log(`[TunnelProxy] Session ID validation failed: ${subdomain}`);
       return null;
     }
     
+    console.log(`[TunnelProxy] Valid tunnel session detected: ${subdomain}`);
     return subdomain;
   }
 
