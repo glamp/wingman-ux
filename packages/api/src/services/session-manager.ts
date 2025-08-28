@@ -42,6 +42,7 @@ export class SessionManager {
   constructor(storagePath: string = './.wingman/sessions') {
     this.storagePath = storagePath;
     this.initializeStorage();
+    this.initializePermanentTestSession();
   }
 
   private async initializeStorage() {
@@ -231,6 +232,35 @@ export class SessionManager {
   }
 
   /**
+   * Initialize permanent test session for E2E validation
+   * This session is always available at test-tunnel.wingmanux.com
+   */
+  private initializePermanentTestSession(): void {
+    const TEST_SESSION_ID = 'test-tunnel';
+    
+    // Create permanent test session that never expires
+    const testSession: TunnelSession = {
+      id: TEST_SESSION_ID,
+      developerId: 'e2e-test',
+      targetPort: 3000, // Default test port
+      status: 'active',
+      createdAt: new Date(),
+      lastActivity: new Date(),
+      tunnelUrl: process.env.NODE_ENV === 'production' 
+        ? `https://${TEST_SESSION_ID}.wingmanux.com`
+        : `http://${TEST_SESSION_ID}.localhost:8787`,
+      metadata: {
+        permanent: true,
+        purpose: 'E2E testing and validation',
+        description: 'Permanent test subdomain for tunnel validation'
+      }
+    };
+    
+    this.sessions.set(TEST_SESSION_ID, testSession);
+    this.logger.info(`Initialized permanent test session: ${TEST_SESSION_ID}`);
+  }
+
+  /**
    * Clean up sessions older than 24 hours.
    * Called periodically by the server to prevent memory leaks.
    */
@@ -239,6 +269,11 @@ export class SessionManager {
     const expiryTime = 24 * 60 * 60 * 1000; // 24 hours
     
     for (const [sessionId, session] of this.sessions.entries()) {
+      // Skip permanent test session
+      if (session.metadata?.permanent) {
+        continue;
+      }
+      
       const age = now - session.lastActivity.getTime();
       if (age > expiryTime) {
         this.logger.info(`Expiring session ${sessionId} (age: ${Math.round(age / 1000 / 60)} minutes)`);

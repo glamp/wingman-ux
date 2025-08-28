@@ -333,13 +333,34 @@ export class TunnelProxy {
     const hostname = host.split(':')[0];
     if (!hostname) return null;
     
-    // Only process tunnel requests for the configured tunnel domain
+    // Check for development localhost pattern first (e.g., test-tunnel.localhost)
+    const isLocalhost = hostname.endsWith('.localhost');
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.FLY_APP_NAME;
+    
+    if (isLocalhost) {
+      // In development, support subdomain.localhost pattern
+      const subdomain = hostname.replace('.localhost', '');
+      
+      // Validate session ID pattern (word-word or test-tunnel)
+      if (/^[a-z]+-[a-z]+$/i.test(subdomain) || subdomain === 'test-tunnel') {
+        console.log(`[TunnelProxy] Valid localhost tunnel detected: ${subdomain}`);
+        return subdomain;
+      }
+      
+      console.log(`[TunnelProxy] Invalid localhost subdomain pattern: ${subdomain}`);
+      return null;
+    }
+    
+    // Production: Only process tunnel requests for the configured tunnel domain
     const tunnelBaseUrl = process.env.TUNNEL_BASE_URL || 'wingmanux.com';
     
     // Check if this request is to the tunnel domain (e.g., *.wingmanux.com)
     if (!hostname.endsWith(`.${tunnelBaseUrl}`)) {
       // This is not a tunnel request (e.g., wingman-tunnel.fly.dev)
-      console.log(`[TunnelProxy] Skipping non-tunnel domain: ${hostname} (expected *.${tunnelBaseUrl})`);
+      if (isProduction) {
+        // Only log in production to avoid noise in development
+        console.log(`[TunnelProxy] Skipping non-tunnel domain: ${hostname} (expected *.${tunnelBaseUrl})`);
+      }
       return null;
     }
     
