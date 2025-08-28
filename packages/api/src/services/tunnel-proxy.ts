@@ -188,8 +188,9 @@ export class TunnelProxy {
               responseMetadata = message.response;
               console.log(`[TunnelProxy] Received response metadata for ${requestId}: status=${responseMetadata.statusCode}, bodyLength=${responseMetadata.bodyLength}`);
               
-              // If there's no body, send the response immediately
+              // If there's no body, send the response immediately with empty body
               if (!responseMetadata.bodyLength || responseMetadata.bodyLength === 0) {
+                responseBody = Buffer.alloc(0); // Set empty buffer instead of null
                 sendCompleteResponse();
               }
               // Otherwise wait for the binary body frame
