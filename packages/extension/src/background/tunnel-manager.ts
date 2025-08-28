@@ -249,8 +249,29 @@ export class TunnelManager {
       // Forward request to localhost
       const response = await fetch(targetUrl, fetchOptions);
       
-      // Get response body
-      const responseBody = await response.text();
+      // Get content type to determine how to handle the response body
+      const contentType = response.headers.get('content-type') || '';
+      const isTextContent = contentType.includes('text/') || 
+                           contentType.includes('application/json') || 
+                           contentType.includes('application/xml') ||
+                           contentType.includes('application/javascript') ||
+                           contentType.includes('text/javascript');
+      
+      let responseBody: string;
+      let isBase64 = false;
+      
+      if (isTextContent && !contentType.includes('javascript')) {
+        // For pure text content (HTML, CSS, plain text, JSON), use text()
+        responseBody = await response.text();
+        logger.debug(`[TunnelManager] Using text encoding for ${contentType}`);
+      } else {
+        // For JavaScript, binary content, or unknown content types, use base64 encoding
+        // to preserve exact byte content and avoid corruption
+        const buffer = await response.arrayBuffer();
+        responseBody = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        isBase64 = true;
+        logger.debug(`[TunnelManager] Using base64 encoding for ${contentType}`);
+      }
       
       // Collect response headers
       const responseHeaders: Record<string, string> = {};
@@ -266,7 +287,8 @@ export class TunnelManager {
         response: {
           statusCode: response.status,
           headers: responseHeaders,
-          body: responseBody
+          body: responseBody,
+          isBase64: isBase64
         }
       };
       
