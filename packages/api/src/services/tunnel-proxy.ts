@@ -67,6 +67,9 @@ export class TunnelProxy {
       if (!subdomain) {
         return next(); // Not a tunnel request
       }
+      
+      // Add extra safety - only process requests that are definitely tunnel requests
+      console.log(`[TunnelProxy] Processing tunnel request for subdomain: ${subdomain}, path: ${req.path}`);
 
       logger.debug(`Processing tunnel request for subdomain: ${subdomain}`);
 

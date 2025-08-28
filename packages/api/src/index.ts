@@ -73,6 +73,28 @@ export function createServer(options: ServerOptions = {}) {
   app.use('/tunnel', tunnelRouter(sessionManager, connectionManager, shareManager));
   app.use('/api', createSessionsRouter(sessionManager));
   
+  // Debug endpoint to check tunnel proxy behavior
+  app.get('/debug/tunnel-proxy', (req, res) => {
+    const host = req.headers.host || '';
+    console.log('[DEBUG] /debug/tunnel-proxy accessed');
+    console.log('[DEBUG] Host header:', host);
+    console.log('[DEBUG] TUNNEL_BASE_URL:', process.env.TUNNEL_BASE_URL);
+    console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
+    
+    res.json({
+      host,
+      message: 'Debug info from tunnel proxy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      tunnelBaseUrl: process.env.TUNNEL_BASE_URL,
+      request: {
+        path: req.path,
+        method: req.method,
+        headers: Object.keys(req.headers)
+      }
+    });
+  });
+  
   // Proxy routes for tunneled requests
   app.use('/tunnel/:sessionId/*', proxyHandler.handleRequest.bind(proxyHandler));
 

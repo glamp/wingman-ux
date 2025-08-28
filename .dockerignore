@@ -1,31 +1,16 @@
-# Ignore node_modules everywhere
-**/node_modules
-**/.git
-**/.env
-**/.env.*
-**/coverage
-**/.nyc_output
-**/.vscode
-**/.idea
-**/logs
-**/*.log
-**/.DS_Store
-**/tmp
-**/temp
-
-# Build artifacts we don't need
-packages/chrome-extension/dist
-packages/cli/dist
-packages/demo-app/dist
-packages/web-sdk/dist
-packages/relay-server/dist
-packages/shared/dist
-packages/webapp/dist
-
-# Local data
-.wingman
-.wingman-dev
-.playwright-mcp
-release
-
-# Keep source files for building
+node_modules
+.git
+.env*
+*.log
+.DS_Store
+test
+tests
+__tests__
+*.test.*
+*.spec.*
+.github
+docs
+plans
+examples
+.vscode
+.idea
