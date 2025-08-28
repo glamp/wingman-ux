@@ -192,6 +192,14 @@ export class TunnelProxy {
               if (!responseMetadata.bodyLength || responseMetadata.bodyLength === 0) {
                 responseBody = Buffer.alloc(0); // Set empty buffer instead of null
                 sendCompleteResponse();
+              } else {
+                // Otherwise wait for the binary body frame, but set a timeout
+                setTimeout(() => {
+                  if (!responseComplete && responseMetadata && !responseBody) {
+                    console.error(`[TunnelProxy] TIMEOUT waiting for binary body for ${requestId}, expected ${responseMetadata.bodyLength} bytes`);
+                    sendErrorResponse(new Error('Timeout waiting for binary body'));
+                  }
+                }, 5000); // 5 second timeout for binary frame
               }
               // Otherwise wait for the binary body frame
               return;
@@ -208,6 +216,14 @@ export class TunnelProxy {
           sendCompleteResponse();
           return;
         }
+        
+        // Debug: Log unexpected data
+        console.log(`[TunnelProxy] UNEXPECTED DATA for ${requestId}:`, {
+          type: typeof data,
+          isBuffer: data instanceof Buffer,
+          hasMetadata: !!responseMetadata,
+          dataLength: data?.length || 'unknown'
+        });
         
       } catch (error: any) {
         console.error(`[TunnelProxy] ERROR handling WebSocket response for ${requestId}:`, error);
