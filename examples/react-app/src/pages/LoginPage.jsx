@@ -31,10 +31,6 @@ export default function LoginPage() {
         flexDirection: 'column', 
         alignItems: 'center' 
       }}>
-        <LoginButton provider="microsoft">
-          🏢 Login with Microsoft
-        </LoginButton>
-        
         <LoginButton provider="google">
           🌐 Sign in with Google
         </LoginButton>
@@ -51,7 +47,6 @@ export default function LoginPage() {
         <p><strong>Tunnel Domain:</strong> {window.location.origin}</p>
         <p><strong>Callback URLs:</strong></p>
         <ul style={{ fontSize: '14px', color: '#666' }}>
-          <li>/auth/microsoft/callback</li>
           <li>/auth/google/callback</li>
         </ul>
         <p style={{ fontSize: '12px', color: '#888' }}>

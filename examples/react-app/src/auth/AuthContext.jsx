@@ -8,51 +8,105 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check for existing auth state in localStorage
-    const savedUser = localStorage.getItem('demo-user');
+    const savedUser = localStorage.getItem('google-user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error('Error parsing saved user data:', error);
+        localStorage.removeItem('google-user');
+      }
     }
     setLoading(false);
   }, []);
 
-  const login = (provider) => {
-    console.log(`[Demo OAuth] Attempting login with ${provider}`);
+  const handleGoogleLoginSuccess = (credentialResponse) => {
+    console.log('[Real OAuth] Google login successful:', credentialResponse);
     
-    // Simulate OAuth redirect
-    // In a real app, this would redirect to the OAuth provider
-    const currentDomain = window.location.origin;
-    const callbackUrl = `${currentDomain}/auth/callback`;
-    
-    console.log(`[Demo OAuth] Would redirect to ${provider} with callback: ${callbackUrl}`);
-    
-    // For demo purposes, simulate successful login
-    setTimeout(() => {
-      const mockUser = {
-        id: '12345',
-        name: 'Demo User',
-        email: 'demo@example.com',
-        provider: provider,
-        avatar: `https://ui-avatars.com/api/?name=Demo+User&background=667eea&color=fff`
+    // Decode the JWT token to get user info
+    try {
+      const decoded = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
+      console.log('[Real OAuth] Decoded user data:', decoded);
+      
+      const currentDomain = window.location.origin;
+      const isTunnelMode = currentDomain.includes('.wingmanux.com');
+      
+      const googleUser = {
+        id: decoded.sub,
+        name: decoded.name,
+        email: decoded.email,
+        avatar: decoded.picture,
+        provider: 'google',
+        credential: credentialResponse.credential,
+        domain: currentDomain,
+        tunnelMode: isTunnelMode,
+        raw: decoded
       };
       
-      setUser(mockUser);
-      localStorage.setItem('demo-user', JSON.stringify(mockUser));
-      console.log(`[Demo OAuth] Login successful:`, mockUser);
-    }, 1000);
+      setUser(googleUser);
+      localStorage.setItem('google-user', JSON.stringify(googleUser));
+      
+      console.log(`[Real OAuth] User authenticated in ${isTunnelMode ? 'tunnel' : 'local'} mode:`, googleUser);
+    } catch (error) {
+      console.error('Error decoding Google credential:', error);
+    }
   };
 
+  const handleGoogleLoginError = (error) => {
+    console.error('[Real OAuth] Google login failed:', error);
+  };
+
+  // Initialize Google OAuth when component mounts
+  useEffect(() => {
+    const initializeGoogleOAuth = () => {
+      if (!window.google) return;
+      
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        console.error('[Real OAuth] Google Client ID not found in environment');
+        return;
+      }
+
+      console.log('[Real OAuth] Initializing Google OAuth with client ID:', clientId);
+      
+      try {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleLoginSuccess,
+          auto_select: false,
+        });
+        console.log('[Real OAuth] Google OAuth initialized successfully');
+      } catch (error) {
+        console.error('[Real OAuth] Failed to initialize Google OAuth:', error);
+      }
+    };
+
+    // Load Google Identity Services script
+    if (!window.google) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = initializeGoogleOAuth;
+      document.head.appendChild(script);
+    } else {
+      initializeGoogleOAuth();
+    }
+  }, []);
+
   const logout = () => {
-    console.log(`[Demo OAuth] Logging out user:`, user);
+    console.log(`[Real OAuth] Logging out user:`, user);
     setUser(null);
-    localStorage.removeItem('demo-user');
+    localStorage.removeItem('google-user');
   };
 
   const value = {
     user,
     loading,
-    login,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    handleGoogleLoginSuccess,
+    handleGoogleLoginError
   };
 
   return (

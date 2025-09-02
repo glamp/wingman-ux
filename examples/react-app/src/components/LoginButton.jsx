@@ -1,37 +1,45 @@
+import { useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext';
 
 export default function LoginButton({ provider, children }) {
-  const { login, loading } = useAuth();
+  const { loading } = useAuth();
+  const buttonRef = useRef(null);
 
-  const handleLogin = () => {
-    console.log(`[LoginButton] Initiating ${provider} OAuth flow`);
-    login(provider);
-  };
+  useEffect(() => {
+    if (provider === 'google' && window.google && buttonRef.current) {
+      // Render Google sign-in button using vanilla Google Identity API
+      window.google.accounts.id.renderButton(buttonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
+        width: 250
+      });
+      console.log('[LoginButton] Google sign-in button rendered');
+    }
+  }, [provider, window.google]);
 
+  if (provider === 'google') {
+    return (
+      <div style={{ margin: '8px' }}>
+        <div ref={buttonRef}></div>
+      </div>
+    );
+  }
+
+  // For other providers, show not implemented message
   return (
-    <button 
-      onClick={handleLogin}
-      disabled={loading}
-      className="login-button"
-      style={{
-        padding: '12px 24px',
-        fontSize: '16px',
-        borderRadius: '8px',
-        border: 'none',
-        background: provider === 'google' ? '#4285f4' : '#0078d4',
-        color: 'white',
-        cursor: 'pointer',
-        margin: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        minWidth: '200px',
-        justifyContent: 'center'
-      }}
-    >
-      {provider === 'google' && '🌐'}
-      {provider === 'microsoft' && '🏢'}
-      {children || `Sign in with ${provider}`}
-    </button>
+    <div style={{ 
+      margin: '8px',
+      padding: '12px 24px',
+      backgroundColor: '#f5f5f5',
+      borderRadius: '8px',
+      color: '#666',
+      textAlign: 'center',
+      border: '1px dashed #ccc'
+    }}>
+      {provider} OAuth not implemented in this demo
+    </div>
   );
 }
