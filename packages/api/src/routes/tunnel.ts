@@ -6,6 +6,13 @@ import { createLogger } from '@wingman/shared';
 
 const logger = createLogger('Wingman:TunnelRoutes');
 
+// Store SSE connections and pending requests
+export const sseConnections = new Map<string, Response>();
+export const pendingRequests = new Map<string, {
+  response: Response;
+  timestamp: number;
+}>();
+
 // Store active tunnel metadata (actual connections managed by ConnectionManager)
 const activeTunnels = new Map<string, {
   sessionId: string;
@@ -444,6 +451,141 @@ export function tunnelRouter(
         ...(share.metadata?.expiresAt && { expiresAt: share.metadata.expiresAt })
       }))
     });
+  });
+
+  /**
+   * GET /tunnel/events/:sessionId
+   * Server-Sent Events endpoint for tunnel clients to receive requests
+   */
+  router.get('/events/:sessionId', (req: Request, res: Response) => {
+    const sessionId = req.params.sessionId;
+    if (!sessionId) {
+      return res.status(400).json({
+        error: 'Session ID required',
+        code: 'MISSING_SESSION_ID'
+      });
+    }
+    
+    // Verify session exists
+    const session = sessionManager?.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        error: 'Session not found',
+        code: 'SESSION_NOT_FOUND'
+      });
+    }
+
+    // Set up SSE headers
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'X-Accel-Buffering': 'no' // Disable Nginx buffering
+    });
+
+    // Store SSE connection
+    sseConnections.set(sessionId, res);
+    logger.info(`SSE client connected for session ${sessionId}`);
+
+    // Send initial connection event
+    res.write(`data: ${JSON.stringify({ 
+      type: 'connected', 
+      sessionId,
+      timestamp: Date.now() 
+    })}\n\n`);
+
+    // Update session status
+    if (sessionManager) {
+      sessionManager.updateSession(sessionId, { status: 'active' });
+    }
+
+    // Send heartbeat every 30 seconds to keep connection alive
+    const heartbeatInterval = setInterval(() => {
+      if (!sseConnections.has(sessionId)) {
+        clearInterval(heartbeatInterval);
+        return;
+      }
+      res.write(`data: ${JSON.stringify({ 
+        type: 'heartbeat', 
+        timestamp: Date.now() 
+      })}\n\n`);
+    }, 30000);
+
+    // Clean up on disconnect
+    req.on('close', () => {
+      logger.info(`SSE client disconnected for session ${sessionId}`);
+      sseConnections.delete(sessionId);
+      clearInterval(heartbeatInterval);
+      if (sessionManager) {
+        sessionManager.updateSession(sessionId, { status: 'pending' });
+      }
+    });
+  });
+
+  /**
+   * POST /tunnel/response
+   * Endpoint for tunnel clients to send responses back
+   */
+  router.post('/response', express.json({ limit: '25mb' }), (req: Request, res: Response) => {
+    const { requestId, sessionId, response } = req.body;
+
+    if (!requestId || !response) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        code: 'INVALID_REQUEST'
+      });
+    }
+
+    // Find the pending request
+    const pendingRequest = pendingRequests.get(requestId);
+    if (!pendingRequest) {
+      return res.status(404).json({
+        error: 'Request not found',
+        code: 'REQUEST_NOT_FOUND'
+      });
+    }
+
+    // Clear the pending request
+    pendingRequests.delete(requestId);
+
+    // Send the response back to the original HTTP client
+    const { response: clientRes } = pendingRequest;
+    
+    try {
+      // Set status and headers
+      clientRes.status(response.statusCode || 200);
+      
+      if (response.headers) {
+        Object.entries(response.headers).forEach(([key, value]) => {
+          const lowerKey = key.toLowerCase();
+          // Skip headers that can cause issues
+          if (!['content-length', 'transfer-encoding', 'connection'].includes(lowerKey)) {
+            clientRes.setHeader(key, value as string);
+          }
+        });
+      }
+
+      // Send body
+      if (response.isBase64 && response.body) {
+        const buffer = Buffer.from(response.body, 'base64');
+        clientRes.send(buffer);
+      } else if (response.body) {
+        clientRes.send(response.body);
+      } else {
+        clientRes.end();
+      }
+
+      // Acknowledge receipt to tunnel client
+      res.json({ success: true, requestId });
+      
+    } catch (error) {
+      logger.error('Error sending response to client:', error);
+      res.status(500).json({
+        error: 'Failed to send response',
+        code: 'RESPONSE_ERROR'
+      });
+    }
   });
 
   return router;

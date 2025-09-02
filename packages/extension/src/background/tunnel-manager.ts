@@ -56,10 +56,8 @@ export class TunnelManager {
       this.currentRelayUrl = baseUrl;
       this.isLocalRelay = isLocalRelay;
       
-      // Use local relay for tunnel creation if available, otherwise fall back to external
-      const apiUrl = isLocalRelay 
-        ? `${baseUrl}/tunnel/create`
-        : 'https://api.wingmanux.com/tunnel/create';
+      // Use the configured base URL for tunnel creation
+      const apiUrl = `${baseUrl}/tunnel/create`;
       
       const requestBody = JSON.stringify({
         targetPort,
@@ -125,10 +123,8 @@ export class TunnelManager {
         return;
       }
 
-      // Use appropriate WebSocket URL based on relay type
-      const wsUrl = isLocalRelay
-        ? relayUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws'
-        : 'wss://api.wingmanux.com/ws';
+      // Use the configured base URL for WebSocket connection
+      const wsUrl = relayUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws';
       
       logger.info(`[TunnelManager] Connecting to WebSocket at ${wsUrl}... (${isLocalRelay ? 'LOCAL' : 'EXTERNAL'})`);
       

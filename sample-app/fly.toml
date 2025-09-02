@@ -1,0 +1,52 @@
+# Sample app configuration for Fly.io
+app = 'wingman-test-app'
+primary_region = 'iad'
+kill_signal = 'SIGTERM'
+kill_timeout = '30s'
+
+[build]
+
+[env]
+  NODE_ENV = 'production'
+  PORT = '3000'
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 3000
+  processes = ['app']
+
+  [[services.ports]]
+    port = 80
+    handlers = ['http']
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
+
+  [services.concurrency]
+    type = 'connections'
+    hard_limit = 50
+    soft_limit = 25
+
+  [[services.tcp_checks]]
+    interval = '15s'
+    timeout = '2s'
+    grace_period = '5s'
+
+  [[services.http_checks]]
+    interval = '30s'
+    timeout = '3s'
+    grace_period = '5s'
+    method = 'GET'
+    path = '/health'
+    protocol = 'http'
+    tls_skip_verify = false
+
+    [services.http_checks.headers]
+      Accept = 'application/json'
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1

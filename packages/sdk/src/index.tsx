@@ -1,2 +1,7 @@
 export { WingmanProvider, useWingman } from './WingmanProvider';
-export type { WingmanConfig } from './types';
+export { 
+  WingmanOAuthHandler, 
+  createOAuthHandler, 
+  withWingmanOAuth 
+} from './oauth-handler';
+export type { WingmanConfig, WingmanOAuthConfig } from './types';

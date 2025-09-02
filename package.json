@@ -18,6 +18,7 @@
     "build": "npm run build --workspaces --if-present",
     "build:extension": "cd packages/extension && npm run build",
     "test": "npm run test --workspaces --if-present",
+    "test:tunnel": "./test-tunnel.sh",
     "test:coverage": "vitest run --coverage",
     "test:coverage:watch": "vitest watch --coverage",
     "test:coverage:all": "npm run test:coverage --workspaces --if-present && node scripts/coverage-report.js",

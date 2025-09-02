@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import type { WingmanConfig } from './types';
 import { setupMessageHandler } from './message-handler';
 import { ReactIntrospector } from './react-introspector';
+import { createOAuthHandler } from './oauth-handler';
 import { WingmanAnnotation, createLogger } from '@wingman/shared';
 
 interface WingmanContextValue {
@@ -56,6 +57,17 @@ export function WingmanProvider({
     // Initialize React introspector
     introspectorRef.current = new ReactIntrospector(debug);
 
+    // Initialize OAuth handler if configured
+    if (config.oauth) {
+      if (debug) {
+        logger.info('Initializing OAuth handler with routes:', config.oauth.routes);
+      }
+      
+      const oauthHandler = createOAuthHandler(config.oauth);
+      // Setup OAuth tunnel detection
+      oauthHandler.setupTunnelOAuth();
+    }
+
     // Setup message handler for Chrome extension communication
     const cleanup = setupMessageHandler(introspectorRef.current, debug);
 
@@ -66,7 +78,7 @@ export function WingmanProvider({
       cleanup();
       introspectorRef.current = null;
     };
-  }, [enabled, debug]);
+  }, [enabled, debug, config.oauth]);
 
   const activate = useCallback(() => {
     setIsActive(true);

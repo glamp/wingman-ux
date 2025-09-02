@@ -1,7 +1,7 @@
 {
   "environment": "production",
   "environmentName": "Production",
-  "relayUrl": "http://localhost:8787",
+  "relayUrl": "https://wingman-tunnel.fly.dev",
   "debug": false,
   "badge": {
     "text": "",

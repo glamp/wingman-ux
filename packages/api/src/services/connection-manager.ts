@@ -23,6 +23,7 @@ export class ConnectionManager extends EventEmitter {
   private developers: Map<string, WebSocket> = new Map();
   private pms: Map<string, WebSocket> = new Map();
   private pendingRequests: Map<string, PendingRequest> = new Map();
+  private tunnelResponseHandlers: Map<string, (message: any) => void> = new Map();
   private logger = createLogger('Wingman:ConnectionManager');
 
   constructor() {
@@ -168,11 +169,34 @@ export class ConnectionManager extends EventEmitter {
 
   /**
    * Handle response from developer.
-   * Note: Currently handled inline in forwardRequest for simplicity.
+   * Forward to any waiting handlers (like TunnelProxy).
    */
   handleResponse(sessionId: string, message: any): void {
-    // This is handled inline in forwardRequest for simplicity
     this.logger.debug(`Received response for session ${sessionId}:`, message.requestId);
+    
+    // Check if there's a tunnel response handler waiting for this response
+    const handlerKey = `${sessionId}:${message.requestId}`;
+    const handler = this.tunnelResponseHandlers.get(handlerKey);
+    
+    if (handler) {
+      // Call the handler and remove it (one-time use)
+      handler(message);
+      this.tunnelResponseHandlers.delete(handlerKey);
+    }
+  }
+  
+  /**
+   * Register a handler for tunnel responses.
+   * Used by TunnelProxy to receive responses for specific requests.
+   */
+  registerTunnelResponseHandler(sessionId: string, requestId: string, handler: (message: any) => void): void {
+    const handlerKey = `${sessionId}:${requestId}`;
+    this.tunnelResponseHandlers.set(handlerKey, handler);
+    
+    // Auto-cleanup after 30 seconds to prevent memory leaks
+    setTimeout(() => {
+      this.tunnelResponseHandlers.delete(handlerKey);
+    }, 30000);
   }
 
   handleDisconnection(sessionId: string): void {

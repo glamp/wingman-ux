@@ -29,6 +29,29 @@ export interface ServerOptions {
 
 const logger = createLogger('Wingman:RelayServer');
 
+/**
+ * Check if buffer contains text data (not binary)
+ * Binary data typically starts with non-printable characters
+ */
+function isTextData(buffer: Buffer): boolean {
+  if (buffer.length === 0) return true;
+  
+  // Check first few bytes for non-printable characters
+  // Text data should be printable ASCII/UTF-8
+  const sample = buffer.subarray(0, Math.min(100, buffer.length));
+  
+  for (let i = 0; i < sample.length; i++) {
+    const byte = sample[i];
+    // Check for common binary file signatures or non-printable bytes
+    if (byte !== undefined && byte < 32 && byte !== 9 && byte !== 10 && byte !== 13) {
+      // Allow tab (9), LF (10), CR (13) but reject other control chars
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 export function createServer(options: ServerOptions = {}) {
   const app = express();
   const port = options.port ?? 8787;
@@ -221,8 +244,12 @@ export function createServer(options: ServerOptions = {}) {
       // Create HTTP server
       const server = createHttpServer(app);
       
-      // Initialize WebSocket server
-      const wss = new WebSocketServer({ server, path: '/ws' });
+      // Initialize WebSocket server with compression disabled
+      const wss = new WebSocketServer({ 
+        server, 
+        path: '/ws',
+        perMessageDeflate: false // Disable compression to avoid RSV1 issues
+      });
       
       // Handle WebSocket upgrade for tunnel subdomains
       server.on('upgrade', (request, socket, head) => {
@@ -258,6 +285,12 @@ export function createServer(options: ServerOptions = {}) {
 
         ws.on('message', (data) => {
           try {
+            // Skip JSON parsing for binary data (tunnel proxy handles these separately)
+            if (data instanceof Buffer && !isTextData(data)) {
+              // Binary data is handled by tunnel proxy, not main WebSocket handler
+              return;
+            }
+            
             const message = JSON.parse(data.toString());
             logger.debug('WebSocket message received:', message.type);
 
@@ -339,8 +372,13 @@ export function createServer(options: ServerOptions = {}) {
               default:
                 logger.debug('Unknown WebSocket message type:', message.type);
             }
-          } catch (error) {
-            logger.error('Error handling WebSocket message:', error);
+          } catch (error: any) {
+            // Don't log JSON parsing errors for binary data - these are expected
+            if (error.message && error.message.includes('Unexpected token') && error.message.includes('not valid JSON')) {
+              logger.debug('Skipping binary data frame (handled by tunnel proxy)');
+            } else {
+              logger.error('Error handling WebSocket message:', error);
+            }
           }
         });
 

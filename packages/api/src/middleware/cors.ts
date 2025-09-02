@@ -48,6 +48,18 @@ export function createCorsMiddleware() {
         return callback(null, true);
       }
 
+      // Allow tunnel subdomains (these are proxying to user's local applications)
+      const tunnelBaseUrl = process.env.TUNNEL_BASE_URL || 'wingmanux.com';
+      if (origin.endsWith(`.${tunnelBaseUrl}`)) {
+        // Additional validation: must be session-like subdomain pattern (word-word)
+        const hostname = new URL(origin).hostname;
+        const subdomain = hostname.split('.')[0];
+        if (subdomain && /^[a-z]+-[a-z]+$/i.test(subdomain)) {
+          console.log(`[CORS] Allowing tunnel subdomain: ${origin}`);
+          return callback(null, true);
+        }
+      }
+
       // Log rejected origins for debugging
       console.warn(`[CORS] Rejected origin: ${origin}`);
       callback(new Error('Not allowed by CORS - only browser extensions can access this server'));

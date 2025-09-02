@@ -27,6 +27,10 @@ kill_timeout = '30s'
   protocol = 'tcp'
   internal_port = 8787
   processes = ['app']
+  
+  # Force HTTP/1.1 for WebSocket support
+  auto_stop_machines = false
+  auto_start_machines = true
 
   [[services.ports]]
     port = 80
@@ -36,6 +40,8 @@ kill_timeout = '30s'
   [[services.ports]]
     port = 443
     handlers = ['tls', 'http']
+    # Explicitly support HTTP/1.1 for WebSockets
+    http_options = { h2_backend = false }
 
   [services.concurrency]
     type = 'connections'

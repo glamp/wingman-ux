@@ -8,6 +8,7 @@ import { Request, Response, NextFunction } from 'express';
 import { createLogger } from '@wingman/shared';
 import type { SessionManager } from './session-manager';
 import type { ConnectionManager } from './connection-manager';
+import { sseConnections, pendingRequests } from '../routes/tunnel';
 
 const logger = createLogger('TunnelProxy');
 
@@ -19,6 +20,24 @@ export class TunnelProxy {
   constructor(sessionManager: SessionManager, connectionManager: ConnectionManager) {
     this.sessionManager = sessionManager;
     this.connectionManager = connectionManager;
+  }
+
+  /**
+   * Check if a path matches OAuth route patterns
+   */
+  private isOAuthRoute(path: string, oauthRoutes: string[] = []): boolean {
+    // Default OAuth route patterns if none specified
+    const defaultPatterns = ['/api/auth/*', '/auth/*', '/oauth/*', '/.auth/*'];
+    const patterns = oauthRoutes.length > 0 ? oauthRoutes : defaultPatterns;
+    
+    return patterns.some(pattern => {
+      // Convert glob pattern to regex (e.g., '/api/auth/*' -> /^\/api\/auth\/.*/)
+      const regexPattern = pattern
+        .replace(/\//g, '\\/')  // Escape forward slashes
+        .replace(/\*/g, '.*');  // Convert * to .*
+      const regex = new RegExp(`^${regexPattern}$`);
+      return regex.test(path);
+    });
   }
 
   /**
@@ -84,34 +103,46 @@ export class TunnelProxy {
         });
       }
 
-      // Check if we're in production/cloud environment
+      // Check if we're in production/cloud environment or if WebSocket tunneling is forced
       const isProduction = process.env.NODE_ENV === 'production' || process.env.FLY_APP_NAME;
+      const forceWebSocketTunnel = process.env.FORCE_WEBSOCKET_TUNNEL === 'true';
       
       // In production, we can't proxy to localhost - need WebSocket forwarding
-      if (session.targetPort && !isProduction) {
+      // Also force WebSocket if FORCE_WEBSOCKET_TUNNEL is set (for testing)
+      if (session.targetPort && !isProduction && !forceWebSocketTunnel) {
         // Local environment: direct proxy to localhost:targetPort works
         logger.debug(`Using direct proxy for ${subdomain} to port ${session.targetPort}`);
         
         const proxy = this.createProxy(subdomain, session.targetPort);
         proxy(req, res, next);
-      } else if (session.targetPort && isProduction) {
-        // Production environment: need WebSocket forwarding
-        const developerWs = this.connectionManager.getDeveloperConnection(subdomain);
+      } else if (session.targetPort && (isProduction || forceWebSocketTunnel)) {
+        // Production environment or forced WebSocket: check for SSE connection first
+        const sseConnection = sseConnections.get(subdomain);
         
-        if (developerWs) {
-          // Developer connected via WebSocket - forward the request
-          logger.debug(`Using WebSocket forwarding for ${subdomain} in production`);
-          
-          // Forward the HTTP request through WebSocket
-          this.forwardRequestViaWebSocket(req, res, subdomain, developerWs);
+        if (sseConnection) {
+          // Developer connected via SSE - forward the request
+          logger.debug(`Using SSE forwarding for ${subdomain}`);
+          this.forwardRequestViaSSE(req, res, subdomain, sseConnection);
         } else {
-          // No developer connected
-          logger.debug(`No developer connected for ${subdomain} in production`);
-          res.status(502).json({
-            error: 'Tunnel not connected',
-            code: 'DEVELOPER_NOT_CONNECTED',
-            details: 'The tunnel exists but the developer is not connected. Please ensure the Chrome extension is running and connected.'
-          });
+          // Fall back to WebSocket for backward compatibility
+          const developerWs = this.connectionManager.getDeveloperConnection(subdomain);
+          
+          if (developerWs) {
+            // Developer connected via WebSocket - forward the request
+            const reason = forceWebSocketTunnel ? 'FORCE_WEBSOCKET_TUNNEL=true' : 'production environment';
+            logger.debug(`Using WebSocket forwarding for ${subdomain} (${reason})`);
+            
+            // Forward the HTTP request through WebSocket
+            this.forwardRequestViaWebSocket(req, res, subdomain, developerWs);
+          } else {
+            // No developer connected
+            logger.debug(`No developer connected for ${subdomain} in production`);
+            res.status(502).json({
+              error: 'Tunnel not connected',
+              code: 'DEVELOPER_NOT_CONNECTED',
+              details: 'The tunnel exists but the developer is not connected. Please ensure the tunnel client is running and connected.'
+            });
+          }
         }
       } else {
         // No target port configured - check if developer is connected via WebSocket
@@ -139,6 +170,79 @@ export class TunnelProxy {
   }
 
   /**
+   * Forward HTTP request through SSE to developer
+   */
+  private forwardRequestViaSSE(req: Request, res: Response, sessionId: string, sseConnection: Response): void {
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Enhanced logging
+    console.log(`[TunnelProxy] FORWARDING REQUEST via SSE ${requestId}: ${req.method} ${req.url} for session ${sessionId}`);
+    logger.info(`[TunnelProxy] Forwarding request via SSE ${requestId}: ${req.method} ${req.url} for session ${sessionId}`);
+    
+    // Store the pending request
+    pendingRequests.set(requestId, {
+      response: res,
+      timestamp: Date.now()
+    });
+    
+    // Check if this is an OAuth route and add tunnel context
+    const isOAuth = this.isOAuthRoute(req.path);
+    const tunnelDomain = `https://${sessionId}.${process.env.TUNNEL_BASE_URL || 'wingmanux.com'}`;
+    
+    // Add OAuth tunnel context headers if this is an OAuth route
+    const modifiedHeaders = { ...req.headers };
+    if (isOAuth) {
+      modifiedHeaders['x-tunnel-domain'] = tunnelDomain;
+      modifiedHeaders['x-tunnel-oauth'] = 'true';
+      modifiedHeaders['x-tunnel-session'] = sessionId;
+      modifiedHeaders['x-original-host'] = req.headers.host || '';
+    }
+    
+    // Prepare request data to send to developer
+    const requestData = {
+      type: 'request',
+      requestId,
+      sessionId,
+      request: {
+        method: req.method,
+        path: req.path,
+        url: req.url,
+        headers: modifiedHeaders,
+        query: req.query,
+        body: req.body
+      }
+    };
+    
+    // Send request through SSE
+    try {
+      sseConnection.write(`data: ${JSON.stringify(requestData)}\n\n`);
+      console.log(`[TunnelProxy] Request sent via SSE for ${requestId}`);
+    } catch (error) {
+      console.error(`[TunnelProxy] Failed to send SSE request for ${requestId}:`, error);
+      pendingRequests.delete(requestId);
+      res.status(502).json({
+        error: 'Failed to forward request',
+        code: 'SSE_SEND_ERROR',
+        details: 'Could not send request to tunnel client'
+      });
+    }
+    
+    // Set timeout for response
+    setTimeout(() => {
+      if (pendingRequests.has(requestId)) {
+        pendingRequests.delete(requestId);
+        if (!res.headersSent) {
+          res.status(504).json({
+            error: 'Gateway Timeout',
+            code: 'SSE_TIMEOUT',
+            details: 'The tunnel client did not respond in time'
+          });
+        }
+      }
+    }, 30000); // 30 second timeout
+  }
+
+  /**
    * Forward HTTP request through WebSocket to developer
    */
   private forwardRequestViaWebSocket(req: Request, res: Response, sessionId: string, developerWs: any): void {
@@ -151,6 +255,20 @@ export class TunnelProxy {
     
     logger.info(`[TunnelProxy] Forwarding request ${requestId}: ${req.method} ${req.url} for session ${sessionId}`);
     
+    // Check if this is an OAuth route and add tunnel context
+    const isOAuth = this.isOAuthRoute(req.path);
+    const tunnelDomain = `https://${sessionId}.${process.env.TUNNEL_BASE_URL || 'wingmanux.com'}`;
+    
+    // Add OAuth tunnel context headers if this is an OAuth route
+    const modifiedHeaders = { ...req.headers };
+    if (isOAuth) {
+      modifiedHeaders['x-tunnel-domain'] = tunnelDomain;
+      modifiedHeaders['x-tunnel-oauth'] = 'true';
+      modifiedHeaders['x-tunnel-session'] = sessionId;
+      modifiedHeaders['x-original-host'] = req.headers.host || '';
+      console.log(`[TunnelProxy] OAuth route detected for ${requestId}: ${req.path}, adding tunnel context`);
+    }
+    
     // Prepare request data to send to developer
     const requestData = {
       type: 'request',
@@ -160,7 +278,7 @@ export class TunnelProxy {
         method: req.method,
         path: req.path,
         url: req.url,
-        headers: req.headers,
+        headers: modifiedHeaders,
         query: req.query,
         body: req.body
       }
@@ -174,13 +292,13 @@ export class TunnelProxy {
     let responseBody: Buffer | null = null;
     let responseComplete = false;
     
-    // Set up response handler for new binary protocol
+    // Set up response handler for binary protocol
     const handleResponse = (data: any) => {
       if (responseComplete) return;
       
       try {
-        // Try to parse as JSON first (metadata)
-        if (typeof data === 'string' || (data instanceof Buffer && data.length < 10000)) {
+        // Try to parse as JSON first (metadata message)
+        if (typeof data === 'string' || (data instanceof Buffer && data.length < 50000)) {
           try {
             const message = JSON.parse(data.toString());
             if (message.type === 'response' && message.requestId === requestId) {
@@ -188,20 +306,29 @@ export class TunnelProxy {
               responseMetadata = message.response;
               console.log(`[TunnelProxy] Received response metadata for ${requestId}: status=${responseMetadata.statusCode}, bodyLength=${responseMetadata.bodyLength}`);
               
-              // If there's no body, send the response immediately with empty body
+              // If there's no body, send the response immediately
               if (!responseMetadata.bodyLength || responseMetadata.bodyLength === 0) {
-                responseBody = Buffer.alloc(0); // Set empty buffer instead of null
+                responseBody = Buffer.alloc(0);
+                sendCompleteResponse();
+              } else if (responseMetadata.body) {
+                // Body is included in metadata (SSE client or small responses)
+                if (responseMetadata.isBase64) {
+                  responseBody = Buffer.from(responseMetadata.body, 'base64');
+                } else {
+                  responseBody = Buffer.from(responseMetadata.body);
+                }
+                console.log(`[TunnelProxy] Body included in metadata for ${requestId}: ${responseBody.length} bytes`);
                 sendCompleteResponse();
               } else {
-                // Otherwise wait for the binary body frame, but set a timeout
+                // Wait for binary body frame (Chrome extension binary protocol)
+                console.log(`[TunnelProxy] Waiting for binary body frame for ${requestId} (${responseMetadata.bodyLength} bytes expected)`);
                 setTimeout(() => {
                   if (!responseComplete && responseMetadata && !responseBody) {
-                    console.error(`[TunnelProxy] TIMEOUT waiting for binary body for ${requestId}, expected ${responseMetadata.bodyLength} bytes`);
+                    console.error(`[TunnelProxy] TIMEOUT waiting for binary body for ${requestId}`);
                     sendErrorResponse(new Error('Timeout waiting for binary body'));
                   }
                 }, 5000); // 5 second timeout for binary frame
               }
-              // Otherwise wait for the binary body frame
               return;
             }
           } catch (parseError) {
@@ -209,15 +336,15 @@ export class TunnelProxy {
           }
         }
         
-        // Handle binary body frame
-        if (responseMetadata && data instanceof Buffer) {
+        // Handle binary body frame from Chrome extension
+        if (responseMetadata && data instanceof Buffer && responseBody === null) {
           responseBody = data;
-          console.log(`[TunnelProxy] Received binary body for ${requestId}: ${data.length} bytes`);
+          console.log(`[TunnelProxy] Received binary body frame for ${requestId}: ${data.length} bytes`);
           sendCompleteResponse();
           return;
         }
         
-        // Debug: Log unexpected data
+        // Debug unexpected data
         console.log(`[TunnelProxy] UNEXPECTED DATA for ${requestId}:`, {
           type: typeof data,
           isBuffer: data instanceof Buffer,
@@ -235,7 +362,7 @@ export class TunnelProxy {
       if (responseComplete || !responseMetadata) return;
       responseComplete = true;
       
-      // Clear timeout and remove listener
+      // Clear timeout and remove listeners
       clearTimeout(timeout);
       developerWs.off('message', handleResponse);
       
@@ -306,18 +433,23 @@ export class TunnelProxy {
       }
     };
     
+    // Register response handler with ConnectionManager (for parsed JSON messages)
+    this.connectionManager.registerTunnelResponseHandler(sessionId, requestId, (message) => {
+      handleResponse(JSON.stringify(message));
+    });
+    
+    // Also listen for raw binary data directly from WebSocket
+    developerWs.on('message', handleResponse);
+    
     // Set timeout for response
     const timeout = setTimeout(() => {
-      developerWs.off('message', handleResponse);
+      responseComplete = true; // Prevent handler from processing if it arrives late
       res.status(504).json({
         error: 'Gateway Timeout',
         code: 'WEBSOCKET_TIMEOUT',
         details: 'The developer did not respond in time'
       });
     }, 30000); // 30 second timeout
-    
-    // Listen for response
-    developerWs.on('message', handleResponse);
     
     // Send request to developer
     developerWs.send(JSON.stringify(requestData));
