@@ -94,15 +94,7 @@ function ScreenshotViewer({ annotation }: ScreenshotViewerProps) {
         canvasSize: { width: canvas.width, height: canvas.height },
       });
 
-      // Semi-transparent overlay over entire image
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Clear the target area (make it visible)
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillRect(scaledRect.x, scaledRect.y, scaledRect.width, scaledRect.height);
-
-      // Reset composite operation and draw target border
+      // Draw target border directly (no dimming overlay for crystal clear image)
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = '#ff4444';
       ctx.lineWidth = 3;
