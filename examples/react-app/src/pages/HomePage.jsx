@@ -1,128 +1,214 @@
+import React, { useState, useContext, useReducer } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import UserProfile from '../components/UserProfile';
+import Counter from '../components/Counter';
+import TodoList from '../components/TodoList';
+import InputForm from '../components/InputForm';
+
+// Demo context for testing context capture
+const DemoContext = React.createContext({ theme: 'light', user: null });
+
+// Reducer for testing useReducer state capture
+function demoReducer(state, action) {
+  switch (action.type) {
+    case 'SET_THEME':
+      return { ...state, theme: action.payload };
+    case 'SET_USER_PREFERENCE':
+      return { ...state, preferences: { ...state.preferences, [action.key]: action.value } };
+    default:
+      return state;
+  }
+}
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
+  
+  // Complex state for testing state capture
+  const [demoState, dispatch] = useReducer(demoReducer, {
+    theme: 'light',
+    preferences: {
+      notifications: true,
+      autoSave: false,
+      language: 'en'
+    }
+  });
+  
+  // Counter state for testing
+  const [count, setCount] = useState(0);
+  const [todos, setTodos] = useState([
+    { id: 1, text: 'Test React metadata capture', completed: false },
+    { id: 2, text: 'Verify component props extraction', completed: true },
+    { id: 3, text: 'Check state management detection', completed: false }
+  ]);
+  
+  // Form state for testing
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    preferences: {
+      newsletter: false,
+      theme: 'auto'
+    }
+  });
+
+  const handleToggleTodo = (id) => {
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  const complexProps = {
+    metadata: {
+      version: '1.0.0',
+      features: ['auth', 'todos', 'counter'],
+      config: {
+        api: { 
+          baseUrl: 'http://localhost:8787',
+          timeout: 5000 
+        },
+        ui: {
+          theme: demoState.theme,
+          animations: true
+        }
+      }
+    },
+    callbacks: {
+      onSave: (data) => console.log('Saving:', data),
+      onError: (error) => console.error('Error:', error)
+    }
+  };
 
   return (
-    <div style={{ 
-      maxWidth: '800px', 
-      margin: '0 auto', 
-      padding: '40px 20px' 
-    }}>
-      <h1>🦅 Wingman OAuth Demo</h1>
-      <p style={{ color: '#666', fontSize: '18px', marginBottom: '30px' }}>
-        Demonstrating OAuth authentication that works seamlessly in both local development and tunnel environments.
-      </p>
-
-      {isAuthenticated ? (
-        <div>
-          <div style={{ 
-            padding: '20px',
-            backgroundColor: '#e8f5e8',
-            borderRadius: '8px',
-            border: '1px solid #4caf50',
-            marginBottom: '30px'
-          }}>
-            <h2>✅ You're signed in!</h2>
-            <p>Welcome back! You have access to protected content.</p>
-            <Link 
-              to="/protected"
-              style={{
-                display: 'inline-block',
-                padding: '10px 20px',
-                backgroundColor: '#4caf50',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '4px',
-                marginTop: '10px'
-              }}
-            >
-              View Protected Page
-            </Link>
-          </div>
+    <DemoContext.Provider value={{ theme: demoState.theme, user }}>
+      <div style={{ 
+        maxWidth: '1000px', 
+        margin: '0 auto', 
+        padding: '40px 20px' 
+      }}>
+        <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1>🎯 Wingman React Component Demo</h1>
+          <p style={{ color: '#666', fontSize: '18px' }}>
+            Interactive components for testing Chrome extension React metadata capture
+          </p>
           
-          <UserProfile />
-        </div>
-      ) : (
-        <div>
-          <div style={{ 
-            padding: '20px',
-            backgroundColor: '#f0f8ff',
-            borderRadius: '8px',
-            border: '1px solid #2196f3',
-            marginBottom: '30px'
+          {/* Navigation to test pages */}
+          <nav style={{ 
+            display: 'flex', 
+            gap: '15px', 
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#f8fafc',
+            borderRadius: '8px'
           }}>
-            <h2>🔐 Authentication Required</h2>
-            <p>Sign in to access protected features and content.</p>
-            <Link 
-              to="/login"
-              style={{
-                display: 'inline-block',
-                padding: '10px 20px',
-                backgroundColor: '#2196f3',
-                color: 'white',
-                textDecoration: 'none',
-                borderRadius: '4px',
-                marginTop: '10px'
-              }}
-            >
-              Sign In
+            <Link to="/auth-demo" style={{ padding: '8px 16px', background: '#3b82f6', color: 'white', textDecoration: 'none', borderRadius: '4px' }}>
+              🔐 Auth Demo
             </Link>
-          </div>
-        </div>
-      )}
+            <Link to="/edge-cases" style={{ padding: '8px 16px', background: '#8b5cf6', color: 'white', textDecoration: 'none', borderRadius: '4px' }}>
+              ⚠️ Edge Cases
+            </Link>
+            <Link to="/state-demo" style={{ padding: '8px 16px', background: '#10b981', color: 'white', textDecoration: 'none', borderRadius: '4px' }}>
+              📊 State Management
+            </Link>
+            <Link to="/props-demo" style={{ padding: '8px 16px', background: '#f59e0b', color: 'white', textDecoration: 'none', borderRadius: '4px' }}>
+              🧪 Props Testing
+            </Link>
+          </nav>
+        </header>
 
-      <div style={{ 
-        marginTop: '40px',
-        padding: '20px',
-        backgroundColor: '#f9f9f9',
-        borderRadius: '8px',
-        border: '1px solid #ddd'
-      }}>
-        <h3>🧪 Test OAuth in Different Environments</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
-          <div>
-            <h4>🏠 Local Development</h4>
-            <p style={{ fontSize: '14px', color: '#666' }}>
-              <strong>URL:</strong> http://localhost:5173<br/>
-              <strong>OAuth Callbacks:</strong> Standard localhost URLs
-            </p>
+        {/* Interactive Demo Components Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
+          gap: '30px',
+          marginBottom: '40px'
+        }}>
+          {/* Counter Component Demo */}
+          <div style={{ 
+            padding: '20px', 
+            border: '1px solid #e5e7eb', 
+            borderRadius: '8px',
+            backgroundColor: 'white'
+          }}>
+            <Counter 
+              count={count}
+              onIncrement={() => setCount(c => c + 1)}
+              onDecrement={() => setCount(c => c - 1)}
+              onReset={() => setCount(0)}
+              {...complexProps}
+            />
           </div>
-          <div>
-            <h4>🌐 Tunnel Mode</h4>
-            <p style={{ fontSize: '14px', color: '#666' }}>
-              <strong>URL:</strong> https://session-id.wingmanux.com<br/>
-              <strong>OAuth Callbacks:</strong> Automatically modified for tunnel domain
-            </p>
+
+          {/* Todo List Demo */}
+          <div style={{ 
+            padding: '20px', 
+            border: '1px solid #e5e7eb', 
+            borderRadius: '8px',
+            backgroundColor: 'white'
+          }}>
+            <TodoList 
+              todos={todos}
+              onToggleTodo={handleToggleTodo}
+              metadata={complexProps.metadata}
+            />
           </div>
+
+          {/* Form Demo */}
+          <div style={{ 
+            padding: '20px', 
+            border: '1px solid #e5e7eb', 
+            borderRadius: '8px',
+            backgroundColor: 'white'
+          }}>
+            <InputForm 
+              formData={formData}
+              onChange={setFormData}
+              config={complexProps.metadata.config}
+              onSubmit={complexProps.callbacks.onSave}
+            />
+          </div>
+
+          {/* User Profile Demo */}
+          {isAuthenticated && (
+            <div style={{ 
+              padding: '20px', 
+              border: '1px solid #e5e7eb', 
+              borderRadius: '8px',
+              backgroundColor: 'white'
+            }}>
+              <UserProfile 
+                user={user}
+                preferences={demoState.preferences}
+                onPreferenceChange={(key, value) => 
+                  dispatch({ type: 'SET_USER_PREFERENCE', key, value })
+                }
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Component Tree Info */}
+        <div style={{ 
+          padding: '20px',
+          backgroundColor: '#f0f9ff',
+          border: '1px solid #0ea5e9',
+          borderRadius: '8px',
+          marginTop: '30px'
+        }}>
+          <h3>🧪 Testing Chrome Extension Metadata Capture</h3>
+          <p style={{ color: '#0c4a6e', marginBottom: '15px' }}>
+            Use the Wingman Chrome extension on this page to test React component metadata extraction:
+          </p>
+          <ul style={{ color: '#0c4a6e' }}>
+            <li><strong>Component Names</strong>: Counter, TodoList, InputForm, UserProfile</li>
+            <li><strong>Props</strong>: Complex objects, arrays, functions, nested data</li>
+            <li><strong>State</strong>: useState (count, todos, formData), useReducer (demoState)</li>
+            <li><strong>Context</strong>: DemoContext with theme/user data</li>
+            <li><strong>Hooks</strong>: useState, useReducer, useContext, useAuth (custom)</li>
+          </ul>
         </div>
       </div>
-
-      <div style={{ 
-        marginTop: '30px',
-        padding: '20px',
-        backgroundColor: '#fff3cd',
-        borderRadius: '8px',
-        border: '1px solid #ffc107'
-      }}>
-        <h3>⚙️ Wingman SDK Configuration</h3>
-        <pre style={{ 
-          background: '#f5f5f5',
-          padding: '15px',
-          borderRadius: '4px',
-          overflow: 'auto',
-          fontSize: '12px'
-        }}>{`const oauthConfig = {
-  routes: ['/auth/*'],
-  modifyRedirectUri: (uri, tunnelDomain) => 
-    uri.replace(/https?:\\/\\/[^\\/]+/, tunnelDomain),
-  envOverrides: {
-    'OAUTH_REDIRECT_URI': '{tunnelDomain}/auth/callback'
-  }
-};`}</pre>
-      </div>
-    </div>
+    </DemoContext.Provider>
   );
 }

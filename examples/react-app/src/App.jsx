@@ -6,6 +6,10 @@ import { WingmanProvider, createOAuthHandler } from 'wingman-sdk';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ProtectedPage from './pages/ProtectedPage';
+import AuthDemoPage from './pages/AuthDemoPage';
+import EdgeCasesPage from './pages/EdgeCasesPage';
+import StateDemoPage from './pages/StateDemoPage';
+import PropsDemoPage from './pages/PropsDemoPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { TestComponentWithContext } from './TestComponent';
 import Header from './components/Header';
@@ -66,6 +70,10 @@ function DemoApp() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth-demo" element={<AuthDemoPage />} />
+        <Route path="/edge-cases" element={<EdgeCasesPage />} />
+        <Route path="/state-demo" element={<StateDemoPage />} />
+        <Route path="/props-demo" element={<PropsDemoPage />} />
         <Route 
           path="/protected" 
           element={

@@ -395,21 +395,13 @@ export class SettingsTab extends BaseComponent {
   private getDefaultTemplate(): string {
     return `# 🎯 UI Feedback Request
 
+![Screenshot]({{screenshotUrl}})
+
 {{#if userNote}}
-## 📝 User Feedback
-
-> **{{userNote}}**
-
----
-
+**User Feedback**: {{userNote}}
 {{/if}}
-## 🖼️ Screenshot Analysis Required
 
-**IMPORTANT**: Please carefully examine the screenshot below to understand the visual context of the UI issue.
-
-![Wingman Screenshot - Click to view full size]({{screenshotUrl}})
-
-*The screenshot above shows the exact area where the user is reporting an issue.*
+Please analyze this UI screenshot and help improve the user experience. Focus on the highlighted element and provide specific, actionable recommendations.
 
 ---
 
@@ -423,76 +415,72 @@ export class SettingsTab extends BaseComponent {
 - **CSS Selector:** \`{{targetSelector}}\`
 {{/if}}
 
----
+## 🔧 Technical Context
 
-## 📍 Page Information
+<details>
+<summary><strong>Page Information</strong></summary>
 
 - **URL:** {{pageUrl}}
 - **Title:** {{pageTitle}}
 - **Viewport:** {{viewportWidth}}×{{viewportHeight}} (DPR: {{viewportDpr}})
 - **Captured:** {{capturedAt}}
 
-## 🔧 Technical Details
+</details>
 
 {{#if hasReact}}
-### React Component Info
+<details>
+<summary><strong>React Component: {{reactComponentName}}</strong></summary>
 
-- **Component:** {{reactComponentName}}
-- **Data Source:** {{reactDataSource}}
-
-**Props:**
-\`\`\`json
+**Props:** \`\`\`json
 {{reactPropsJson}}
 \`\`\`
 
-**State:**
-\`\`\`json
+**State:** \`\`\`json
 {{reactStateJson}}
 \`\`\`
 
+</details>
 {{/if}}
+
 {{#if hasErrors}}
-### ⚠️ JavaScript Errors ({{errorCount}})
+<details open>
+<summary><strong>⚠️ JavaScript Errors ({{errorCount}})</strong></summary>
 
 {{#each errors}}
 {{index}}. **[{{timestamp}}]** {{message}}
-{{#if stack}}
-\`\`\`
+{{#if stack}}\`\`\`
 {{stack}}
-\`\`\`
-{{/if}}
+\`\`\`{{/if}}
 {{/each}}
 
+</details>
 {{/if}}
+
 {{#if hasConsole}}
-### Console Logs ({{consoleCount}})
+<details>
+<summary><strong>Console Logs ({{consoleCount}})</strong></summary>
 
 {{#each consoleLogs}}
 {{index}}. **[{{level}}]** {{timestamp}}: {{args}}
 {{/each}}
 
+</details>
 {{/if}}
+
 {{#if hasNetwork}}
-### Network Activity ({{networkCount}} requests)
+<details>
+<summary><strong>Network Activity ({{networkCount}} requests)</strong></summary>
 
 {{#each networkRequests}}
-{{index}}. **{{url}}**
-   - Status: {{status}}
-   - Duration: {{duration}}ms
-   - Type: {{initiatorType}}
+{{index}}. **{{url}}** ({{status}} - {{duration}}ms)
 {{/each}}
 
+</details>
 {{/if}}
-### Browser Info
-
-- **User Agent:** {{userAgent}}
-- **Annotation ID:** {{annotationId}}
 
 ---
 
-## 💡 Action Request
-
-Please review the **screenshot** and **user feedback** above to understand and address the reported UI issue. Focus on the visual elements shown in the screenshot and how they relate to the user's feedback.`;
+**Task**: Based on the screenshot and user feedback, provide specific UI/UX improvements for the highlighted element.`;
   }
 
   private showSampleDataModal(): void {
