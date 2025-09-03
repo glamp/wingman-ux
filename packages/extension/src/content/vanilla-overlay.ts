@@ -398,6 +398,13 @@ async function submitFeedback() {
   logger.debug('Submitting feedback:', note);
   
   try {
+    // Extract React data before cleaning up overlay
+    let reactData = undefined;
+    if (overlayState.selectedElement && sdkBridge) {
+      logger.debug('Extracting React data for element...');
+      reactData = await sdkBridge.getReactData(overlayState.selectedElement);
+    }
+    
     // Build target info
     const target = {
       mode: 'element' as const,
@@ -410,6 +417,14 @@ async function submitFeedback() {
       selector: generateSimpleSelector(overlayState.selectedElement),
     };
     
+    // Get robust selector if available
+    if (overlayState.selectedElement && sdkBridge) {
+      const robustSelector = await sdkBridge.getRobustSelector(overlayState.selectedElement);
+      if (robustSelector) {
+        target.selector = robustSelector;
+      }
+    }
+    
     // Clean up overlay before screenshot
     cleanup();
     
@@ -420,11 +435,35 @@ async function submitFeedback() {
     const screenshot = await captureScreenshot();
     
     // Build annotation
-    const annotation = buildAnnotation(note, target, screenshot);
+    const annotation = buildAnnotation(note, target, screenshot, reactData);
     
     // Submit annotation
     const result = await submitAnnotation(annotation);
     logger.info('Annotation submitted successfully:', result);
+    
+    // Handle clipboard mode - copy to clipboard in content script context
+    if (result.message === 'Copied to clipboard' && result.clipboardContent) {
+      // Use the more reliable textarea method as primary approach
+      const textArea = document.createElement('textarea');
+      textArea.value = result.clipboardContent;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (!successful) {
+          logger.error('Copy command returned false');
+        }
+      } catch (err) {
+        logger.error('Failed to copy to clipboard:', err);
+      }
+
+      document.body.removeChild(textArea);
+    }
     
     // Show success notification
     showSuccessNotification(result, annotation.id);
@@ -540,10 +579,10 @@ function showSuccessNotification(result: RelayResponse, annotationId: string) {
   }
   
   notification.innerHTML = `
-    <div style="display: flex; align-items: flex-start; gap: 8px;">
-      <div style="font-size: 16px; margin-top: 1px;">✓</div>
-      <div>
-        <div>${message}</div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="font-size: 16px; line-height: 1; display: flex; align-items: center;">✓</div>
+      <div style="display: flex; flex-direction: column; justify-content: center;">
+        <div style="line-height: 1.2;">${message}</div>
         ${linkHtml}
       </div>
     </div>
@@ -576,7 +615,8 @@ function showSuccessNotification(result: RelayResponse, annotationId: string) {
 function buildAnnotation(
   note: string,
   target: any,
-  screenshot: string
+  screenshot: string,
+  reactData?: any
 ): WingmanAnnotation {
   const annotation: WingmanAnnotation = {
     id: ulid(),
@@ -603,6 +643,10 @@ function buildAnnotation(
     network: networkCapture?.getEntries() || [],
     errors: consoleCapture?.getErrors() || [],
   };
+
+  if (reactData) {
+    annotation.react = reactData;
+  }
 
   return annotation;
 }
