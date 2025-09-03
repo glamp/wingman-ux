@@ -6,6 +6,7 @@
     {
       "resources": [
         "page-console-injector.js",
+        "assets/*",
         ".reload"
       ],
       "matches": [

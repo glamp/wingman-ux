@@ -4,6 +4,7 @@ import { ConsoleCapture } from './console-capture';
 import { NetworkCapture } from './network-capture';
 import { SDKBridge } from './sdk-bridge';
 import { createLogger } from '../utils/logger';
+import { mountReactOverlay, mountSuccessNotification } from '../content-ui/overlay';
 
 const logger = createLogger('Wingman:Content');
 logger.info('Content script loaded on:', window.location.href);
@@ -76,8 +77,7 @@ async function activateOverlay() {
     overlayActive = true;
     logger.debug('Creating React overlay...');
 
-    // Dynamically import React components only when needed
-    const { mountReactOverlay } = await import('../content-ui/index');
+    // Use static import to avoid temporal dead zone in IIFE bundle
     overlayCleanup = mountReactOverlay({
       onSubmit: async (note: string, target: any, element?: HTMLElement) => {
         try {
@@ -184,7 +184,6 @@ async function activateOverlay() {
 
           if (result.message === 'Copied to clipboard') {
             // Clipboard mode - always show copy notification
-            const { mountSuccessNotification } = await import('../content-ui/index');
             if (mountSuccessNotification) {
               mountSuccessNotification({
                 mode: 'clipboard',
@@ -196,7 +195,6 @@ async function activateOverlay() {
             }
           } else if (showPreviewUrl && result.previewUrl) {
             // Server mode - show preview URL if enabled
-            const { mountSuccessNotification } = await import('../content-ui/index');
             if (mountSuccessNotification) {
               mountSuccessNotification({
                 previewUrl: result.previewUrl,

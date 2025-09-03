@@ -24,8 +24,8 @@ export default defineConfig(async () => {
         },
       } : undefined,
       lib: {
-        entry: resolve(__dirname, 'src/content/index.ts'),
-        name: 'WingmanContent',
+        entry: resolve(__dirname, 'src/content/vanilla-overlay.ts'),
+        name: 'WingmanContent', 
         fileName: () => 'content.js',
         formats: ['iife'],
       },
@@ -33,8 +33,19 @@ export default defineConfig(async () => {
         output: {
           // Ensure no exports in IIFE
           exports: 'none',
+          // Force single bundle - fix for Chrome extension content scripts
+          inlineDynamicImports: true,
+          manualChunks: undefined,
         },
       },
+    },
+    resolve: {
+      // Deduplicate React to single instance
+      dedupe: ['react', 'react-dom'],
+    },
+    optimizeDeps: {
+      // Include React in optimization to prevent duplication
+      include: ['react', 'react-dom'],
     },
     define: {
       'process.env.WINGMAN_ENV': JSON.stringify(environment),

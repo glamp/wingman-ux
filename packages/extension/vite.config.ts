@@ -61,6 +61,7 @@ export default defineConfig(async () => {
       input: {
         background: resolve(__dirname, 'src/background/index.ts'),
         popup: resolve(__dirname, 'src/popup/popup.ts'),
+        'modern-popup': resolve(__dirname, 'src/popup/modern-popup.ts'),
       },
       output: {
         entryFileNames: '[name].js',
@@ -91,12 +92,16 @@ export default defineConfig(async () => {
         if (isDev) {
           // Watch HTML and CSS files for changes
           this.addWatchFile(resolve(__dirname, 'src/popup/popup.html'));
+          this.addWatchFile(resolve(__dirname, 'src/popup/modern-popup.html'));
           this.addWatchFile(resolve(__dirname, 'src/content/content.css'));
+          this.addWatchFile(resolve(__dirname, 'src/popup/styles/main.css'));
+          this.addWatchFile(resolve(__dirname, 'src/popup/styles/tabs.css'));
+          this.addWatchFile(resolve(__dirname, 'src/popup/styles/components.css'));
           console.log('[Vite] Watching static files for changes');
         }
       },
       async watchChange(id) {
-        if (id.includes('popup.html') || id.includes('content.css')) {
+        if (id.includes('popup.html') || id.includes('content.css') || id.includes('styles/')) {
           console.log(`[Vite] Static file changed: ${id.split('/').pop()}`);
         }
       }
@@ -118,6 +123,23 @@ export default defineConfig(async () => {
           resolve(__dirname, 'src/popup/popup.html'),
           resolve(distDir, 'popup.html')
         );
+        
+        // Copy modern-popup.html
+        fs.copyFileSync(
+          resolve(__dirname, 'src/popup/modern-popup.html'),
+          resolve(distDir, 'modern-popup.html')
+        );
+        
+        // Copy modern popup CSS files
+        const stylesDir = resolve(distDir, 'styles');
+        fs.mkdirSync(stylesDir, { recursive: true });
+        const cssFiles = ['main.css', 'tabs.css', 'components.css'];
+        cssFiles.forEach(file => {
+          fs.copyFileSync(
+            resolve(__dirname, `src/popup/styles/${file}`),
+            resolve(stylesDir, file)
+          );
+        });
         
         // Copy CSS
         fs.copyFileSync(
