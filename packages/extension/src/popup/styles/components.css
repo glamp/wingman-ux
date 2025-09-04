@@ -686,7 +686,7 @@ input:checked + .toggle-slider:before {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  z-index: 1000;
+  z-index: 9999;
   opacity: 0;
   transform: translateY(-8px);
   pointer-events: none;

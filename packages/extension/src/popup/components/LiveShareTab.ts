@@ -64,25 +64,6 @@ export class LiveShareTab extends BaseComponent {
             </button>
           </div>
 
-          <div class="tunnel-info" id="tunnelInfo" style="display: none;">
-            <div class="info-section">
-              <h4 class="info-label">Share URL</h4>
-              <div class="url-display">
-                <input type="text" id="tunnelUrlInput" readonly class="url-input">
-                <div class="url-actions">
-                  <button class="action-btn copy-btn" id="copyTunnelBtn" title="Copy URL">
-                    <span class="btn-icon">📋</span>
-                  </button>
-                  <button class="action-btn share-btn" id="createShareBtn" title="Create Share Link">
-                    <span class="btn-icon">🔗</span>
-                  </button>
-                  <button class="action-btn qr-btn" id="showQRBtn" title="Show QR Code">
-                    <span class="btn-icon">📱</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div class="share-info" id="shareInfo" style="display: none;">
             <div class="info-section">
@@ -98,8 +79,13 @@ export class LiveShareTab extends BaseComponent {
                     <span class="btn-icon">📋</span>
                     <span class="btn-text">Copy</span>
                   </button>
+                  <button class="action-btn qr-btn" id="showQRBtn" title="Show QR Code">
+                    <span class="btn-icon">📱</span>
+                    <span class="btn-text">QR Code</span>
+                  </button>
                   <button class="action-btn revoke-btn" id="revokeShareBtn" title="Revoke Link">
                     <span class="btn-icon">❌</span>
+                    <span class="btn-text">Revoke</span>
                   </button>
                 </div>
               </div>
@@ -116,14 +102,13 @@ export class LiveShareTab extends BaseComponent {
       this.container.appendChild(this.element);
     }
     this.attachEventListeners();
+    this.detectPort(); // Auto-detect on initial render
   }
 
   private attachEventListeners(): void {
     const changePortBtn = this.element.querySelector('#changePortBtn') as HTMLButtonElement;
     const detectBtn = this.element.querySelector('#detectBtn') as HTMLButtonElement;
     const tunnelToggleBtn = this.element.querySelector('#tunnelToggleBtn') as HTMLButtonElement;
-    const copyTunnelBtn = this.element.querySelector('#copyTunnelBtn') as HTMLButtonElement;
-    const createShareBtn = this.element.querySelector('#createShareBtn') as HTMLButtonElement;
     const showQRBtn = this.element.querySelector('#showQRBtn') as HTMLButtonElement;
     const copyShareBtn = this.element.querySelector('#copyShareBtn') as HTMLButtonElement;
 
@@ -140,21 +125,10 @@ export class LiveShareTab extends BaseComponent {
       this.onTunnelToggle(port);
     });
 
-    copyTunnelBtn?.addEventListener('click', () => {
-      const tunnelUrl = (this.element.querySelector('#tunnelUrlInput') as HTMLInputElement)?.value;
-      if (tunnelUrl) {
-        this.onCopyUrl(tunnelUrl);
-      }
-    });
-
-    createShareBtn?.addEventListener('click', () => {
-      this.onCreateShare();
-    });
-
     showQRBtn?.addEventListener('click', () => {
-      const tunnelUrl = (this.element.querySelector('#tunnelUrlInput') as HTMLInputElement)?.value;
-      if (tunnelUrl) {
-        this.onShowQR(tunnelUrl);
+      const shareUrl = (this.element.querySelector('#shareUrlInput') as HTMLInputElement)?.value;
+      if (shareUrl) {
+        this.onShowQR(shareUrl);
       }
     });
 
@@ -232,10 +206,8 @@ export class LiveShareTab extends BaseComponent {
 
     const statusBadge = this.element.querySelector('#tunnelStatus .status-badge') as HTMLElement;
     const tunnelToggleBtn = this.element.querySelector('#tunnelToggleBtn') as HTMLButtonElement;
-    const tunnelInfo = this.element.querySelector('#tunnelInfo') as HTMLElement;
-    const tunnelUrlInput = this.element.querySelector('#tunnelUrlInput') as HTMLInputElement;
 
-    if (!statusBadge || !tunnelToggleBtn || !tunnelInfo || !tunnelUrlInput) return;
+    if (!statusBadge || !tunnelToggleBtn) return;
 
     // Update status badge
     statusBadge.className = `status-badge ${state.status}`;
@@ -251,23 +223,21 @@ export class LiveShareTab extends BaseComponent {
         btnText.textContent = 'Start Live Sharing';
         tunnelToggleBtn.className = 'tunnel-toggle-btn';
         tunnelToggleBtn.disabled = false;
-        tunnelInfo.style.display = 'none';
         break;
       case 'connecting':
         btnIcon.textContent = '⏳';
         btnText.textContent = 'Starting...';
         tunnelToggleBtn.className = 'tunnel-toggle-btn connecting';
         tunnelToggleBtn.disabled = true;
-        tunnelInfo.style.display = 'none';
         break;
       case 'active':
         btnIcon.textContent = '🛑';
         btnText.textContent = 'Stop Sharing';
         tunnelToggleBtn.className = 'tunnel-toggle-btn active';
         tunnelToggleBtn.disabled = false;
-        tunnelInfo.style.display = 'block';
+        // Auto-create shareable link when tunnel becomes active
         if (state.tunnelUrl) {
-          tunnelUrlInput.value = state.tunnelUrl;
+          this.onCreateShare();
         }
         break;
       case 'error':
@@ -275,7 +245,6 @@ export class LiveShareTab extends BaseComponent {
         btnText.textContent = 'Retry Sharing';
         tunnelToggleBtn.className = 'tunnel-toggle-btn error';
         tunnelToggleBtn.disabled = false;
-        tunnelInfo.style.display = 'none';
         break;
     }
 

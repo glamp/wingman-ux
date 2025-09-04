@@ -421,7 +421,14 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
 
     // Get relay URL from storage to pass to tunnel manager
     chrome.storage.local.get(['relayUrl']).then(({ relayUrl }) => {
-      const finalRelayUrl = relayUrl || extensionConfig?.relayUrl || 'http://localhost:8787';
+      // For tunnels, never use clipboard mode - always use actual server
+      let finalRelayUrl = relayUrl;
+      if (relayUrl === 'clipboard') {
+        finalRelayUrl = extensionConfig?.relayUrl || 'http://localhost:8787';
+        logger.debug('Skipping clipboard mode for tunnel, using:', finalRelayUrl);
+      } else {
+        finalRelayUrl = relayUrl || extensionConfig?.relayUrl || 'http://localhost:8787';
+      }
       logger.debug('Using relay URL for tunnel:', finalRelayUrl);
       
       return tunnelManager.createTunnel(request.targetPort, finalRelayUrl);
