@@ -26,12 +26,8 @@ export function formatAnnotationForClaude(annotation: WingmanAnnotation): string
     output += `---\n\n`;
   }
 
-  // CRITICAL: Ensure Claude analyzes the screenshot
-  output += `## 🖼️ Screenshot Analysis Required\n\n`;
-  output += `**IMPORTANT**: Please carefully examine the screenshot below to understand the visual context of the UI issue.\n\n`;
-  output += `![Wingman Screenshot - Click to view full size](http://localhost:8787/annotations/${annotation.id}/screenshot)\n\n`;
-  output += `*The screenshot above shows the exact area where the user is reporting an issue.*\n\n`;
-  output += `---\n\n`;
+  // Claude 2025 vision optimized: Image first with URL
+  output += `![Screenshot](http://localhost:8787/annotations/${annotation.id}/screenshot)\n\n`;
 
   // Visual context about the selected area
   output += `## 🎨 Visual Context\n\n`;

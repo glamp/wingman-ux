@@ -6,12 +6,21 @@ import type { WingmanAnnotation } from '@wingman/shared';
  * Content scripts CANNOT use ES modules, so they must use the local duplicate
  * in src/utils/format-claude.ts instead.
  * 
- * Now using the template engine for improved formatting with the optimized template.
+ * Now using the template engine for improved formatting with selected templates.
  */
 import { createLogger, createTemplateEngine, defaultTemplate } from '@wingman/shared';
+import type { AnnotationTemplate, TemplateVariable } from '@wingman/shared';
 import { getEnvironmentConfig } from '../utils/config';
 import type { EnvironmentConfig } from '../types/env';
 import { TunnelManager } from './tunnel-manager';
+
+interface Template {
+  id: string;
+  name: string;
+  content: string;
+  builtin: boolean;
+  icon?: string;
+}
 
 // Global config reference
 let extensionConfig: EnvironmentConfig | null = null;
@@ -24,6 +33,197 @@ const tunnelManager = new TunnelManager();
 
 // Template engine instance (will be initialized with config)
 let templateEngine: any;
+
+// Get standard template variables (reuse from defaultTemplate)
+function getStandardVariables(): TemplateVariable[] {
+  return defaultTemplate.variables;
+}
+
+// Simple template mapping - just use the existing defaultTemplate for all
+function getTemplateForId(templateId: string): AnnotationTemplate {
+  const variables = getStandardVariables();
+  
+  switch (templateId) {
+    case 'claude-code':
+      return {
+        ...defaultTemplate,
+        id: 'claude-code',
+        name: 'Claude Code'
+      };
+      
+    case 'cursor':
+      return {
+        id: 'cursor',
+        name: 'Cursor',
+        description: 'Concise format for Cursor AI',
+        builtIn: true,
+        template: `## UI Issue Report
+
+![Screenshot]({{screenshotUrl}})
+
+{{#if userNote}}
+### Issue Description
+{{userNote}}
+{{/if}}
+
+### Element Details
+{{#if targetSelector}}
+- **Element:** \`{{targetSelector}}\`
+{{/if}}
+{{#if targetRect}}
+- **Position:** {{targetRectX}},{{targetRectY}} ({{targetRectWidth}}×{{targetRectHeight}})
+{{/if}}
+
+### Page Context
+- **URL:** {{pageUrl}}
+- **Title:** {{pageTitle}}
+
+{{#if hasReact}}
+### Component Info
+- **Component:** {{reactComponentName}}
+- **Props:** \`{{reactPropsJson}}\`
+- **State:** \`{{reactStateJson}}\`
+{{/if}}
+
+{{#if hasErrors}}
+### Errors
+{{#each errors}}
+- {{message}}
+{{/each}}
+{{/if}}
+
+**Fix this UI issue with specific code changes.**`,
+        variables
+      };
+      
+    case 'github-copilot':
+      return {
+        id: 'github-copilot',
+        name: 'GitHub Copilot',
+        description: 'GitHub issue format for Copilot',
+        builtIn: true,
+        template: `# UI Issue Report
+
+## Description
+{{#if userNote}}
+{{userNote}}
+{{/if}}
+
+## Screenshot
+![UI Issue]({{screenshotUrl}})
+
+## Technical Details
+
+### Element Information
+{{#if targetSelector}}
+- **CSS Selector:** \`{{targetSelector}}\`
+{{/if}}
+{{#if targetRect}}
+- **Dimensions:** {{targetRectWidth}} × {{targetRectHeight}}
+- **Position:** ({{targetRectX}}, {{targetRectY}})
+{{/if}}
+
+### Page Information
+- **URL:** \`{{pageUrl}}\`
+- **Title:** {{pageTitle}}
+- **Viewport:** {{viewportWidth}} × {{viewportHeight}}
+
+{{#if hasReact}}
+### React Component
+\`\`\`javascript
+// Component: {{reactComponentName}}
+// Props: {{reactPropsJson}}
+// State: {{reactStateJson}}
+\`\`\`
+{{/if}}
+
+{{#if hasErrors}}
+### JavaScript Errors
+\`\`\`
+{{#each errors}}
+{{message}}
+{{stack}}
+{{/each}}
+\`\`\`
+{{/if}}
+
+## Expected Behavior
+<!-- Describe what should happen -->
+
+## Actual Behavior
+<!-- Describe what currently happens -->
+
+## Reproduction Steps
+1. Navigate to {{pageUrl}}
+2. <!-- Add steps to reproduce -->
+
+---
+**Environment:** {{userAgent}}
+**Timestamp:** {{capturedAt}}`,
+        variables
+      };
+      
+    case 'short':
+      return {
+        id: 'short',
+        name: 'Short',
+        description: 'Minimal format - just feedback and screenshot',
+        builtIn: true,
+        template: `{{#if userNote}}
+**Feedback:** {{userNote}}
+{{/if}}
+
+![Screenshot]({{screenshotUrl}})`,
+        variables
+      };
+      
+    case 'medium':
+      return {
+        id: 'medium',
+        name: 'Medium',
+        description: 'Balanced format with essential details',
+        builtIn: true,
+        template: `# UI Feedback
+
+{{#if userNote}}
+**User Comment:** {{userNote}}
+{{/if}}
+
+![Screenshot]({{screenshotUrl}})
+
+## Element Details
+{{#if targetSelector}}
+- **Selector:** \`{{targetSelector}}\`
+{{/if}}
+{{#if targetRect}}
+- **Size:** {{targetRectWidth}}×{{targetRectHeight}}
+{{/if}}
+
+{{#if hasReact}}
+## React Component: {{reactComponentName}}
+**Props:** \`{{reactPropsJson}}\`
+**State:** \`{{reactStateJson}}\`
+{{/if}}
+
+## Page Info
+- **URL:** {{pageUrl}}
+- **Title:** {{pageTitle}}
+- **Viewport:** {{viewportWidth}}×{{viewportHeight}}
+- **Browser:** {{userAgent}}
+
+{{#if hasErrors}}
+## Errors ({{errorCount}})
+{{#each errors}}
+- {{message}}
+{{/each}}
+{{/if}}`,
+        variables
+      };
+      
+    default:
+      return defaultTemplate;
+  }
+}
 
 // Initialize extension with environment-specific settings
 async function initializeExtension() {
@@ -313,14 +513,32 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   try {
     // Get relay URL from config first, then fall back to storage, then default
     let relayUrl = extensionConfig?.relayUrl || 'http://localhost:8787';
-    const { relayUrl: storedRelayUrl, copyFormat = 'claude' } = await chrome.storage.local.get(['relayUrl', 'copyFormat']);
-    if (storedRelayUrl) {
-      relayUrl = storedRelayUrl;
+    const stored = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId', 'customTemplates', 'copyFormat']);
+    
+    if (stored.relayUrl) {
+      relayUrl = stored.relayUrl;
     }
+
+    // Get template settings with migration support
+    let selectedTemplateId = stored.selectedTemplateId;
+    if (!selectedTemplateId && stored.copyFormat) {
+      // Migration from old copyFormat system
+      const formatToTemplate: { [key: string]: string } = {
+        'claude': 'claude-code',
+        'json': 'short',
+        'markdown': 'medium'
+      };
+      selectedTemplateId = formatToTemplate[stored.copyFormat] || 'claude-code';
+    }
+    selectedTemplateId = selectedTemplateId || 'claude-code';
+
+    const customTemplates = stored.customTemplates || [];
 
     // Handle clipboard mode - need to use content script for clipboard access
     if (relayUrl === 'clipboard') {
-      const formattedContent = formatAnnotationForClipboard(annotation, copyFormat);
+      const template = getTemplateForId(selectedTemplateId);
+      const formattedContent = templateEngine.render(annotation, template);
+      
       // Service workers don't have clipboard access, return the formatted content
       // The content script will handle the actual clipboard operation
       return { 
@@ -349,54 +567,3 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   }
 }
 
-function formatAnnotationForClipboard(annotation: WingmanAnnotation, format: string): string {
-  switch (format) {
-    case 'json':
-      return JSON.stringify(annotation, null, 2);
-    
-    case 'markdown':
-      return formatAsMarkdown(annotation);
-    
-    case 'claude':
-    default:
-      // Use the new template engine with the optimized template
-      return templateEngine.render(annotation, defaultTemplate);
-  }
-}
-
-function formatAsMarkdown(annotation: WingmanAnnotation): string {
-  const lines = [
-    '# Wingman Feedback',
-    '',
-    `**URL:** ${annotation.page.url}`,
-    `**Timestamp:** ${new Date(annotation.createdAt).toLocaleString()}`,
-    `**User Agent:** ${annotation.page.ua}`,
-    ''
-  ];
-
-  if (annotation.note) {
-    lines.push('## User Feedback');
-    lines.push(annotation.note);
-    lines.push('');
-  }
-
-  if (annotation.target) {
-    lines.push('## Target Element');
-    if (annotation.target.selector) {
-      lines.push(`**Selector:** \`${annotation.target.selector}\``);
-    }
-    if (annotation.target.rect) {
-      const rect = annotation.target.rect;
-      lines.push(`**Position:** x:${rect.x}, y:${rect.y}, width:${rect.width}, height:${rect.height}`);
-    }
-    lines.push('');
-  }
-
-  if (annotation.media && annotation.media.screenshot) {
-    lines.push('## Screenshot');
-    lines.push('*Screenshot data attached as base64*');
-    lines.push('');
-  }
-
-  return lines.join('\n');
-}

@@ -16,7 +16,8 @@ export class ModernPopup {
   private settings: SettingsConfig = {
     relayUrl: 'http://localhost:8787',
     showPreviewUrl: true,
-    copyFormat: 'claude'
+    selectedTemplateId: 'claude-code',
+    customTemplates: []
   };
 
   private activeTunnel: TunnelState | null = null;
@@ -450,18 +451,32 @@ export class ModernPopup {
   private async loadSettings(): Promise<void> {
     try {
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        const stored = await chrome.storage.local.get(['relayUrl', 'showPreviewUrl', 'copyFormat']);
+        const stored = await chrome.storage.local.get(['relayUrl', 'showPreviewUrl', 'selectedTemplateId', 'customTemplates', 'copyFormat']);
+        
+        // Migration: if old copyFormat exists but selectedTemplateId doesn't, migrate it
+        let selectedTemplateId = stored.selectedTemplateId;
+        if (!selectedTemplateId && stored.copyFormat) {
+          const formatToTemplate: { [key: string]: string } = {
+            'claude': 'claude-code',
+            'json': 'short', // Simple fallback
+            'markdown': 'medium'
+          };
+          selectedTemplateId = formatToTemplate[stored.copyFormat] || 'claude-code';
+        }
+        
         this.settings = {
           relayUrl: stored.relayUrl || 'http://localhost:8787',
           showPreviewUrl: stored.showPreviewUrl ?? true,
-          copyFormat: stored.copyFormat || 'claude'
+          selectedTemplateId: selectedTemplateId || 'claude-code',
+          customTemplates: stored.customTemplates || []
         };
       } else {
         // Fallback for testing environment - use defaults
         this.settings = {
           relayUrl: 'http://localhost:8787',
           showPreviewUrl: true,
-          copyFormat: 'claude'
+          selectedTemplateId: 'claude-code',
+          customTemplates: []
         };
       }
       
@@ -472,7 +487,8 @@ export class ModernPopup {
       this.settings = {
         relayUrl: 'http://localhost:8787',
         showPreviewUrl: true,
-        copyFormat: 'claude'
+        selectedTemplateId: 'claude-code',
+        customTemplates: []
       };
       this.settingsTab.updateSettings(this.settings);
     }

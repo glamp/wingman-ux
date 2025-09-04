@@ -1,14 +1,24 @@
 import { BaseComponent } from './Component';
 
+export interface Template {
+  id: string;
+  name: string;
+  content: string;
+  builtin: boolean;
+  icon?: string;
+}
+
 export interface SettingsConfig {
   relayUrl: string;
   showPreviewUrl: boolean;
-  copyFormat: 'claude' | 'json' | 'markdown';
+  selectedTemplateId: string;
+  customTemplates: Template[];
 }
 
 export class SettingsTab extends BaseComponent {
   private settings: SettingsConfig;
   private onSettingsChange: (settings: Partial<SettingsConfig>) => void;
+  private builtinTemplates: Template[];
 
   constructor(
     container: HTMLElement,
@@ -18,6 +28,7 @@ export class SettingsTab extends BaseComponent {
     super(container);
     this.settings = { ...initialSettings };
     this.onSettingsChange = onSettingsChange;
+    this.builtinTemplates = this.getBuiltinTemplates();
   }
 
   protected createElement(): HTMLElement {
@@ -72,37 +83,17 @@ export class SettingsTab extends BaseComponent {
               </div>
 
               <div class="setting-item">
-                <label class="setting-label" for="copyFormatSelect">Copy Format</label>
-                <div class="custom-select" id="copyFormatSelect">
+                <label class="setting-label" for="templateSelect">Template Format</label>
+                <div class="custom-select" id="templateSelect">
                   <div class="select-trigger" tabindex="0">
                     <span class="select-value">
-                      <span class="format-icon">${this.getFormatIcon(this.settings.copyFormat)}</span>
-                      <span class="format-text">${this.getFormatText(this.settings.copyFormat)}</span>
+                      <span class="format-icon">${this.getSelectedTemplateIcon()}</span>
+                      <span class="format-text">${this.getSelectedTemplateName()}</span>
                     </span>
                     <span class="select-arrow">▼</span>
                   </div>
                   <div class="select-options">
-                    <div class="select-option" data-value="claude">
-                      <span class="format-icon">🤖</span>
-                      <div class="format-info">
-                        <span class="format-text">Claude Code</span>
-                        <span class="format-desc">Optimized for AI conversations</span>
-                      </div>
-                    </div>
-                    <div class="select-option" data-value="json">
-                      <span class="format-icon">📄</span>
-                      <div class="format-info">
-                        <span class="format-text">JSON</span>
-                        <span class="format-desc">Raw structured data</span>
-                      </div>
-                    </div>
-                    <div class="select-option" data-value="markdown">
-                      <span class="format-icon">📝</span>
-                      <div class="format-info">
-                        <span class="format-text">Markdown</span>
-                        <span class="format-desc">Human-readable format</span>
-                      </div>
-                    </div>
+                    ${this.generateTemplateOptions()}
                   </div>
                 </div>
               </div>
@@ -166,9 +157,9 @@ export class SettingsTab extends BaseComponent {
   private attachEventListeners(): void {
     const relayUrlInput = this.element.querySelector('#relayUrlInput') as HTMLInputElement;
     const showPreviewToggle = this.element.querySelector('#showPreviewToggle') as HTMLInputElement;
-    const copyFormatSelect = this.element.querySelector('#copyFormatSelect') as HTMLElement;
-    const selectTrigger = copyFormatSelect?.querySelector('.select-trigger') as HTMLElement;
-    const selectOptions = copyFormatSelect?.querySelector('.select-options') as HTMLElement;
+    const templateSelect = this.element.querySelector('#templateSelect') as HTMLElement;
+    const selectTrigger = templateSelect?.querySelector('.select-trigger') as HTMLElement;
+    const selectOptions = templateSelect?.querySelector('.select-options') as HTMLElement;
 
     // URL input with debounced save
     let saveTimeout: number | null = null;
@@ -205,32 +196,34 @@ export class SettingsTab extends BaseComponent {
       this.onSettingsChange({ showPreviewUrl: this.settings.showPreviewUrl });
     });
 
-    // Custom select dropdown
+    // Template select dropdown
     selectTrigger?.addEventListener('click', () => {
-      const isOpen = copyFormatSelect.classList.contains('open');
-      copyFormatSelect.classList.toggle('open', !isOpen);
+      const isOpen = templateSelect.classList.contains('open');
+      templateSelect.classList.toggle('open', !isOpen);
     });
 
     selectTrigger?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        copyFormatSelect.classList.toggle('open');
+        templateSelect.classList.toggle('open');
       }
     });
 
     selectOptions?.addEventListener('click', (e) => {
       const option = (e.target as HTMLElement).closest('.select-option') as HTMLElement;
       if (option) {
-        const value = option.dataset.value as SettingsConfig['copyFormat'];
-        this.updateCopyFormat(value);
-        copyFormatSelect.classList.remove('open');
+        const templateId = option.dataset.value;
+        if (templateId) {
+          this.updateSelectedTemplate(templateId);
+          templateSelect.classList.remove('open');
+        }
       }
     });
 
     // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
-      if (copyFormatSelect && !copyFormatSelect.contains(e.target as Node)) {
-        copyFormatSelect.classList.remove('open');
+      if (templateSelect && !templateSelect.contains(e.target as Node)) {
+        templateSelect.classList.remove('open');
       }
     });
 
@@ -256,41 +249,42 @@ export class SettingsTab extends BaseComponent {
     this.loadTemplate();
   }
 
-  private updateCopyFormat(format: SettingsConfig['copyFormat']): void {
-    this.settings.copyFormat = format;
+  private updateSelectedTemplate(templateId: string): void {
+    this.settings.selectedTemplateId = templateId;
     
     const selectValue = this.element.querySelector('.select-value') as HTMLElement;
     if (selectValue) {
       const icon = selectValue.querySelector('.format-icon') as HTMLElement;
       const text = selectValue.querySelector('.format-text') as HTMLElement;
       
-      icon.textContent = this.getFormatIcon(format);
-      text.textContent = this.getFormatText(format);
+      icon.textContent = this.getSelectedTemplateIcon();
+      text.textContent = this.getSelectedTemplateName();
     }
 
     // Update selected state in options
     this.element.querySelectorAll('.select-option').forEach(option => {
-      option.classList.toggle('selected', (option as HTMLElement).dataset.value === format);
+      option.classList.toggle('selected', (option as HTMLElement).dataset.value === templateId);
     });
 
-    this.onSettingsChange({ copyFormat: format });
+    // Load the selected template into the editor
+    this.loadTemplateIntoEditor(templateId);
+
+    this.onSettingsChange({ selectedTemplateId: templateId });
   }
 
-  private getFormatIcon(format: SettingsConfig['copyFormat']): string {
-    switch (format) {
-      case 'claude': return '🤖';
-      case 'json': return '📄';
-      case 'markdown': return '📝';
-      default: return '🤖';
-    }
-  }
-
-  private getFormatText(format: SettingsConfig['copyFormat']): string {
-    switch (format) {
-      case 'claude': return 'Claude Code';
-      case 'json': return 'JSON';
-      case 'markdown': return 'Markdown';
-      default: return 'Claude Code';
+  private loadTemplateIntoEditor(templateId: string): void {
+    const template = this.getTemplateById(templateId);
+    const templateEditor = this.element.querySelector('#templateEditor') as HTMLTextAreaElement;
+    
+    if (template && templateEditor) {
+      templateEditor.value = template.content;
+      templateEditor.disabled = template.builtin; // Disable editing for built-in templates
+      
+      // Update save button state
+      const saveBtn = this.element.querySelector('#saveTemplateBtn') as HTMLButtonElement;
+      if (saveBtn) {
+        saveBtn.style.display = template.builtin ? 'none' : 'block';
+      }
     }
   }
 
@@ -331,42 +325,53 @@ export class SettingsTab extends BaseComponent {
       showPreviewToggle.checked = settings.showPreviewUrl;
     }
 
-    if (settings.copyFormat) {
-      this.updateCopyFormat(settings.copyFormat);
+    if (settings.selectedTemplateId) {
+      this.updateSelectedTemplate(settings.selectedTemplateId);
+    }
+
+    if (settings.customTemplates) {
+      // Refresh template options when custom templates change
+      this.refreshTemplateOptions();
+    }
+  }
+
+  private refreshTemplateOptions(): void {
+    const selectOptions = this.element.querySelector('.select-options') as HTMLElement;
+    if (selectOptions) {
+      selectOptions.innerHTML = this.generateTemplateOptions();
     }
   }
 
   private async loadTemplate(): Promise<void> {
-    const templateEditor = this.element.querySelector('#templateEditor') as HTMLTextAreaElement;
-    if (!templateEditor) return;
-
-    try {
-      // Try to load from Chrome storage
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        const result = await chrome.storage.local.get(['customTemplate']);
-        if (result.customTemplate) {
-          templateEditor.value = result.customTemplate;
-        } else {
-          templateEditor.value = this.getDefaultTemplate();
-        }
-      } else {
-        // Fallback for testing environment - show default template
-        templateEditor.value = this.getDefaultTemplate();
-      }
-    } catch (error) {
-      console.error('Failed to load template:', error);
-      // Fallback to default template
-      templateEditor.value = this.getDefaultTemplate();
-    }
+    // Load the currently selected template into the editor
+    this.loadTemplateIntoEditor(this.settings.selectedTemplateId);
   }
 
   private async saveTemplate(): Promise<void> {
     try {
       const templateEditor = this.element.querySelector('#templateEditor') as HTMLTextAreaElement;
-      if (templateEditor && templateEditor.value.trim()) {
-        await chrome.storage.local.set({ customTemplate: templateEditor.value.trim() });
+      const selectedTemplate = this.getSelectedTemplate();
+      
+      if (templateEditor && templateEditor.value.trim() && !selectedTemplate.builtin) {
+        // Update the existing custom template
+        const updatedTemplate: Template = {
+          ...selectedTemplate,
+          content: templateEditor.value.trim()
+        };
         
-        // Show success toast
+        // Update in settings
+        const updatedCustomTemplates = this.settings.customTemplates.map(t => 
+          t.id === selectedTemplate.id ? updatedTemplate : t
+        );
+        
+        this.settings.customTemplates = updatedCustomTemplates;
+        this.onSettingsChange({ customTemplates: updatedCustomTemplates });
+        
+        // Save to storage
+        await chrome.storage.local.set({ 
+          customTemplates: updatedCustomTemplates 
+        });
+        
         this.showToast('Template saved successfully!', 'success');
       }
     } catch (error) {
@@ -377,14 +382,16 @@ export class SettingsTab extends BaseComponent {
 
   private async resetTemplate(): Promise<void> {
     try {
-      const templateEditor = this.element.querySelector('#templateEditor') as HTMLTextAreaElement;
-      if (templateEditor) {
-        templateEditor.value = this.getDefaultTemplate();
-        
-        // Remove custom template from storage
-        await chrome.storage.local.remove('customTemplate');
-        
-        this.showToast('Template reset to default', 'success');
+      const selectedTemplate = this.getSelectedTemplate();
+      
+      if (selectedTemplate.builtin) {
+        // For built-in templates, just reload the original content
+        this.loadTemplateIntoEditor(selectedTemplate.id);
+        this.showToast('Template reset to original', 'success');
+      } else {
+        // For custom templates, switch back to Claude Code template
+        this.updateSelectedTemplate('claude-code');
+        this.showToast('Switched to Claude Code template', 'success');
       }
     } catch (error) {
       console.error('Failed to reset template:', error);
@@ -392,96 +399,6 @@ export class SettingsTab extends BaseComponent {
     }
   }
 
-  private getDefaultTemplate(): string {
-    return `# 🎯 UI Feedback Request
-
-![Screenshot]({{screenshotUrl}})
-
-{{#if userNote}}
-**User Feedback**: {{userNote}}
-{{/if}}
-
-Please analyze this UI screenshot and help improve the user experience. Focus on the highlighted element and provide specific, actionable recommendations.
-
----
-
-## 🎨 Visual Context
-
-{{#if targetRect}}
-- **Selected Area:** {{targetRectWidth}}×{{targetRectHeight}} pixels at position ({{targetRectX}}, {{targetRectY}})
-{{/if}}
-- **Selection Mode:** {{selectionModeText}}
-{{#if targetSelector}}
-- **CSS Selector:** \`{{targetSelector}}\`
-{{/if}}
-
-## 🔧 Technical Context
-
-<details>
-<summary><strong>Page Information</strong></summary>
-
-- **URL:** {{pageUrl}}
-- **Title:** {{pageTitle}}
-- **Viewport:** {{viewportWidth}}×{{viewportHeight}} (DPR: {{viewportDpr}})
-- **Captured:** {{capturedAt}}
-
-</details>
-
-{{#if hasReact}}
-<details>
-<summary><strong>React Component: {{reactComponentName}}</strong></summary>
-
-**Props:** \`\`\`json
-{{reactPropsJson}}
-\`\`\`
-
-**State:** \`\`\`json
-{{reactStateJson}}
-\`\`\`
-
-</details>
-{{/if}}
-
-{{#if hasErrors}}
-<details open>
-<summary><strong>⚠️ JavaScript Errors ({{errorCount}})</strong></summary>
-
-{{#each errors}}
-{{index}}. **[{{timestamp}}]** {{message}}
-{{#if stack}}\`\`\`
-{{stack}}
-\`\`\`{{/if}}
-{{/each}}
-
-</details>
-{{/if}}
-
-{{#if hasConsole}}
-<details>
-<summary><strong>Console Logs ({{consoleCount}})</strong></summary>
-
-{{#each consoleLogs}}
-{{index}}. **[{{level}}]** {{timestamp}}: {{args}}
-{{/each}}
-
-</details>
-{{/if}}
-
-{{#if hasNetwork}}
-<details>
-<summary><strong>Network Activity ({{networkCount}} requests)</strong></summary>
-
-{{#each networkRequests}}
-{{index}}. **{{url}}** ({{status}} - {{duration}}ms)
-{{/each}}
-
-</details>
-{{/if}}
-
----
-
-**Task**: Based on the screenshot and user feedback, provide specific UI/UX improvements for the highlighted element.`;
-  }
 
   private showSampleDataModal(): void {
     // Create modal if it doesn't exist
@@ -720,5 +637,295 @@ Please analyze this UI screenshot and help improve the user experience. Focus on
 
   hide(): void {
     this.element.style.display = 'none';
+  }
+
+  private getBuiltinTemplates(): Template[] {
+    return [
+      {
+        id: 'claude-code',
+        name: 'Claude Code',
+        icon: '🤖',
+        builtin: true,
+        content: `# 🎯 UI Feedback Request
+
+![Screenshot]({{screenshotUrl}})
+
+{{#if userNote}}
+**User Feedback**: {{userNote}}
+{{/if}}
+
+Please analyze this UI screenshot and help improve the user experience. Focus on the highlighted element and provide specific, actionable recommendations.
+
+---
+
+## 🎨 Visual Context
+
+{{#if targetRect}}
+- **Selected Area:** {{targetRectWidth}}×{{targetRectHeight}} pixels at position ({{targetRectX}}, {{targetRectY}})
+{{/if}}
+- **Selection Mode:** {{selectionModeText}}
+{{#if targetSelector}}
+- **CSS Selector:** \`{{targetSelector}}\`
+{{/if}}
+
+## 🔧 Technical Context
+
+<details>
+<summary><strong>Page Information</strong></summary>
+
+- **URL:** {{pageUrl}}
+- **Title:** {{pageTitle}}
+- **Viewport:** {{viewportWidth}}×{{viewportHeight}} (DPR: {{viewportDpr}})
+- **Captured:** {{capturedAt}}
+
+</details>
+
+{{#if hasReact}}
+<details>
+<summary><strong>React Component: {{reactComponentName}}</strong></summary>
+
+**Props:** \`\`\`json
+{{reactPropsJson}}
+\`\`\`
+
+**State:** \`\`\`json
+{{reactStateJson}}
+\`\`\`
+
+</details>
+{{/if}}
+
+{{#if hasErrors}}
+<details open>
+<summary><strong>⚠️ JavaScript Errors ({{errorCount}})</strong></summary>
+
+{{#each errors}}
+{{index}}. **[{{timestamp}}]** {{message}}
+{{#if stack}}\`\`\`
+{{stack}}
+\`\`\`{{/if}}
+{{/each}}
+
+</details>
+{{/if}}
+
+{{#if hasConsole}}
+<details>
+<summary><strong>Console Logs ({{consoleCount}})</strong></summary>
+
+{{#each consoleLogs}}
+{{index}}. **[{{level}}]** {{timestamp}}: {{args}}
+{{/each}}
+
+</details>
+{{/if}}
+
+{{#if hasNetwork}}
+<details>
+<summary><strong>Network Activity ({{networkCount}} requests)</strong></summary>
+
+{{#each networkRequests}}
+{{index}}. **{{url}}** ({{status}} - {{duration}}ms)
+{{/each}}
+
+</details>
+{{/if}}
+
+---
+
+**Task**: Based on the screenshot and user feedback, provide specific UI/UX improvements for the highlighted element.`
+      },
+      {
+        id: 'cursor',
+        name: 'Cursor',
+        icon: '⚡',
+        builtin: true,
+        content: `## UI Issue Report
+
+![Screenshot]({{screenshotUrl}})
+
+{{#if userNote}}
+### Issue Description
+{{userNote}}
+{{/if}}
+
+### Element Details
+{{#if targetSelector}}
+- **Element:** \`{{targetSelector}}\`
+{{/if}}
+{{#if targetRect}}
+- **Position:** {{targetRectX}},{{targetRectY}} ({{targetRectWidth}}×{{targetRectHeight}})
+{{/if}}
+
+### Page Context
+- **URL:** {{pageUrl}}
+- **Title:** {{pageTitle}}
+
+{{#if hasReact}}
+### Component Info
+- **Component:** {{reactComponentName}}
+- **Props:** \`{{reactPropsJson}}\`
+- **State:** \`{{reactStateJson}}\`
+{{/if}}
+
+{{#if hasErrors}}
+### Errors
+{{#each errors}}
+- {{message}}
+{{/each}}
+{{/if}}
+
+**Fix this UI issue with specific code changes.**`
+      },
+      {
+        id: 'github-copilot',
+        name: 'GitHub Copilot',
+        icon: '🐙',
+        builtin: true,
+        content: `# UI Issue Report
+
+## Description
+{{#if userNote}}
+{{userNote}}
+{{/if}}
+
+## Screenshot
+![UI Issue]({{screenshotUrl}})
+
+## Technical Details
+
+### Element Information
+{{#if targetSelector}}
+- **CSS Selector:** \`{{targetSelector}}\`
+{{/if}}
+{{#if targetRect}}
+- **Dimensions:** {{targetRectWidth}} × {{targetRectHeight}}
+- **Position:** ({{targetRectX}}, {{targetRectY}})
+{{/if}}
+
+### Page Information
+- **URL:** \`{{pageUrl}}\`
+- **Title:** {{pageTitle}}
+- **Viewport:** {{viewportWidth}} × {{viewportHeight}}
+
+{{#if hasReact}}
+### React Component
+\`\`\`javascript
+// Component: {{reactComponentName}}
+// Props: {{reactPropsJson}}
+// State: {{reactStateJson}}
+\`\`\`
+{{/if}}
+
+{{#if hasErrors}}
+### JavaScript Errors
+\`\`\`
+{{#each errors}}
+{{message}}
+{{stack}}
+{{/each}}
+\`\`\`
+{{/if}}
+
+## Expected Behavior
+<!-- Describe what should happen -->
+
+## Actual Behavior
+<!-- Describe what currently happens -->
+
+## Reproduction Steps
+1. Navigate to {{pageUrl}}
+2. <!-- Add steps to reproduce -->
+
+---
+**Environment:** {{userAgent}}
+**Timestamp:** {{capturedAt}}`
+      },
+      {
+        id: 'short',
+        name: 'Short',
+        icon: '📝',
+        builtin: true,
+        content: `{{#if userNote}}
+**Feedback:** {{userNote}}
+{{/if}}
+
+![Screenshot]({{screenshotUrl}})`
+      },
+      {
+        id: 'medium',
+        name: 'Medium',
+        icon: '📊',
+        builtin: true,
+        content: `# UI Feedback
+
+{{#if userNote}}
+**User Comment:** {{userNote}}
+{{/if}}
+
+![Screenshot]({{screenshotUrl}})
+
+## Element Details
+{{#if targetSelector}}
+- **Selector:** \`{{targetSelector}}\`
+{{/if}}
+{{#if targetRect}}
+- **Size:** {{targetRectWidth}}×{{targetRectHeight}}
+{{/if}}
+
+{{#if hasReact}}
+## React Component: {{reactComponentName}}
+**Props:** \`{{reactPropsJson}}\`
+**State:** \`{{reactStateJson}}\`
+{{/if}}
+
+## Page Info
+- **URL:** {{pageUrl}}
+- **Title:** {{pageTitle}}
+- **Viewport:** {{viewportWidth}}×{{viewportHeight}}
+- **Browser:** {{userAgent}}
+
+{{#if hasErrors}}
+## Errors ({{errorCount}})
+{{#each errors}}
+- {{message}}
+{{/each}}
+{{/if}}`
+      }
+    ];
+  }
+
+  private getAllTemplates(): Template[] {
+    return [...this.builtinTemplates, ...this.settings.customTemplates];
+  }
+
+  private getTemplateById(id: string): Template | undefined {
+    return this.getAllTemplates().find(t => t.id === id);
+  }
+
+  private getSelectedTemplate(): Template {
+    const template = this.getTemplateById(this.settings.selectedTemplateId);
+    return template || this.builtinTemplates[0]; // Default to first builtin if not found
+  }
+
+  private getSelectedTemplateIcon(): string {
+    return this.getSelectedTemplate().icon || '🤖';
+  }
+
+  private getSelectedTemplateName(): string {
+    return this.getSelectedTemplate().name;
+  }
+
+  private generateTemplateOptions(): string {
+    const allTemplates = this.getAllTemplates();
+    return allTemplates.map(template => `
+      <div class="select-option" data-value="${template.id}">
+        <span class="format-icon">${template.icon || '📄'}</span>
+        <div class="format-info">
+          <span class="format-text">${template.name}</span>
+          <span class="format-desc">${template.builtin ? 'Built-in template' : 'Custom template'}</span>
+        </div>
+      </div>
+    `).join('');
   }
 }
