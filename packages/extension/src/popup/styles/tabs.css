@@ -2,15 +2,17 @@
 .tab-navigation {
   flex-shrink: 0;
   padding: 0 var(--space-4);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .tab-list {
   display: flex;
-  background: var(--bg-secondary);
+  background: rgba(248, 250, 252, 0.8);
   border-radius: var(--radius-lg);
   padding: var(--space-1);
   gap: var(--space-1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(226, 232, 240, 0.3);
 }
 
 .tab-button {
