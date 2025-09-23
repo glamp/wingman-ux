@@ -552,16 +552,90 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
     // Handle clipboard mode - need to use content script for clipboard access
     if (relayUrl === 'clipboard') {
       const template = getTemplateForId(selectedTemplateId);
-      // Use the remote API URL for clipboard mode screenshots
-      const actualRelayUrl = stored.remoteUrl || REMOTE_API_URL;
-      const formattedContent = templateEngine.render(annotation, template, { relayUrl: actualRelayUrl });
+      let screenshotPath = '';
+
+      // Try to save screenshot to Downloads folder
+      try {
+        if (annotation.media?.screenshot?.dataUrl) {
+          // Generate timestamp-based filename
+          const timestamp = Date.now();
+          const filename = `wingman-screenshot-${timestamp}.png`;
+
+          // Convert base64 to blob
+          const base64Data = annotation.media.screenshot.dataUrl.split(',')[1];
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'image/png' });
+
+          // Create object URL for the blob
+          const url = URL.createObjectURL(blob);
+
+          // Download the file
+          const downloadId = await chrome.downloads.download({
+            url: url,
+            filename: filename,
+            saveAs: false // Don't prompt user
+          });
+
+          // Wait for download to complete and get the file path
+          await new Promise<void>((resolve) => {
+            const checkDownload = () => {
+              chrome.downloads.search({ id: downloadId }, (downloads) => {
+                if (downloads && downloads[0]) {
+                  const download = downloads[0];
+                  if (download.state === 'complete' && download.filename) {
+                    screenshotPath = download.filename;
+                    // Clean up the object URL
+                    URL.revokeObjectURL(url);
+                    resolve();
+                  } else if (download.state === 'interrupted') {
+                    // Download failed, clean up and resolve anyway
+                    URL.revokeObjectURL(url);
+                    logger.warn('Screenshot download failed:', download.error);
+                    resolve();
+                  } else {
+                    // Still downloading, check again
+                    setTimeout(checkDownload, 100);
+                  }
+                }
+              });
+            };
+            checkDownload();
+          });
+        }
+      } catch (error) {
+        logger.warn('Failed to save screenshot to Downloads folder:', error);
+        // Continue without local file path
+      }
+
+      // Use local file path if available, otherwise fall back to remote URL
+      let formattedContent: string;
+      if (screenshotPath) {
+        // Use the local file path for the screenshot
+        const fileUrl = `file://${screenshotPath}`;
+        formattedContent = templateEngine.render(annotation, template, { relayUrl: fileUrl, isLocalFile: true });
+        // Replace any remaining remote URLs with the local file URL
+        formattedContent = formattedContent.replace(
+          /!\[.*?\]\(.*?\/annotations\/.*?\/screenshot\)/g,
+          `![Wingman Screenshot - Local file](${fileUrl})`
+        );
+      } else {
+        // Fall back to remote URL
+        const actualRelayUrl = stored.remoteUrl || REMOTE_API_URL;
+        formattedContent = templateEngine.render(annotation, template, { relayUrl: actualRelayUrl });
+      }
 
       // Service workers don't have clipboard access, return the formatted content
       // The content script will handle the actual clipboard operation
       return {
         success: true,
-        message: 'Copied to clipboard',
-        clipboardContent: formattedContent
+        message: screenshotPath ? 'Screenshot saved to Downloads folder and copied to clipboard' : 'Copied to clipboard',
+        clipboardContent: formattedContent,
+        screenshotPath: screenshotPath
       };
     }
 

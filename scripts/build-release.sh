@@ -35,8 +35,14 @@ build_package() {
     local package=$1
     local environment="${2:-production}"
     log "Building $package..."
-    cd "$ROOT_DIR/packages/$package"
-    
+    # Handle chrome-extension -> extension rename
+    local actual_package=$package
+    if [ "$package" = "chrome-extension" ]; then
+        actual_package="extension"
+    fi
+
+    cd "$ROOT_DIR/packages/$actual_package"
+
     if [ "$package" = "chrome-extension" ]; then
         if [ "$environment" = "development" ]; then
             npm run build:dev
@@ -61,16 +67,16 @@ ensure_dir() {
 create_chrome_zip() {
     local environment="${1:-production}"
     log "Creating Chrome Extension ZIP for ${environment}..."
-    local ext_dir="$ROOT_DIR/packages/chrome-extension/dist/${environment}"
+    local ext_dir="$ROOT_DIR/packages/extension/dist/${environment}"
     local release_chrome="$RELEASE_DIR/chrome-extension"
-    
+
     ensure_dir "$release_chrome"
-    
+
     if [ ! -d "$ext_dir" ]; then
         error "Extension directory not found: $ext_dir"
         return 1
     fi
-    
+
     cd "$ext_dir"
     local zip_name="wingman-chrome-extension-${environment}.zip"
     zip -r "$release_chrome/$zip_name" . -q

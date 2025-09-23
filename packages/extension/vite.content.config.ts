@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import hotReloadExtension from 'hot-reload-extension-vite';
 
 // Get environment from WINGMAN_ENV or NODE_ENV, default to development
 const environment = process.env.WINGMAN_ENV || process.env.NODE_ENV || 'development';
+const isDev = environment === 'development';
 const isProd = environment === 'production';
 
 console.log(`Building Chrome Extension Content Script for environment: ${environment}`);
@@ -55,6 +57,11 @@ export default defineConfig(async () => {
     plugins: [
       // React plugin for JSX support
       react(),
+      // Hot reload plugin for content script
+      ...(isDev ? [hotReloadExtension({
+        log: true
+        // Port is configured via HOT_RELOAD_EXTENSION_VITE_PORT env var
+      })] : []),
     ],
   };
 });

@@ -1,175 +1,149 @@
-# Wingman
+# 🚀 Wingman
 
-A lightweight UX feedback assistant for capturing and sharing feedback from web applications.
+**Instant UI feedback for developers** — Capture, annotate, and fix UI issues in seconds.
 
-## Quick Start
+[![npm version](https://img.shields.io/npm/v/wingman-cli.svg)](https://www.npmjs.com/package/wingman-cli)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome-Extension-blue)](https://chrome.google.com/webstore)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### For Users (NPM Package)
+## What is Wingman?
+
+Wingman is your AI copilot for UI development. Point, click, and get instant fixes for any UI issue. No more back-and-forth with screenshots in Slack. No more "it works on my machine."
+
+### ✨ Key Features
+
+- **🎯 Point & Click** — Select any element on the page and capture context
+- **📸 Smart Screenshots** — Automatically includes React props, console logs, and network data
+- **🤖 AI-Ready** — Perfectly formatted for Claude, Cursor, and GitHub Copilot
+- **🔥 Hot Reload** — Chrome extension reloads instantly during development
+- **🌐 Share Links** — Create shareable feedback links without any backend setup
+- **🔒 Privacy First** — Run locally or use your own infrastructure
+
+## 🎬 Quick Start (2 minutes)
 
 ```bash
-# Start unified server (local mode)
-npx wingman-cli serve
-
-# Or with automatic tunnel for sharing
-npx wingman-cli serve --tunnel
-```
-
-That's it! Your server is running at `http://localhost:8787` 🎉
-
-### For Development
-
-```bash
-# Clone the repository
-git clone https://github.com/glamp/wingman-ux.git
-cd wingman-ux
-
-# Install dependencies
+# Install and run everything
 npm install
-
-# Start all services (API, webapp, extension, react-app)
 npm run dev
 
-# Check what's running
-npm run dev:status
-
-# Stop everything
-npm run dev:stop
+# In another terminal, load the Chrome extension
+cd packages/extension
+npm run dev:chrome:personal
 ```
 
-### What You Get
-- 🪶 Unified server with built-in WebSocket support
-- 🌐 Web interface for annotations, tunnels, and monitoring
-- 🚇 Optional cloud tunnel for remote collaboration
-- 🤖 MCP integration for Claude Code
-- ✈️ Aviation-themed session IDs for easy sharing
+That's it! The extension hot-reloads when you change code. See [DEV_INSTRUCTIONS.md](DEV_INSTRUCTIONS.md) for details.
 
-### Next Steps
+## 📦 Installation Options
 
-1. **Install Chrome Extension**
-   - [Chrome Web Store](https://chrome.google.com/webstore/detail/wingman) (coming soon)
-   - Or [load unpacked](#development-setup) for development
+### Option 1: Chrome Extension (Recommended)
+Install from Chrome Web Store or load locally for development.
 
-2. **Optional: Add to Your React App**
-
+### Option 2: NPM Package
 ```bash
-npm install wingman-sdk
+# Run without installing
+npx wingman-cli serve
+
+# Or install globally
+npm install -g wingman-cli
+wingman serve
+
+# With tunnel for sharing
+wingman serve --tunnel
+```
+
+### Option 3: React SDK
+```bash
+npm install @wingman/sdk
 ```
 
 ```jsx
-import { WingmanProvider } from 'wingman-sdk';
+import { WingmanProvider } from '@wingman/sdk';
 
 function App() {
   return (
-    <WingmanProvider config={{ enabled: true }}>
-      {/* Your app components */}
+    <WingmanProvider apiUrl="http://localhost:8787">
+      <YourApp />
     </WingmanProvider>
   );
 }
 ```
 
-## Development Setup
+## 🏗️ Architecture
+
+```
+wingman/
+├── packages/
+│   ├── api/          # Express server with WebSocket support
+│   ├── extension/    # Chrome extension (Manifest V3)
+│   ├── webapp/       # React dashboard
+│   ├── sdk/          # React SDK for metadata extraction
+│   └── cli/          # NPM CLI package
+└── examples/
+    └── react-app/    # Demo application
+```
+
+## 🔧 Development
 
 ### Prerequisites
+- Node.js 18+
+- Chrome or Chromium browser
+- npm 9+
 
-- Node.js 18+ and npm 9+
-- Chrome browser for extension testing
+### Environment Setup
 
-### Project Structure
-
-```
-wingman-ux/
-├── packages/
-│   ├── api/          # Backend server & tunnel management
-│   ├── webapp/       # Web interface & landing pages
-│   ├── extension/    # Chrome extension
-│   ├── sdk/          # React SDK for web apps
-│   └── cli/          # NPM CLI package
-├── examples/
-│   └── react-app/    # Demo React application
-└── .env.defaults     # Default configuration
-```
-
-### Development Commands
+The dev environment is pre-configured with hot reloading:
 
 ```bash
-# Start everything (API, webapp, extension, react-app)
+# Everything with hot reload
 npm run dev
 
-# Start individual services
-npm run dev:api        # API server only (port 8787)
+# Individual services
+npm run dev:api        # API only (port 8787)
 npm run dev:webapp     # Web app only (port 3001)
-npm run dev:extension  # Extension build watcher
-npm run dev:react-app  # Example React app (port 5173)
-
-# Utility commands
-npm run dev:status     # Check what's running
-npm run dev:stop       # Stop all services
-npm run dev:restart    # Restart everything
-
-# Build all packages
-npm run build
-
-# Run tests
-npm test
+npm run dev:extension  # Extension only (with watchers)
 ```
 
-### Load Chrome Extension for Development
+### Chrome Extension Development
 
-1. Build the extension first:
-   ```bash
-   cd packages/extension
-   npm run build
-   ```
+The extension includes:
+- **Hot Reload** via Vite HMR on port 9012
+- **Auto-rebuild** on file changes
+- **Source maps** in development
+- **React DevTools** integration
 
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" (top right)
-4. Click "Load unpacked"
-5. Select the `packages/extension/dist` folder
-
-### Local Subdomain Testing (Optional)
-
-To test subdomain-based tunnels locally:
-
-1. Edit `/etc/hosts` (macOS/Linux) or `C:\Windows\System32\drivers\etc\hosts` (Windows):
-   ```
-   127.0.0.1   ghost-alpha.localhost
-   127.0.0.1   maverick-bravo.localhost
-   # Add more as needed
-   ```
-
-2. Access your sessions at `http://ghost-alpha.localhost:8787`
-
-### 5. Capture Feedback
-
-1. Click the Wingman extension icon in Chrome
-2. Select an element or region on the page
-3. Add your feedback notes
-4. Submit to send to the relay server
-
-The feedback is stored locally in `./.wingman/annotations/` and can be retrieved via:
-
+Load the extension:
 ```bash
-# Get the last annotation
-curl http://localhost:8787/annotations/last
+cd packages/extension
+npm run dev:chrome:personal  # Uses your Chrome profile
+# OR
+npm run dev:chrome:fresh     # Clean profile for testing
 ```
 
-## What Gets Captured
+## 🎯 How It Works
 
-- Screenshot of the selected area
-- CSS selectors for the element
-- Console logs and errors
-- Network request timings
-- React component metadata (when available)
-- Your feedback notes
+1. **Capture** — Click any element on the page
+2. **Annotate** — Add notes about the issue
+3. **Context** — Automatically captures:
+   - React component props & state
+   - Console logs & errors
+   - Network requests
+   - Device & browser info
+4. **Share** — Copy formatted output or create share link
+5. **Fix** — Paste into your AI tool for instant solutions
 
-## 🪶 Claude Code Integration
+## 🤝 Integration Examples
 
-Wingman provides MCP (Model Context Protocol) tools for Claude Code to review and fix UI issues.
+### Claude Code / Claude.ai
+```markdown
+# Paste captured feedback directly
+![Screenshot](https://api.wingmanux.com/annotations/abc123/screenshot)
 
-### Setup Claude Code
+**Issue:** Button not aligned properly
+**Component:** <Button variant="primary" />
+**Props:** { disabled: false, loading: true }
+```
 
-Add Wingman to your Claude Code settings:
-
+### MCP Integration for Claude Code
 ```json
 {
   "mcpServers": {
@@ -181,125 +155,170 @@ Add Wingman to your Claude Code settings:
 }
 ```
 
-That's it! Claude Code will automatically start the Wingman server when needed.
+Available MCP tools:
+- `wingman_list` - List all feedback
+- `wingman_review` - Review specific annotation
+- `wingman_delete` - Clean up processed items
+- `wingman_fix_ui` - Automated fix workflow
 
-### Available MCP Tools
+### Cursor / GitHub Copilot
+The extension formats output specifically for each AI tool's preferred format.
 
-Once configured, Claude Code has access to:
+### Custom Templates
+Create your own output templates for any workflow:
+```javascript
+{
+  "template": "{{userNote}}\n![]({{screenshotUrl}})\n{{reactComponentName}}"
+}
+```
 
-- **`wingman_list()`** - List all UI feedback annotations
-- **`wingman_review()`** - Get the latest annotation with full details
-- **`wingman_delete(id)`** - Remove processed annotation
+## 🚢 Deployment
 
-### Slash Commands
-
-Use these commands in Claude Code:
-- `/wingman` - Show all Wingman options
-- `/wingman:list` - List all annotations
-- `/wingman:review` - Review latest issue
-- `/wingman:fix` - Fix UI issue with guided approach
-
-### Example Workflow
-
-1. **Start server**: `wingman serve`
-2. **User reports issue** via Chrome extension
-3. **In Claude Code**: "Use wingman to check for feedback"
-4. **Claude** uses MCP tools to review annotations
-5. **Claude** fixes the code and cleans up
-
-### The Wingman Fix Flow
-
-When using the `wingman_fix_ui` prompt, Claude will:
-- 🔍 Analyze the screenshot and target element
-- 🎯 Identify the specific UI issue
-- 📝 Review React/HTML context
-- 🔧 Generate and apply the fix
-- ✅ Validate the changes
-- 🗑️ Clean up the processed annotation
-
-## Environment Configuration
-
-Copy `.env.defaults` to `.env` to customize your local setup:
-
+### Local Development
 ```bash
-cp .env.defaults .env
+npm run dev
 ```
 
-Key configuration options:
-- `API_PORT`: API server port (default: 8787)
-- `WEBAPP_PORT`: Web app port (default: 3001)
-- `TUNNEL_MODE`: local or remote
-- `NODE_ENV`: development or production
-
-See `.env.defaults` for all available options.
-
-## Server Architecture
-
-The Wingman server (`wingman serve`) provides a unified HTTP server with multiple endpoints:
-
-```
-http://localhost:8787/
-├── /annotations       # Chrome extension posts feedback here
-├── /annotations/last  # Get most recent annotation
-├── /mcp              # Claude Code MCP endpoint (SSE)
-├── /preview          # Preview UI for viewing feedback
-└── /health           # Health check endpoint
-```
-
-All endpoints share the same storage (`./.wingman/annotations/`), ensuring consistency between Chrome extension feedback and Claude Code tools.
-
-## Publishing to NPM
-
-### Prerequisites
-
-1. Login to npm:
+### Production Build
 ```bash
-npm login
+npm run build
+npm run release:chrome   # Chrome extension
+npm run release:cli      # NPM package
 ```
 
-2. Ensure you have publishing rights for:
-- `wingman-cli` package
-- `wingman-sdk` package (optional)
-
-### Publishing Packages
-
+### Self-Hosted
 ```bash
-# Publish all packages
-./scripts/publish-npm.sh
-
-# Publish only CLI
-./scripts/publish-npm.sh --cli
-
-# Publish only SDK
-./scripts/publish-npm.sh --sdk
-
-# Dry run (test without publishing)
-npm run release:cli
-cd release/cli
-npm publish --dry-run
+docker run -p 8787:8787 wingman/wingman
 ```
 
-### Version Management
-
-Update version in package.json before publishing:
-
+### Tunnel Mode (Share with anyone)
 ```bash
-cd packages/cli
-npm version patch  # or minor/major
+wingman serve --tunnel
+# Creates: https://ghost-alpha.wingmanux.com
 ```
 
-### After Publishing
+## 📚 API Reference
 
-Users can run immediately with:
+### REST Endpoints
+- `POST /annotations` — Submit feedback
+- `GET /annotations/last` — Get latest annotation
+- `GET /share/:token` — Access shared feedback
+- `GET /health` — Server status
 
+### WebSocket
+- Connect to `/ws` for real-time updates
+- Automatic reconnection with exponential backoff
+
+### Storage
+- Annotations: `./.wingman/annotations/:id.json`
+- Sessions: `./.wingman/sessions/:id.json`
+- Screenshots embedded as base64 in JSON
+
+## 🐛 Troubleshooting
+
+### Extension not hot-reloading?
 ```bash
-# No installation needed!
-npx wingman-cli serve
+# Check HMR connection
+curl http://localhost:9012
+# Should see WebSocket upgrade headers
 
-# SDK for React projects (optional)
-npm install wingman-sdk
+# Restart dev server
+npm run dev:restart
 ```
 
-## License
+### Port conflicts?
+Default ports:
+- API: 8787
+- Web: 3001
+- React Example: 5173
+- HMR: 9012
 
-MIT
+Change in `.env`:
+```env
+API_PORT=8788
+WEBAPP_PORT=3002
+HOT_RELOAD_EXTENSION_VITE_PORT=9013
+```
+
+### Chrome won't load extension?
+```bash
+# Build first
+cd packages/extension
+npm run build:dev
+
+# Check manifest
+cat dist/development/manifest.json
+
+# Check for errors
+chrome://extensions/ → Details → Errors
+```
+
+### MCP not working in Claude Code?
+```bash
+# Test MCP directly
+curl http://localhost:8787/mcp/health
+
+# Check Claude Code settings
+# Should have wingman in mcpServers config
+```
+
+## 🤝 Contributing
+
+We love contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Workflow
+1. Fork the repo
+2. Create feature branch
+3. Make changes with hot reload
+4. Run tests: `npm test`
+5. Submit PR
+
+### Testing
+```bash
+# Unit tests
+npm test
+
+# E2E tests
+npm run test:e2e
+
+# Coverage
+npm run test:coverage
+```
+
+### Code Style
+- TypeScript strict mode
+- Prettier formatting
+- ESM modules
+- React 18+
+
+## 🚀 Roadmap
+
+- [ ] Firefox extension
+- [ ] VS Code extension
+- [ ] Figma plugin
+- [ ] Video capture
+- [ ] Session replay
+- [ ] Team collaboration
+- [ ] Analytics dashboard
+
+## 📄 License
+
+MIT © Wingman Team
+
+## 🙏 Acknowledgments
+
+Built with:
+- [Vite](https://vitejs.dev/) for blazing fast builds
+- [React](https://react.dev/) for UI
+- [Express](https://expressjs.com/) for the API
+- [Chrome Extensions Manifest V3](https://developer.chrome.com/docs/extensions/mv3/)
+- [MCP SDK](https://modelcontextprotocol.io/) for AI integration
+
+---
+
+<p align="center">
+  <b>Stop describing bugs. Start fixing them.</b><br>
+  <a href="https://wingmanux.com">wingmanux.com</a> •
+  <a href="https://twitter.com/wingmanux">Twitter</a> •
+  <a href="https://github.com/wingman/wingman">GitHub</a>
+</p>
