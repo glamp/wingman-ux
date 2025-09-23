@@ -14,6 +14,9 @@ import { getEnvironmentConfig } from '../utils/config';
 import type { EnvironmentConfig } from '../types/env';
 import { TunnelManager } from './tunnel-manager';
 
+// Remote API URL constant
+const REMOTE_API_URL = 'https://api.wingmanux.com';
+
 interface Template {
   id: string;
   name: string;
@@ -520,10 +523,15 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   try {
     // Get relay URL from config first, then fall back to storage, then default
     let relayUrl = extensionConfig?.relayUrl || 'http://localhost:8787';
-    const stored = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId', 'customTemplates', 'copyFormat']);
-    
+    const stored = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId', 'customTemplates', 'copyFormat', 'remoteUrl']);
+
     if (stored.relayUrl) {
       relayUrl = stored.relayUrl;
+    }
+
+    // Track the remote URL for clipboard mode
+    if (relayUrl && relayUrl !== 'clipboard' && !relayUrl.includes('localhost')) {
+      await chrome.storage.local.set({ remoteUrl: relayUrl });
     }
 
     // Get template settings with migration support
@@ -544,9 +552,8 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
     // Handle clipboard mode - need to use content script for clipboard access
     if (relayUrl === 'clipboard') {
       const template = getTemplateForId(selectedTemplateId);
-      // For clipboard mode, we still use localhost as the base URL since there's no actual server
-      // But we could get the last used relay URL from storage for consistency
-      const actualRelayUrl = stored.lastUsedRelayUrl || 'http://localhost:8787';
+      // Use the remote API URL for clipboard mode screenshots
+      const actualRelayUrl = stored.remoteUrl || REMOTE_API_URL;
       const formattedContent = templateEngine.render(annotation, template, { relayUrl: actualRelayUrl });
 
       // Service workers don't have clipboard access, return the formatted content
