@@ -5,7 +5,7 @@
  */
 
 import type { WingmanAnnotation } from '../types.js';
-import type { AnnotationTemplate, TemplateEngine, TemplateVariable } from './types.js';
+import type { AnnotationTemplate, TemplateContext, TemplateEngine, TemplateVariable } from './types.js';
 
 /**
  * Get a value from an object using a dot-notation path
@@ -49,16 +49,16 @@ export class SimpleTemplateEngine implements TemplateEngine {
   /**
    * Render an annotation using a template
    */
-  render(annotation: WingmanAnnotation, template: AnnotationTemplate): string {
+  render(annotation: WingmanAnnotation, template: AnnotationTemplate, context?: TemplateContext): string {
     let result = template.template;
-    
+
     // Process variables
     for (const variable of template.variables) {
       const value = this.getValue(annotation, variable.path);
-      const formattedValue = variable.formatter 
-        ? variable.formatter(value)
+      const formattedValue = variable.formatter
+        ? variable.formatter(value, context)
         : value?.toString() || variable.defaultValue || '';
-      
+
       // Simple replacement for now (will be enhanced with Handlebars)
       const placeholder = `{{${variable.key}}}`;
       result = result.replace(new RegExp(placeholder, 'g'), formattedValue);

@@ -206,6 +206,10 @@ describe('formatAnnotationForClaude', () => {
     const result = formatAnnotationForClaude(annotation);
 
     expect(result).toContain('![Wingman Screenshot - Click to view full size](http://localhost:8787/annotations/specific-id-12345/screenshot)');
+
+    // Test with custom relay URL
+    const resultWithCustom = formatAnnotationForClaude(annotation, { relayUrl: 'https://example.com' });
+    expect(resultWithCustom).toContain('![Wingman Screenshot - Click to view full size](https://example.com/annotations/specific-id-12345/screenshot)');
   });
 
   it('should properly escape markdown special characters in user input', () => {

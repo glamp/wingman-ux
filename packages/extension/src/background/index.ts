@@ -544,15 +544,23 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
     // Handle clipboard mode - need to use content script for clipboard access
     if (relayUrl === 'clipboard') {
       const template = getTemplateForId(selectedTemplateId);
-      const formattedContent = templateEngine.render(annotation, template);
-      
+      // For clipboard mode, we still use localhost as the base URL since there's no actual server
+      // But we could get the last used relay URL from storage for consistency
+      const actualRelayUrl = stored.lastUsedRelayUrl || 'http://localhost:8787';
+      const formattedContent = templateEngine.render(annotation, template, { relayUrl: actualRelayUrl });
+
       // Service workers don't have clipboard access, return the formatted content
       // The content script will handle the actual clipboard operation
-      return { 
-        success: true, 
+      return {
+        success: true,
         message: 'Copied to clipboard',
-        clipboardContent: formattedContent 
+        clipboardContent: formattedContent
       };
+    }
+
+    // Save the relay URL for later use (e.g., in clipboard mode)
+    if (relayUrl !== 'clipboard') {
+      await chrome.storage.local.set({ lastUsedRelayUrl: relayUrl });
     }
 
     const response = await fetch(`${relayUrl}/annotations`, {

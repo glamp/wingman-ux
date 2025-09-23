@@ -14,8 +14,10 @@ function ClaudeCopyButton({ annotation }: ClaudeCopyButtonProps) {
 
   const handleCopy = async () => {
     try {
-      // Use the shared formatter
-      const formattedText = formatAnnotationForClaude(annotation.annotation);
+      // Get the current origin for the relay URL
+      const relayUrl = window.location.origin;
+      // Use the shared formatter with the correct relay URL
+      const formattedText = formatAnnotationForClaude(annotation.annotation, { relayUrl });
 
       // Use simple text copy that includes the embedded base64 image
       if (navigator.clipboard && navigator.clipboard.writeText) {

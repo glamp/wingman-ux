@@ -2,21 +2,24 @@ import type { WingmanAnnotation } from './types';
 
 /**
  * IMPORTANT: This function mirrors the optimized template from packages/shared/src/templates/default.template.ts
- * 
+ *
  * This duplication is INTENTIONAL and NECESSARY because:
  * - Chrome content scripts cannot use ES modules (no import/export)
  * - Content scripts must be self-contained bundles without external imports
  * - This file is used by content script components (SuccessNotification)
- * 
+ *
  * If you modify the template, you MUST also update this function to match:
  * - packages/shared/src/templates/default.template.ts (the canonical template)
- * 
+ *
  * Background scripts use the template engine directly via the shared package.
  * This function should produce the same output as the optimized template.
- * 
+ *
  * Formats a Wingman annotation as markdown for Claude Code using the optimized template format
  */
-export function formatAnnotationForClaude(annotation: WingmanAnnotation): string {
+export function formatAnnotationForClaude(
+  annotation: WingmanAnnotation,
+  options?: { relayUrl?: string }
+): string {
   let output = `# 🎯 UI Feedback Request\n\n`;
 
   // MOST IMPORTANT: User's feedback at the very top
@@ -27,7 +30,8 @@ export function formatAnnotationForClaude(annotation: WingmanAnnotation): string
   }
 
   // Claude 2025 vision optimized: Image first with URL
-  output += `![Screenshot](http://localhost:8787/annotations/${annotation.id}/screenshot)\n\n`;
+  const baseUrl = options?.relayUrl || 'http://localhost:8787';
+  output += `![Screenshot](${baseUrl}/annotations/${annotation.id}/screenshot)\n\n`;
 
   // Visual context about the selected area
   output += `## 🎨 Visual Context\n\n`;

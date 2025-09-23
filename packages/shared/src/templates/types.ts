@@ -5,24 +5,34 @@
 import type { WingmanAnnotation } from '../types.js';
 
 /**
+ * Context object passed to template formatters
+ */
+export interface TemplateContext {
+  /** Base URL for the relay server */
+  relayUrl?: string;
+  /** Additional context values */
+  [key: string]: any;
+}
+
+/**
  * Represents a template variable that can be extracted from an annotation
  */
 export interface TemplateVariable {
   /** Unique key for the variable (e.g., 'userNote', 'screenshot.url') */
   key: string;
-  
+
   /** JSON path in the annotation object (e.g., 'note', 'page.url') */
   path: string;
-  
+
   /** Optional formatter function to transform the value */
-  formatter?: (value: any) => string;
-  
+  formatter?: (value: any, context?: TemplateContext) => string;
+
   /** Whether this variable is required for the template */
   required: boolean;
-  
+
   /** Default value if the variable is not found */
   defaultValue?: string;
-  
+
   /** Description of what this variable represents */
   description?: string;
 }
@@ -66,18 +76,18 @@ export interface TemplateEngine {
   /**
    * Render an annotation using a template
    */
-  render(annotation: WingmanAnnotation, template: AnnotationTemplate): string;
-  
+  render(annotation: WingmanAnnotation, template: AnnotationTemplate, context?: TemplateContext): string;
+
   /**
    * Validate that a template is well-formed
    */
   validate(template: AnnotationTemplate): { valid: boolean; errors?: string[] };
-  
+
   /**
    * Extract variables from a template string
    */
   extractVariables(templateString: string): string[];
-  
+
   /**
    * Get value from annotation using path
    */

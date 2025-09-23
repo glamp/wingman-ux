@@ -120,7 +120,8 @@ Please review the **screenshot** and **user feedback** above to understand and a
     {
       key: 'screenshotUrl',
       path: 'id',
-      formatter: (id: string) => `http://localhost:8787/annotations/${id}/screenshot`,
+      formatter: (id: string, context?: { relayUrl?: string }) =>
+        `${context?.relayUrl || 'http://localhost:8787'}/annotations/${id}/screenshot`,
       required: true,
       description: 'URL to the screenshot image'
     },

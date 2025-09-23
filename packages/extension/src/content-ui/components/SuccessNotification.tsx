@@ -84,10 +84,20 @@ const SuccessNotification: React.FC<SuccessNotificationProps> = ({
   };
 
   const handleCopyForClaude = async () => {
-    const textToCopy = annotation 
-      ? formatAnnotationForClaude(annotation)
+    // Extract relay URL from preview URL if available
+    let relayUrl = 'http://localhost:8787';
+    if (previewUrl) {
+      try {
+        const url = new URL(previewUrl);
+        relayUrl = url.origin;
+      } catch {
+        // Keep default if URL parsing fails
+      }
+    }
+    const textToCopy = annotation
+      ? formatAnnotationForClaude(annotation, { relayUrl })
       : previewUrl || '';
-    
+
     const success = await copyToClipboard(textToCopy);
     if (success) {
       setClaudeCopied(true);

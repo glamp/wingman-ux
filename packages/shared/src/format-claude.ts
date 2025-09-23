@@ -3,16 +3,19 @@ import type { WingmanAnnotation } from './types.js';
 /**
  * Formats a Wingman annotation as markdown for Claude Code
  * This is shared between the Chrome extension and preview UI
- * 
+ *
  * NOTE: There is a duplicate of this function in:
  * - packages/chrome-extension/src/utils/format-claude.ts
- * 
+ *
  * The duplicate exists because Chrome content scripts cannot use ES modules.
  * If you modify this function, please also update the duplicate.
- * 
+ *
  * Background scripts and non-extension code should use this version.
  */
-export function formatAnnotationForClaude(annotation: WingmanAnnotation): string {
+export function formatAnnotationForClaude(
+  annotation: WingmanAnnotation,
+  options?: { relayUrl?: string }
+): string {
   let output = `# 🎯 UI Feedback Request\n\n`;
 
   // MOST IMPORTANT: User's feedback at the very top
@@ -25,7 +28,8 @@ export function formatAnnotationForClaude(annotation: WingmanAnnotation): string
   // CRITICAL: Ensure Claude analyzes the screenshot
   output += `## 🖼️ Screenshot Analysis Required\n\n`;
   output += `**IMPORTANT**: Please carefully examine the screenshot below to understand the visual context of the UI issue.\n\n`;
-  output += `![Wingman Screenshot - Click to view full size](http://localhost:8787/annotations/${annotation.id}/screenshot)\n\n`;
+  const baseUrl = options?.relayUrl || 'http://localhost:8787';
+  output += `![Wingman Screenshot - Click to view full size](${baseUrl}/annotations/${annotation.id}/screenshot)\n\n`;
   output += `*The screenshot above shows the exact area where the user is reporting an issue.*\n\n`;
   output += `---\n\n`;
 
