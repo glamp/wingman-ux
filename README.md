@@ -253,19 +253,6 @@ cat dist/development/manifest.json
 chrome://extensions/ → Details → Errors
 ```
 
-### MCP not working in Claude Code?
-```bash
-# Test MCP directly
-curl http://localhost:8787/mcp/health
-
-# Check Claude Code settings
-# Should have wingman in mcpServers config
-```
-
-## 🤝 Contributing
-
-We love contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
 ### Development Workflow
 1. Fork the repo
 2. Create feature branch
@@ -284,22 +271,6 @@ npm run test:e2e
 # Coverage
 npm run test:coverage
 ```
-
-### Code Style
-- TypeScript strict mode
-- Prettier formatting
-- ESM modules
-- React 18+
-
-## 🚀 Roadmap
-
-- [ ] Firefox extension
-- [ ] VS Code extension
-- [ ] Figma plugin
-- [ ] Video capture
-- [ ] Session replay
-- [ ] Team collaboration
-- [ ] Analytics dashboard
 
 ## 📄 License
 
