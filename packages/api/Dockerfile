@@ -3,6 +3,16 @@
 # Build stage
 FROM node:20-alpine AS builder
 
+# Install build dependencies for canvas
+RUN apk add --no-cache \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    python3 \
+    make \
+    g++
+
 WORKDIR /app
 
 # Copy workspace files
@@ -25,6 +35,19 @@ RUN npm run build --workspace=@wingman/api
 # Runtime stage
 FROM node:20-alpine
 
+# Install canvas dependencies for Alpine Linux
+RUN apk add --no-cache \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    librsvg-dev \
+    pixman-dev \
+    pangomm-dev \
+    python3 \
+    make \
+    g++
+
 WORKDIR /app
 
 # Install production dependencies only
@@ -32,7 +55,8 @@ COPY package*.json ./
 COPY packages/api/package*.json ./packages/api/
 COPY packages/shared/package*.json ./packages/shared/
 
-RUN npm ci --workspace=@wingman/api --workspace=@wingman/shared --omit=dev
+# Install with canvas support
+RUN npm ci --workspace=@wingman/api --workspace=@wingman/shared --omit=dev --include=optional
 
 # Copy built application
 COPY --from=builder /app/packages/api/dist ./packages/api/dist

@@ -14,7 +14,7 @@ export class ModernPopup {
   private tabPanels: HTMLElement;
   
   private settings: SettingsConfig = {
-    relayUrl: 'http://localhost:8787',
+    relayUrl: 'https://api.wingmanux.com',
     showPreviewUrl: true,
     selectedTemplateId: 'claude-code',
     customTemplates: []
@@ -465,7 +465,7 @@ export class ModernPopup {
         }
         
         this.settings = {
-          relayUrl: stored.relayUrl || 'http://localhost:8787',
+          relayUrl: stored.relayUrl || 'https://api.wingmanux.com',
           showPreviewUrl: stored.showPreviewUrl ?? true,
           selectedTemplateId: selectedTemplateId || 'claude-code',
           customTemplates: stored.customTemplates || []
@@ -473,7 +473,7 @@ export class ModernPopup {
       } else {
         // Fallback for testing environment - use defaults
         this.settings = {
-          relayUrl: 'http://localhost:8787',
+          relayUrl: 'https://api.wingmanux.com',
           showPreviewUrl: true,
           selectedTemplateId: 'claude-code',
           customTemplates: []
@@ -485,7 +485,7 @@ export class ModernPopup {
       console.error('Failed to load settings:', error);
       // Use defaults on error
       this.settings = {
-        relayUrl: 'http://localhost:8787',
+        relayUrl: 'https://api.wingmanux.com',
         showPreviewUrl: true,
         selectedTemplateId: 'claude-code',
         customTemplates: []

@@ -427,10 +427,10 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
       // For tunnels, never use clipboard mode - always use actual server
       let finalRelayUrl = relayUrl;
       if (relayUrl === 'clipboard') {
-        finalRelayUrl = extensionConfig?.relayUrl || 'http://localhost:8787';
+        finalRelayUrl = extensionConfig?.relayUrl || 'https://api.wingmanux.com';
         logger.debug('Skipping clipboard mode for tunnel, using:', finalRelayUrl);
       } else {
-        finalRelayUrl = relayUrl || extensionConfig?.relayUrl || 'http://localhost:8787';
+        finalRelayUrl = relayUrl || extensionConfig?.relayUrl || 'https://api.wingmanux.com';
       }
       logger.debug('Using relay URL for tunnel:', finalRelayUrl);
       
@@ -522,7 +522,7 @@ async function captureScreenshot(): Promise<string> {
 async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   try {
     // Get relay URL from config first, then fall back to storage, then default
-    let relayUrl = extensionConfig?.relayUrl || 'http://localhost:8787';
+    let relayUrl = extensionConfig?.relayUrl || 'https://api.wingmanux.com';
     const stored = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId', 'customTemplates', 'copyFormat', 'remoteUrl']);
 
     if (stored.relayUrl) {
@@ -624,8 +624,8 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
           `![Wingman Screenshot - Local file](${fileUrl})`
         );
       } else {
-        // Fall back to remote URL
-        const actualRelayUrl = stored.remoteUrl || REMOTE_API_URL;
+        // Fall back to API URL for screenshot URLs (always use API server for screenshots)
+        const actualRelayUrl = REMOTE_API_URL;
         formattedContent = templateEngine.render(annotation, template, { relayUrl: actualRelayUrl });
       }
 

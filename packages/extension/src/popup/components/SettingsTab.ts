@@ -166,14 +166,14 @@ export class SettingsTab extends BaseComponent {
     relayUrlInput?.addEventListener('input', () => {
       if (saveTimeout) clearTimeout(saveTimeout);
       saveTimeout = setTimeout(() => {
-        this.settings.relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+        this.settings.relayUrl = relayUrlInput.value.trim() || 'https://api.wingmanux.com';
         this.onSettingsChange({ relayUrl: this.settings.relayUrl });
       }, 500);
     });
 
     relayUrlInput?.addEventListener('blur', () => {
       if (saveTimeout) clearTimeout(saveTimeout);
-      this.settings.relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+      this.settings.relayUrl = relayUrlInput.value.trim() || 'https://api.wingmanux.com';
       this.onSettingsChange({ relayUrl: this.settings.relayUrl });
     });
 

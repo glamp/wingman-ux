@@ -30,7 +30,7 @@ export function formatAnnotationForClaude(
   }
 
   // Claude 2025 vision optimized: Image first with URL
-  const baseUrl = options?.relayUrl || 'http://localhost:8787';
+  const baseUrl = options?.relayUrl || 'https://api.wingmanux.com';
   output += `![Screenshot](${baseUrl}/annotations/${annotation.id}/screenshot)\n\n`;
 
   // Visual context about the selected area

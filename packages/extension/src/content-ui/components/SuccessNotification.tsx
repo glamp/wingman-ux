@@ -85,7 +85,7 @@ const SuccessNotification: React.FC<SuccessNotificationProps> = ({
 
   const handleCopyForClaude = async () => {
     // Extract relay URL from preview URL if available
-    let relayUrl = 'http://localhost:8787';
+    let relayUrl = 'https://api.wingmanux.com';
     if (previewUrl) {
       try {
         const url = new URL(previewUrl);

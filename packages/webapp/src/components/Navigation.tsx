@@ -106,6 +106,7 @@ interface NavItemData {
 
 const navItems: NavItemData[] = [
   { path: '/', label: 'Home' },
+  { path: '/install', label: 'Install' },
   { path: '/tunnels', label: 'Tunnels' },
   { path: '/annotations', label: 'Annotations' },
   { path: '/dashboard', label: 'Dashboard' },

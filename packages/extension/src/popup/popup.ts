@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializeEnvironmentUI();
 
   // Load saved settings
-  const { relayUrl = 'http://localhost:8787', showPreviewUrl = true, copyFormat = 'claude' } = await chrome.storage.local.get(['relayUrl', 'showPreviewUrl', 'copyFormat']);
+  const { relayUrl = 'https://api.wingmanux.com', showPreviewUrl = true, copyFormat = 'claude' } = await chrome.storage.local.get(['relayUrl', 'showPreviewUrl', 'copyFormat']);
   relayUrlInput.value = relayUrl;
   showPreviewUrlCheckbox.checked = showPreviewUrl;
   
@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       clearTimeout(saveTimeout);
     }
     saveTimeout = setTimeout(async () => {
-      const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+      const relayUrl = relayUrlInput.value.trim() || 'https://api.wingmanux.com';
       try {
         await chrome.storage.local.set({ relayUrl });
         checkConnectionStatus(); // Re-check connection with new URL
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (saveTimeout) {
       clearTimeout(saveTimeout);
     }
-    const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+    const relayUrl = relayUrlInput.value.trim() || 'https://api.wingmanux.com';
     try {
       await chrome.storage.local.set({ relayUrl });
       checkConnectionStatus(); // Re-check connection with new URL
@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function checkConnectionStatus() {
-    const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+    const relayUrl = relayUrlInput.value.trim() || 'https://api.wingmanux.com';
     console.log('[Wingman Popup] Checking connection to:', relayUrl);
     
     // Handle clipboard mode
@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     detectPortBtn.addEventListener('click', async () => {
-      const relayUrl = relayUrlInput.value.trim() || 'http://localhost:8787';
+      const relayUrl = relayUrlInput.value.trim() || 'https://api.wingmanux.com';
       try {
         const response = await fetch(`${relayUrl}/tunnel/detect`);
         const data = await response.json();
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       try {
         // Get relay URL from storage
-        const { relayUrl } = await chrome.storage.local.get({ relayUrl: 'http://localhost:8787' });
+        const { relayUrl } = await chrome.storage.local.get({ relayUrl: 'https://api.wingmanux.com' });
         
         const response = await fetch(`${relayUrl}/tunnel/share`, {
           method: 'POST',
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       revokeShareLinkBtn.disabled = true;
       
       try {
-        const { relayUrl } = await chrome.storage.local.get({ relayUrl: 'http://localhost:8787' });
+        const { relayUrl } = await chrome.storage.local.get({ relayUrl: 'https://api.wingmanux.com' });
         
         const response = await fetch(`${relayUrl}/tunnel/share/${activeShareToken}`, {
           method: 'DELETE'

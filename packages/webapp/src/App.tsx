@@ -6,6 +6,7 @@ import AnnotationPreviewPage from './pages/AnnotationPreview';
 import SessionLanding from './pages/SessionLanding';
 import ShareLanding from './pages/ShareLanding';
 import TunnelDashboard from './pages/TunnelDashboard';
+import InstallationGuide from './pages/InstallationGuide';
 import Navigation from './components/Navigation';
 import { gradients, typography } from './styles/theme';
 import { theme } from './theme';
@@ -55,7 +56,10 @@ function AppLayout() {
         
         {/* Annotation routes */}
         <Route path="/annotations" element={<AnnotationPreviewPage />} />
-        
+
+        {/* Installation guide */}
+        <Route path="/install" element={<InstallationGuide />} />
+
         {/* Session landing page (developer URLs) */}
         <Route path="/sessions/:sessionId" element={<SessionLanding />} />
         <Route path="/session/:sessionId" element={<SessionLanding />} />

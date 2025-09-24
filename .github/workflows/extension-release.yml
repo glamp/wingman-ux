@@ -1,0 +1,155 @@
+name: Chrome Extension Release
+
+on:
+  push:
+    tags:
+      - 'extension-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Extension version (e.g., 1.0.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag=extension-v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            # Extract version from tag (extension-v1.0.0 -> 1.0.0)
+            TAG_VERSION=${GITHUB_REF#refs/tags/extension-v}
+            echo "version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update extension version
+        run: |
+          cd packages/extension
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - name: Build production extension
+        run: |
+          cd packages/extension
+          npm run build:prod
+
+      - name: Install Chrome for .crx generation
+        run: |
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update -q
+          sudo apt-get install -y google-chrome-stable
+
+      - name: Generate extension ID and .crx file
+        id: crx
+        run: |
+          cd packages/extension
+
+          # Generate a consistent private key for signing
+          # In production, you'd store this as a secret
+          echo "${{ secrets.EXTENSION_PRIVATE_KEY || 'dummy-key-for-testing' }}" > private-key.pem || openssl genrsa -out private-key.pem 2048
+
+          # Create .crx file using chrome --pack-extension
+          google-chrome --headless --disable-gpu --pack-extension=dist/production --pack-extension-key=private-key.pem
+
+          # Extract extension ID from the packed extension
+          EXTENSION_ID=$(openssl rsa -in private-key.pem -pubout -outform DER | openssl dgst -sha256 -binary | head -c 16 | xxd -p -c 16 | sed 's/../\\x&/g' | xargs printf | base32 | tr '[:upper:]' '[:lower:]' | tr -d '=' | head -c 32)
+          echo "extension_id=${EXTENSION_ID}" >> $GITHUB_OUTPUT
+
+          # Rename .crx file to include version
+          mv dist/production.crx "wingman-chrome-extension-v${{ steps.version.outputs.version }}.crx"
+
+          # Clean up private key
+          rm -f private-key.pem
+
+      - name: Create/Update updates.xml
+        run: |
+          cd docs
+          cat > updates.xml << EOF
+          <?xml version='1.0' encoding='UTF-8'?>
+          <gupdate xmlns='http://www.google.com/update2/response' protocol='2.0'>
+            <app appid='${{ steps.crx.outputs.extension_id }}'>
+              <updatecheck codebase='https://github.com/glamp/wingman-attempt-4/releases/download/${{ steps.version.outputs.tag }}/wingman-chrome-extension-v${{ steps.version.outputs.version }}.crx' version='${{ steps.version.outputs.version }}' />
+            </app>
+          </gupdate>
+          EOF
+
+      - name: Commit and push updates.xml
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/updates.xml
+          git commit -m "Update extension to v${{ steps.version.outputs.version }}" || exit 0
+          git push origin HEAD:main
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Chrome Extension v${{ steps.version.outputs.version }}"
+          body: |
+            ## 🎯 Wingman Chrome Extension v${{ steps.version.outputs.version }}
+
+            ### Installation Instructions
+
+            **⚠️ Important:** This extension is not distributed through the Chrome Web Store. You'll see a security warning during installation - this is expected and safe.
+
+            #### Option 1: Direct Installation (.crx file)
+            1. Download `wingman-chrome-extension-v${{ steps.version.outputs.version }}.crx`
+            2. Open Chrome and go to `chrome://extensions/`
+            3. Enable "Developer mode" (toggle in top right)
+            4. Drag and drop the .crx file onto the extensions page
+            5. Click "Add extension" when prompted
+
+            #### Option 2: Developer Mode Installation
+            1. Download and extract the .crx file (or download the source)
+            2. Open Chrome and go to `chrome://extensions/`
+            3. Enable "Developer mode"
+            4. Click "Load unpacked" and select the extracted folder
+
+            ### Automatic Updates
+            Once installed, Chrome will automatically check for and install updates every few hours.
+
+            ### Usage
+            - **Keyboard shortcut:** Alt+Shift+K (Cmd+Shift+K on Mac)
+            - **Extension popup:** Click the Wingman icon in your toolbar
+            - **Getting started:** Visit [wingmanux.com](https://wingmanux.com) for detailed instructions
+
+            ### What's New
+            - Latest improvements and bug fixes
+            - Updated to work with production API server
+
+            For support, visit [wingmanux.com](https://wingmanux.com)
+          files: |
+            packages/extension/wingman-chrome-extension-v${{ steps.version.outputs.version }}.crx
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          keep_files: true

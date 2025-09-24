@@ -1,8 +1,7 @@
 {
   "version": "1.0.0",
-  "size": 1848368,
-  "sizeFormatted": "1805.05 KB",
-  "sha256": "6a449ddd31daa4a457a6f5b16da90baa8586031836dabc3be7bf20abdf450bb4",
-  "lastModified": "2025-09-23T22:59:32.924Z",
-  "downloadUrl": "/wingman-chrome-extension.zip"
+  "buildDate": "2025-09-24T01:29:50.729Z",
+  "environment": "production",
+  "fileSize": 1848372,
+  "fileSizeMB": "1.76"
 }

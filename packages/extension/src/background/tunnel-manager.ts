@@ -49,7 +49,7 @@ export class TunnelManager {
       this.updateBadge();
 
       // Determine which server to use
-      const baseUrl = relayUrl || 'http://localhost:8787';
+      const baseUrl = relayUrl || 'https://api.wingmanux.com';
       const isLocalRelay = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
       
       // Store for reconnection

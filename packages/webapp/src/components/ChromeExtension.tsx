@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Box, Typography, Button, Chip, Collapse } from '@mui/material';
+import { Box, Typography, Button, Chip } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { GetApp, Code, Extension, ExpandMore, Keyboard } from '@mui/icons-material';
+import { GetApp, Extension, Keyboard, Help } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { colors, gradients, typography } from '../styles/theme';
 
 /**
@@ -67,70 +67,6 @@ const SecondaryButton = styled(Button)({
   },
 });
 
-/**
- * Instruction list with numbered steps
- */
-const InstructionList = styled('div')({
-  background: 'rgba(255, 255, 255, 0.8)',
-  backdropFilter: 'blur(10px)',
-  borderRadius: '16px',
-  padding: '24px',
-  border: '1px solid rgba(255, 255, 255, 0.3)',
-  marginTop: '20px',
-});
-
-/**
- * Individual instruction item
- */
-const InstructionItem = styled('div')({
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: '16px',
-  marginBottom: '16px',
-  '&:last-child': {
-    marginBottom: 0,
-  },
-});
-
-/**
- * Instruction number circle
- */
-const InstructionNumber = styled('div')({
-  width: '32px',
-  height: '32px',
-  borderRadius: '50%',
-  background: gradients.primary,
-  color: 'white',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontWeight: 'bold',
-  fontSize: '16px',
-  flexShrink: 0,
-});
-
-/**
- * Instruction text
- */
-const InstructionText = styled(Typography)({
-  flex: 1,
-  fontSize: '1rem',
-  lineHeight: 1.5,
-  color: colors.textPrimary,
-});
-
-/**
- * Code snippet display
- */
-const CodeSnippet = styled('code')({
-  background: colors.bgSecondary,
-  border: `1px solid ${colors.borderColor}`,
-  borderRadius: '4px',
-  padding: '2px 6px',
-  fontFamily: typography.mono,
-  fontSize: '0.9em',
-  color: colors.textPrimary,
-});
 
 /**
  * Keyboard shortcut display
@@ -151,13 +87,17 @@ const KeyboardShortcut = styled(Box)({
  * Chrome Extension section component with improved design
  */
 export default function ChromeExtension() {
-  const [showInstructions, setShowInstructions] = useState(false);
+  const navigate = useNavigate();
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = '/wingman-chrome-extension.zip';
-    link.download = 'wingman-chrome-extension.zip';
+    link.href = '/wingman-chrome-extension.crx';
+    link.download = 'wingman-chrome-extension.crx';
     link.click();
+  };
+
+  const handleInstallGuide = () => {
+    navigate('/install');
   };
 
   return (
@@ -185,66 +125,28 @@ export default function ChromeExtension() {
         <GradientButton onClick={handleDownload}>
           <GetApp /> Download Extension
         </GradientButton>
-        
-        <SecondaryButton onClick={() => setShowInstructions(!showInstructions)}>
-          <ExpandMore sx={{ 
-            transform: showInstructions ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.3s ease'
-          }} /> 
-          Install Guide
+
+        <SecondaryButton onClick={handleInstallGuide}>
+          <Help />
+          Installation Guide
         </SecondaryButton>
       </Box>
 
-      <Collapse in={showInstructions}>
-        <InstructionList>
-          <InstructionItem>
-            <InstructionNumber>1</InstructionNumber>
-            <InstructionText>
-              Download the extension ZIP file using the button above
-            </InstructionText>
-          </InstructionItem>
-          
-          <InstructionItem>
-            <InstructionNumber>2</InstructionNumber>
-            <InstructionText>
-              Open <CodeSnippet>chrome://extensions</CodeSnippet> in your Chrome browser
-            </InstructionText>
-          </InstructionItem>
-          
-          <InstructionItem>
-            <InstructionNumber>3</InstructionNumber>
-            <InstructionText>
-              Enable "Developer Mode" using the toggle in the top-right corner
-            </InstructionText>
-          </InstructionItem>
-          
-          <InstructionItem>
-            <InstructionNumber>4</InstructionNumber>
-            <InstructionText>
-              Drag and drop the downloaded ZIP file directly onto the extensions page
-            </InstructionText>
-          </InstructionItem>
-
-          <KeyboardShortcut>
-            <Keyboard sx={{ color: colors.primary }} />
-            <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-              Keyboard shortcut:
-            </Typography>
-            <CodeSnippet>Alt+Shift+W</CodeSnippet>
-            <Typography variant="body2" sx={{ color: colors.textSecondary }}>
-              to quickly open Wingman
-            </Typography>
-          </KeyboardShortcut>
-        </InstructionList>
-      </Collapse>
-
-      {!showInstructions && (
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <Typography variant="body2" sx={{ color: colors.textMuted }}>
-            Need help installing? Click "Install Guide" above for step-by-step instructions.
+      <Box sx={{ textAlign: 'center', mt: 3 }}>
+        <Typography variant="body2" sx={{ color: colors.textMuted, mb: 1 }}>
+          Self-hosted distribution with automatic updates
+        </Typography>
+        <KeyboardShortcut sx={{ maxWidth: '400px', margin: '0 auto' }}>
+          <Keyboard sx={{ color: colors.primary }} />
+          <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+            Quick access:
           </Typography>
-        </Box>
-      )}
+          <Chip label="Alt+Shift+K" size="small" sx={{ mx: 0.5 }} />
+          <Typography variant="body2" sx={{ color: colors.textSecondary }}>
+            (Mac: Cmd+Shift+K)
+          </Typography>
+        </KeyboardShortcut>
+      </Box>
     </Box>
   );
 }

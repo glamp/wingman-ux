@@ -21,6 +21,7 @@
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
     "@wingman/shared": "*",
+    "canvas": "^3.2.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
@@ -29,9 +30,6 @@
     "uuid": "^11.1.0",
     "ws": "^8.18.3",
     "zod": "^3.25.76"
-  },
-  "optionalDependencies": {
-    "canvas": "^3.2.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.41.0",

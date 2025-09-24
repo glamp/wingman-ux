@@ -28,7 +28,7 @@ export function formatAnnotationForClaude(
   // CRITICAL: Ensure Claude analyzes the screenshot
   output += `## 🖼️ Screenshot Analysis Required\n\n`;
   output += `**IMPORTANT**: Please carefully examine the screenshot below to understand the visual context of the UI issue.\n\n`;
-  const baseUrl = options?.relayUrl || 'http://localhost:8787';
+  const baseUrl = options?.relayUrl || 'https://api.wingmanux.com';
   output += `![Wingman Screenshot - Click to view full size](${baseUrl}/annotations/${annotation.id}/screenshot)\n\n`;
   output += `*The screenshot above shows the exact area where the user is reporting an issue.*\n\n`;
   output += `---\n\n`;
