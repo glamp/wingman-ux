@@ -45,7 +45,7 @@ const InstallationGuide: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<DownloadIcon />}
-            href="https://github.com/glamp/wingman-attempt-4/releases/latest"
+            href="https://github.com/glamp/wingman-ux/releases/latest"
             target="_blank"
             sx={{ mb: 2 }}
           >
@@ -399,14 +399,14 @@ const InstallationGuide: React.FC = () => {
           <Stack direction="row" spacing={2}>
             <Button
               variant="outlined"
-              href="https://github.com/glamp/wingman-attempt-4"
+              href="https://github.com/glamp/wingman-ux"
               target="_blank"
             >
               GitHub Repository
             </Button>
             <Button
               variant="outlined"
-              href="https://github.com/glamp/wingman-attempt-4/issues"
+              href="https://github.com/glamp/wingman-ux/issues"
               target="_blank"
             >
               Report an Issue
