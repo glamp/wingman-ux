@@ -42,17 +42,33 @@ const InstallationGuide: React.FC = () => {
           <Typography paragraph>
             Download the latest version of the Wingman Chrome Extension:
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            href="https://github.com/glamp/wingman-ux/releases/latest"
-            target="_blank"
-            sx={{ mb: 2 }}
-          >
-            Download Latest Release
-          </Button>
+          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              href="/wingman-chrome-extension.crx"
+              download="wingman-chrome-extension-v1.0.1.crx"
+            >
+              Download CRX (Recommended)
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              href="/wingman-chrome-extension.zip"
+              download="wingman-chrome-extension-v1.0.1.zip"
+            >
+              Download ZIP
+            </Button>
+          </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            <strong>CRX:</strong> Self-signed extension for easy installation (v1.0.1)
+          </Typography>
           <Typography variant="body2" color="text.secondary">
-            Look for the file named <code>wingman-chrome-extension-v[version].crx</code>
+            <strong>ZIP:</strong> For manual installation via "Load unpacked"
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="body2" color="text.secondary">
+            Alternative: <Link href="https://github.com/glamp/wingman-ux/releases/latest" target="_blank">Download from GitHub Releases</Link>
           </Typography>
         </Box>
       ),
@@ -94,17 +110,30 @@ const InstallationGuide: React.FC = () => {
       content: (
         <Box>
           <Typography paragraph>
-            Install the downloaded .crx file:
+            Choose your installation method based on the file you downloaded:
           </Typography>
-          <Typography variant="h6" gutterBottom>Option 1: Drag & Drop (Recommended)</Typography>
+
+          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+            For CRX File (Recommended)
+          </Typography>
+          <Typography variant="subtitle2" color="primary" gutterBottom>
+            Drag & Drop Installation:
+          </Typography>
           <ol>
             <li>Drag the downloaded .crx file onto the extensions page</li>
             <li>Click "Add extension" when prompted</li>
           </ol>
 
-          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Option 2: Load Unpacked</Typography>
+          <Divider sx={{ my: 3 }} />
+
+          <Typography variant="h6" gutterBottom>
+            For ZIP File
+          </Typography>
+          <Typography variant="subtitle2" color="primary" gutterBottom>
+            Load Unpacked Installation:
+          </Typography>
           <ol>
-            <li>Extract the .crx file (it's essentially a zip)</li>
+            <li>Extract the downloaded .zip file to a folder</li>
             <li>Click "Load unpacked" on the extensions page</li>
             <li>Select the extracted folder</li>
           </ol>
