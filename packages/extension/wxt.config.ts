@@ -13,6 +13,9 @@ export default defineConfig({
   // Configure source directory
   srcDir: './src',
 
+  // Configure output directory (visible in Finder/Explorer)
+  outDir: './dist-wxt',
+
   // Configure manifest
   manifest: ({ browser, manifestVersion }) => {
     const baseManifest = {

@@ -18,6 +18,10 @@ declare module '#imports' {
   export { InvalidMatchPattern, MatchPattern } from 'wxt/utils/match-patterns';
   export { useState, useCallback, useMemo, useEffect, useRef, useContext, useReducer } from 'react';
   export { fakeBrowser } from 'wxt/testing';
+  export { MainTab } from '../src/components/MainTab';
+  export { SettingsTab } from '../src/components/SettingsTab';
+  export { ShareTab } from '../src/components/ShareTab';
+  export { TabNavigation } from '../src/components/TabNavigation';
   export { copyToClipboard } from '../src/utils/clipboard';
   export { getEnvironmentConfig, isDebugMode, shouldShowLogs } from '../src/utils/config';
   export { formatAnnotationForClaude } from '../src/utils/format-claude';

@@ -71,25 +71,25 @@ src/
 **Goal**: Replace scattered state with centralized Zustand stores
 
 #### Zustand Store Creation
-- [ ] **settings-store.ts**: User preferences, relay URL, templates
-- [ ] **tunnel-store.ts**: Tunnel state, sharing functionality
-- [ ] **popup-store.ts**: UI state, active tabs, form data
-- [ ] **chrome-storage.ts**: Persistence adapter for chrome.storage
+- [x] **settings-store.ts**: User preferences, relay URL, templates
+- [x] **tunnel-store.ts**: Tunnel state, sharing functionality
+- [x] **popup-store.ts**: UI state, active tabs, form data
+- [x] **chrome-storage.ts**: Persistence adapter for chrome.storage
 
 #### State Migration Tasks
-- [ ] Analyze current state scattered across files
-- [ ] Create typed interfaces for all state
-- [ ] Build chrome.storage persistence middleware
-- [ ] Create message bridge for background ↔ popup communication
-- [ ] Migrate settings from manual chrome.storage calls
-- [ ] Replace manual message passing with Zustand subscriptions
+- [x] Analyze current state scattered across files
+- [x] Create typed interfaces for all state
+- [x] Build chrome.storage persistence middleware
+- [x] Create message bridge for background ↔ popup communication
+- [x] Migrate settings from manual chrome.storage calls
+- [x] Replace manual message passing with Zustand subscriptions
 
 #### Testing
 - [ ] Test state persistence across extension restarts
 - [ ] Verify popup ↔ background state sync
 - [ ] Test in multiple tabs/windows
 
-**Success Criteria**: All state centralized, no manual chrome.storage calls
+**Success Criteria**: ✅ **MOSTLY COMPLETE** - All state centralized, typed messaging bridge built
 
 ### Phase 3: Popup Migration to MUI ⏱️ 2-3 days
 **Goal**: Replace current popup with clean MUI-based React app

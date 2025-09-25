@@ -3,7 +3,11 @@ export {}
 declare global {
   const ContentScriptContext: typeof import('wxt/utils/content-script-context')['ContentScriptContext']
   const InvalidMatchPattern: typeof import('wxt/utils/match-patterns')['InvalidMatchPattern']
+  const MainTab: typeof import('/Users/glamp/workspace/github.com/glamp/wingman-attempt-4/packages/extension/src/components/MainTab')['MainTab']
   const MatchPattern: typeof import('wxt/utils/match-patterns')['MatchPattern']
+  const SettingsTab: typeof import('/Users/glamp/workspace/github.com/glamp/wingman-attempt-4/packages/extension/src/components/SettingsTab')['SettingsTab']
+  const ShareTab: typeof import('/Users/glamp/workspace/github.com/glamp/wingman-attempt-4/packages/extension/src/components/ShareTab')['ShareTab']
+  const TabNavigation: typeof import('/Users/glamp/workspace/github.com/glamp/wingman-attempt-4/packages/extension/src/components/TabNavigation')['TabNavigation']
   const browser: typeof import('wxt/browser')['browser']
   const copyToClipboard: typeof import('/Users/glamp/workspace/github.com/glamp/wingman-attempt-4/packages/extension/src/utils/clipboard')['copyToClipboard']
   const createIframeUi: typeof import('wxt/utils/content-script-ui/iframe')['createIframeUi']
