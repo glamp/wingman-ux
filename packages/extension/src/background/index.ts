@@ -541,7 +541,7 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   try {
     // 1. Get settings from storage (there's always a selection)
     const stored = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId']);
-    const relayUrl = stored.relayUrl || 'https://api.wingmanux.com';
+    const relayUrl = stored.relayUrl || 'clipboard';
     const templateId = stored.selectedTemplateId || 'claude-code';
 
     logger.info('Submitting annotation with mode:', relayUrl);
