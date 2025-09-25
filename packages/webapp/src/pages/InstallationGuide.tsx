@@ -47,7 +47,7 @@ const InstallationGuide: React.FC = () => {
               variant="contained"
               startIcon={<DownloadIcon />}
               href="/wingman-chrome-extension.crx"
-              download="wingman-chrome-extension-v1.0.1.crx"
+              download="wingman-chrome-extension-v1.0.2.crx"
             >
               Download CRX (Recommended)
             </Button>
@@ -55,13 +55,13 @@ const InstallationGuide: React.FC = () => {
               variant="outlined"
               startIcon={<DownloadIcon />}
               href="/wingman-chrome-extension.zip"
-              download="wingman-chrome-extension-v1.0.1.zip"
+              download="wingman-chrome-extension-v1.0.2.zip"
             >
               Download ZIP
             </Button>
           </Stack>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            <strong>CRX:</strong> Self-signed extension for easy installation (v1.0.1)
+            <strong>CRX:</strong> Self-signed extension for easy installation (v1.0.2)
           </Typography>
           <Typography variant="body2" color="text.secondary">
             <strong>ZIP:</strong> For manual installation via "Load unpacked"

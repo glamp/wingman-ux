@@ -1,6 +1,6 @@
 {
   "name": "@wingman/extension",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Wingman Chrome Extension - Lightweight UX feedback assistant for web applications",
   "author": "Wingman Team",
   "license": "MIT",
