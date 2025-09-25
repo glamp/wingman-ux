@@ -144,10 +144,20 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
         return html;
       },
       focus: () => {
-        // Focus the editor's contenteditable element
-        const editable = editorRef.current?.querySelector('.rsw-ce');
-        if (editable instanceof HTMLElement) {
-          editable.focus();
+        // Focus the editor's contenteditable element within shadow DOM
+        const shadowHost = document.getElementById('wingman-overlay-host');
+        if (shadowHost && shadowHost.shadowRoot) {
+          const editable = shadowHost.shadowRoot.querySelector('.rsw-ce');
+          if (editable instanceof HTMLElement) {
+            editable.focus();
+            // Set cursor position to start for better UX
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(editable);
+            range.collapse(true);
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          }
         }
       },
     }));
@@ -167,8 +177,8 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
           const style = document.createElement('style');
           style.id = 'wysiwyg-styles';
           style.textContent = WYSIWYG_CSS;
-          // Insert at the beginning to ensure it loads before other styles
-          shadowHost.shadowRoot.insertBefore(style, shadowHost.shadowRoot.firstChild);
+          // Append at the end to ensure our styles override defaults
+          shadowHost.shadowRoot.appendChild(style);
           
           // Force a re-render of contenteditable with !important
           setTimeout(() => {

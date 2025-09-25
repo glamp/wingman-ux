@@ -16,6 +16,9 @@ export default defineConfig({
   // Configure output directory (visible in Finder/Explorer)
   outDir: './dist-wxt',
 
+  // Configure public directory for static assets
+  publicDir: './src/public',
+
   // Configure manifest
   manifest: ({ browser, manifestVersion }) => {
     const baseManifest = {

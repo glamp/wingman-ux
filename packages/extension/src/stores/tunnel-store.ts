@@ -30,8 +30,8 @@ export const useTunnelStore = create<TunnelStore>()((set, get) => ({
         set({
           activeTunnel: {
             sessionId: response.tunnel.sessionId,
-            tunnelUrl: response.tunnel.tunnelUrl,
-            publicUrl: response.tunnel.publicUrl,
+            tunnelUrl: response.tunnel.tunnelUrl || response.tunnel.publicUrl,
+            publicUrl: response.tunnel.tunnelUrl || response.tunnel.publicUrl,
             isActive: true,
             connectedAt: Date.now(),
           },

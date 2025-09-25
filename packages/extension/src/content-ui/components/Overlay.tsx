@@ -59,9 +59,11 @@ const Overlay: React.FC<OverlayProps> = ({ onSubmit, onCancel }) => {
   useEffect(() => {
     const host = document.getElementById('wingman-overlay-host');
     if (host) {
-      host.style.pointerEvents = selectorActive ? 'all' : 'none';
+      // Always allow pointer events through the host when note panel is visible
+      // The overlay Box component will control pointer events for the selector
+      host.style.pointerEvents = notePanelVisible ? 'all' : (selectorActive ? 'all' : 'none');
     }
-  }, [selectorActive]);
+  }, [selectorActive, notePanelVisible]);
 
   return (
     <Box

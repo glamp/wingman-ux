@@ -109,9 +109,16 @@ export function mountReactInShadow({
 
   // Create React root and render
   const root = createRoot(reactContainer);
-  
-  // Minimal React render without MUI to avoid conflicts
-  root.render(<Component {...props} />);
+
+  // Render with MUI providers for proper styling
+  root.render(
+    <CacheProvider value={emotionCache}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Component {...props} />
+      </ThemeProvider>
+    </CacheProvider>
+  );
 
   // Unmount function
   const unmount = () => {

@@ -52,34 +52,22 @@ export const MainTab: React.FC = () => {
   const getModeDisplay = () => {
     switch (relayUrl) {
       case 'clipboard':
-        return { label: 'Clipboard Mode', color: 'info' as const };
+        return { label: '📋 Clipboard', icon: '📋', shortLabel: 'Clipboard', color: 'info' as const };
       case 'http://localhost:8787':
-        return { label: 'Local Server', color: 'success' as const };
+        return { label: '💻 Local', icon: '💻', shortLabel: 'Local', color: 'success' as const };
       default:
-        return { label: 'Remote Server', color: 'primary' as const };
+        return { label: '🌐 Remote', icon: '🌐', shortLabel: 'Remote', color: 'primary' as const };
     }
   };
 
   const mode = getModeDisplay();
 
   return (
-    <Stack spacing={3}>
-      {/* Status Display */}
-      <Box sx={{ textAlign: 'center' }}>
-        <Chip
-          label={mode.label}
-          color={mode.color}
-          size="small"
-          sx={{ mb: 1 }}
-        />
-        <Typography variant="body2" color="text.secondary">
-          Current output mode
-        </Typography>
-      </Box>
-
-      {/* Main Action */}
-      <Paper elevation={1} sx={{ p: 3 }}>
-        <Stack spacing={2} alignItems="center">
+    <Box sx={{ position: 'relative', height: '100%' }}>
+      <Stack spacing={3}>
+        {/* Main Action */}
+        <Paper elevation={1} sx={{ p: 3 }}>
+          <Stack spacing={2} alignItems="center">
           <Button
             variant="contained"
             size="large"
@@ -130,5 +118,26 @@ export const MainTab: React.FC = () => {
         </Typography>
       </Paper>
     </Stack>
+
+      {/* Subtle Output Mode Indicator */}
+      <Chip
+        label={mode.label}
+        size="small"
+        sx={{
+          position: 'absolute',
+          bottom: 8,
+          right: 8,
+          opacity: 0.8,
+          fontSize: '0.75rem',
+          height: 24,
+          '& .MuiChip-label': {
+            px: 1,
+          },
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      />
+    </Box>
   );
 };

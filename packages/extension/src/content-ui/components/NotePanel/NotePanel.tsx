@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   Paper,
   Button,
@@ -20,6 +20,16 @@ const NotePanel: React.FC<NotePanelProps> = ({
   onCancel,
 }) => {
   const editorRef = useRef<RichTextEditorHandle>(null);
+
+  // Autofocus the editor when the panel becomes visible
+  useEffect(() => {
+    if (visible) {
+      // Delay to ensure Shadow DOM and styles are fully loaded
+      setTimeout(() => {
+        editorRef.current?.focus();
+      }, 200);
+    }
+  }, [visible]);
 
   const handleSubmit = () => {
     const htmlContent = editorRef.current?.getHTML()?.trim();

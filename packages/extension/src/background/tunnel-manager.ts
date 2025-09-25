@@ -14,7 +14,7 @@ export class TunnelManager {
   private currentTunnel: TunnelSession | null = null;
   private reconnectAttempts: number = 0;
   private readonly maxReconnectAttempts: number = 5;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimeout: number | null = null;
   private currentRelayUrl: string = '';
   private isLocalRelay: boolean = false;
 
