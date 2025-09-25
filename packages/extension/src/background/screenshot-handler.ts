@@ -101,10 +101,61 @@ export class ScreenshotHandler {
   }
 
   /**
+   * Hide the download shelf temporarily
+   */
+  private async hideDownloadShelf(): Promise<boolean> {
+    try {
+      // Try modern API first (Chrome 117+)
+      if (chrome.downloads.setUiOptions) {
+        await chrome.downloads.setUiOptions({ enabled: false });
+        logger.debug('Download shelf hidden using setUiOptions');
+        return true;
+      }
+      // Fall back to legacy API for older Chrome versions
+      else if ((chrome.downloads as any).setShelfEnabled) {
+        await new Promise<void>((resolve) => {
+          (chrome.downloads as any).setShelfEnabled(false);
+          resolve();
+        });
+        logger.debug('Download shelf hidden using setShelfEnabled');
+        return true;
+      }
+    } catch (error) {
+      logger.warn('Failed to hide download shelf:', error);
+    }
+    return false;
+  }
+
+  /**
+   * Restore the download shelf
+   */
+  private async restoreDownloadShelf(): Promise<void> {
+    try {
+      // Try modern API first (Chrome 117+)
+      if (chrome.downloads.setUiOptions) {
+        await chrome.downloads.setUiOptions({ enabled: true });
+        logger.debug('Download shelf restored using setUiOptions');
+      }
+      // Fall back to legacy API for older Chrome versions
+      else if ((chrome.downloads as any).setShelfEnabled) {
+        (chrome.downloads as any).setShelfEnabled(true);
+        logger.debug('Download shelf restored using setShelfEnabled');
+      }
+    } catch (error) {
+      logger.warn('Failed to restore download shelf:', error);
+    }
+  }
+
+  /**
    * Perform the actual download with detailed error handling
    */
   private async performDownload(dataUrl: string, filename: string): Promise<number | null> {
+    let shelfHidden = false;
+
     try {
+      // Hide the download shelf before download
+      shelfHidden = await this.hideDownloadShelf();
+
       const downloadOptions: chrome.downloads.DownloadOptions = {
         url: dataUrl,  // Data URL can be used directly
         filename: filename,
@@ -115,10 +166,11 @@ export class ScreenshotHandler {
       logger.debug('Download options:', {
         filename,
         urlLength: dataUrl.length,
-        urlPrefix: dataUrl.substring(0, 50) + '...'
+        urlPrefix: dataUrl.substring(0, 50) + '...',
+        shelfHidden
       });
 
-      return new Promise((resolve) => {
+      const downloadId = await new Promise<number | null>((resolve) => {
         chrome.downloads.download(downloadOptions, (downloadId) => {
           if (chrome.runtime.lastError) {
             logger.error('Chrome download API error:', chrome.runtime.lastError);
@@ -133,7 +185,21 @@ export class ScreenshotHandler {
         });
       });
 
+      // Restore download shelf after a short delay
+      // This ensures the download completes before re-enabling
+      if (shelfHidden) {
+        setTimeout(() => {
+          this.restoreDownloadShelf();
+        }, 500);
+      }
+
+      return downloadId;
+
     } catch (error) {
+      // Restore shelf if we hid it and an error occurred
+      if (shelfHidden) {
+        await this.restoreDownloadShelf();
+      }
       logger.error('Exception during download:', error);
       return null;
     }

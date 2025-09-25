@@ -6,7 +6,8 @@
     "scripting",
     "tabs",
     "storage",
-    "downloads"
+    "downloads",
+    "downloads.ui"
   ],
   "host_permissions": [
     "http://localhost:*/*",
