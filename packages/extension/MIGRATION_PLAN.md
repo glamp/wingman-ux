@@ -167,18 +167,18 @@ src/
 
 **Success Criteria**: ✅ **COMPLETED** - React overlay integrated with WXT, vanilla code removed, builds successfully
 
-### Phase 5: Background Script Migration ⏱️ 1-2 days
+### Phase 5: Background Script Migration ⏱️ 1-2 days - **COMPLETED** ✅
 **Goal**: Simplify background script, integrate with Zustand
 
 #### Background Script Tasks
-- [ ] Port background logic to WXT structure
-- [ ] Connect to Zustand stores for state management
-- [ ] Simplify message handling (use Zustand instead of manual messages)
-- [ ] Port tunnel management functionality
-- [ ] Port screenshot handling
-- [ ] Test all background functionality
+- [x] Port background logic to WXT structure
+- [x] Connect to Zustand stores for state management
+- [x] Simplify message handling (use Zustand instead of manual messages)
+- [x] Port tunnel management functionality
+- [x] Port screenshot handling
+- [x] Test all background functionality
 
-**Success Criteria**: Background script works with new state system
+**Success Criteria**: ✅ **COMPLETED** - Background script fully migrated with tunnel support!
 
 ### Phase 6: Build System & Configuration ⏱️ 1-2 days
 **Goal**: Clean up build process, environment handling
@@ -275,22 +275,22 @@ src/
 
 ## Timeline - **ALMOST COMPLETE!** 🚀
 
-**Original Estimate**: 12-16 days → **Actual Progress**: 3 days → **85% Complete!**
+**Original Estimate**: 12-16 days → **Actual Progress**: 4 days → **90% Complete!**
 
 - ✅ Phase 1: ~~2-3 days~~ **1 day** (WXT setup)
 - ✅ Phase 2: ~~2-3 days~~ **1 day** (State management)
 - ✅ Phase 3: ~~2-3 days~~ **0 days** (Popup migration - done with Phase 2!)
 - ✅ Phase 3.5: ~~1 day~~ **0.5 days** (Dead code cleanup - **COMPLETED!**)
 - ✅ Phase 4: ~~3-4 days~~ **0.5 days** (Content script - **COMPLETED!**)
-- 🔄 Phase 5: 1-2 days (Background script - **80% complete**)
+- ✅ Phase 5: ~~1-2 days~~ **1 day** (Background script - **COMPLETED!**)
 - ⚡ Phase 6: ~~1-2 days~~ **0 days** (Build system - WXT handles this!)
 - 🔄 Phase 7: 1-2 days (Testing & polish)
 
-**Remaining**: ~2-3 days (down from 12-16!)
+**Remaining**: ~1-2 days (down from 12-16!)
 
 ## Current Status
 
-✅ **COMPLETED** (3 days):
+✅ **COMPLETED** (4 days):
 - WXT framework migration
 - Zustand state management
 - MUI popup interface with 3 tabs
@@ -300,11 +300,12 @@ src/
 - **Dead code cleanup** - Removed 4,584 lines of legacy popup code
 - **React overlay integration** - Removed 992 lines of vanilla content script code
 - **Full annotation pipeline** - Background script with screenshot capture and template formatting
+- **Tunnel management** - Full WebSocket tunnel support with auto-reconnect
+- **UX improvements** - Auto-detect port, autofocus, compact UI
 
 🔄 **NEXT UP**:
-- Phase 5: Complete background script migration (tunnel management)
 - Phase 7: Final testing and polish
-- Extension is **85% complete** and fully functional!
+- Extension is **90% complete** and fully functional!
 
 ## Success Metrics Achieved
 
@@ -324,7 +325,7 @@ src/
 ---
 
 **Last Updated**: 2025-09-25
-**Status**: ✅ Phase 1-4 Complete - 85% Migration Complete!
-**Next Action**: Phase 5 - Background script tunnel management (optional)
+**Status**: ✅ Phase 1-5 Complete - 90% Migration Complete!
+**Next Action**: Phase 7 - Final testing and polish
 
 **Extension is production-ready with core functionality complete!**
