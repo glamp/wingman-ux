@@ -2,16 +2,17 @@ import type { WingmanAnnotation } from '@wingman/shared';
 /**
  * Background scripts CAN use ES modules and imports from @wingman/shared
  * because they run as service workers in Manifest V3.
- * 
+ *
  * Content scripts CANNOT use ES modules, so they must use the local duplicate
  * in src/utils/format-claude.ts instead.
- * 
+ *
  * Now using the template engine for improved formatting with selected templates.
  */
-import { createLogger, createTemplateEngine, defaultTemplate } from '@wingman/shared';
 import type { AnnotationTemplate, TemplateVariable } from '@wingman/shared';
-import { getEnvironmentConfig } from '../utils/config';
+import { createLogger, createTemplateEngine, defaultTemplate } from '@wingman/shared';
 import type { EnvironmentConfig } from '../types/env';
+import { getEnvironmentConfig } from '../utils/config';
+import { ScreenshotHandler } from './screenshot-handler';
 import { TunnelManager } from './tunnel-manager';
 
 // Remote API URL constant
@@ -37,6 +38,9 @@ const tunnelManager = new TunnelManager();
 // Template engine instance (will be initialized with config)
 let templateEngine: any;
 
+// Screenshot handler instance
+let screenshotHandler: ScreenshotHandler;
+
 // Get standard template variables (reuse from defaultTemplate)
 function getStandardVariables(): TemplateVariable[] {
   return defaultTemplate.variables;
@@ -45,15 +49,15 @@ function getStandardVariables(): TemplateVariable[] {
 // Simple template mapping - just use the existing defaultTemplate for all
 function getTemplateForId(templateId: string): AnnotationTemplate {
   const variables = getStandardVariables();
-  
+
   switch (templateId) {
     case 'claude-code':
       return {
         ...defaultTemplate,
         id: 'claude-code',
-        name: 'Claude Code'
+        name: 'Claude Code',
       };
-      
+
     case 'cursor':
       return {
         id: 'cursor',
@@ -96,9 +100,9 @@ function getTemplateForId(templateId: string): AnnotationTemplate {
 {{/if}}
 
 **Fix this UI issue with specific code changes.**`,
-        variables
+        variables,
       };
-      
+
     case 'github-copilot':
       return {
         id: 'github-copilot',
@@ -163,9 +167,9 @@ function getTemplateForId(templateId: string): AnnotationTemplate {
 ---
 **Environment:** {{userAgent}}
 **Timestamp:** {{capturedAt}}`,
-        variables
+        variables,
       };
-      
+
     case 'short':
       return {
         id: 'short',
@@ -177,9 +181,9 @@ function getTemplateForId(templateId: string): AnnotationTemplate {
 {{/if}}
 
 ![Screenshot]({{screenshotUrl}})`,
-        variables
+        variables,
       };
-      
+
     case 'medium':
       return {
         id: 'medium',
@@ -220,9 +224,9 @@ function getTemplateForId(templateId: string): AnnotationTemplate {
 - {{message}}
 {{/each}}
 {{/if}}`,
-        variables
+        variables,
       };
-      
+
     default:
       return defaultTemplate;
   }
@@ -232,16 +236,21 @@ function getTemplateForId(templateId: string): AnnotationTemplate {
 async function initializeExtension() {
   try {
     extensionConfig = getEnvironmentConfig();
-    
+
     // Initialize template engine with truncation configuration
     templateEngine = createTemplateEngine({
-      truncationConfig: extensionConfig.dataCapture ? {
-        console: { templateLimit: extensionConfig.dataCapture.console.templateLimit },
-        network: { templateLimit: extensionConfig.dataCapture.network.templateLimit },
-        errors: { templateLimit: extensionConfig.dataCapture.errors.templateLimit }
-      } : undefined
+      truncationConfig: extensionConfig.dataCapture
+        ? {
+            console: { templateLimit: extensionConfig.dataCapture.console.templateLimit },
+            network: { templateLimit: extensionConfig.dataCapture.network.templateLimit },
+            errors: { templateLimit: extensionConfig.dataCapture.errors.templateLimit },
+          }
+        : undefined,
     });
-    
+
+    // Initialize screenshot handler
+    screenshotHandler = new ScreenshotHandler(templateEngine);
+
     // Set up environment badge
     if (extensionConfig.badge.text) {
       await chrome.action.setBadgeText({ text: extensionConfig.badge.text });
@@ -250,21 +259,20 @@ async function initializeExtension() {
       // Clear badge for production
       await chrome.action.setBadgeText({ text: '' });
     }
-    
+
     // Configure logger based on environment
     if (extensionConfig.features.verboseLogging) {
       logger.setLevel('debug');
     }
-    
+
     // Set up hot reload in development mode
     if (extensionConfig.environment === 'development' && extensionConfig.features.hotReload) {
       setupHotReload();
     }
-    
+
     // Log initialization
     logger.info(`Service worker started - ${extensionConfig.environmentName} mode`);
     logger.debug('Config:', extensionConfig);
-    
   } catch (error) {
     logger.error('Failed to initialize:', error);
   }
@@ -274,38 +282,38 @@ async function initializeExtension() {
 function setupHotReload() {
   let lastReloadTime = 0;
   let wsConnected = false;
-  
+
   // Try WebSocket connection for HMR (port 9012)
   const HMR_PORT = 9012;
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 3;
-  
+
   function connectWebSocket() {
     if (reconnectAttempts >= maxReconnectAttempts) {
       logger.debug('Max WebSocket reconnect attempts reached, falling back to file polling');
       return;
     }
-    
+
     try {
       const ws = new WebSocket(`ws://localhost:${HMR_PORT}`);
-      
+
       ws.onopen = () => {
         wsConnected = true;
         reconnectAttempts = 0;
         logger.info(`HMR WebSocket connected on port ${HMR_PORT}`);
       };
-      
+
       ws.onmessage = (event) => {
         if (event.data === 'file-change') {
           logger.info('HMR: File change detected, reloading extension...');
           chrome.runtime.reload();
         }
       };
-      
+
       ws.onerror = (error) => {
         logger.debug('HMR WebSocket error, will use file polling fallback');
       };
-      
+
       ws.onclose = () => {
         wsConnected = false;
         logger.debug('HMR WebSocket disconnected');
@@ -319,20 +327,20 @@ function setupHotReload() {
       logger.debug('Failed to create WebSocket connection:', error);
     }
   }
-  
+
   // Try WebSocket first
   connectWebSocket();
-  
+
   // Fallback: Poll for reload trigger file changes
   setInterval(async () => {
     // Skip file polling if WebSocket is connected
     if (wsConnected) return;
-    
+
     try {
       const response = await fetch(chrome.runtime.getURL('.reload'));
       const text = await response.text();
       const reloadTime = parseInt(text, 10);
-      
+
       if (reloadTime > lastReloadTime) {
         lastReloadTime = reloadTime;
         logger.info('Hot reload triggered via file polling, reloading extension...');
@@ -342,7 +350,7 @@ function setupHotReload() {
       // Silently ignore - file might not exist yet
     }
   }, 2000); // Check every 2 seconds instead of 1 to reduce overhead
-  
+
   logger.info('Hot reload enabled - WebSocket on port 9012 with file polling fallback');
 }
 
@@ -354,18 +362,20 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   // Inject when navigation starts (earliest possible moment)
   if (changeInfo.status === 'loading' && tab.url) {
     // Skip chrome:// and extension pages
-    if (tab.url.startsWith('chrome://') || 
-        tab.url.startsWith('chrome-extension://') ||
-        tab.url.startsWith('https://chrome.google.com/webstore')) {
+    if (
+      tab.url.startsWith('chrome://') ||
+      tab.url.startsWith('chrome-extension://') ||
+      tab.url.startsWith('https://chrome.google.com/webstore')
+    ) {
       return;
     }
-    
+
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
         files: ['page-console-injector.js'],
         world: 'MAIN' as chrome.scripting.ExecutionWorld,
-        injectImmediately: true
+        injectImmediately: true,
       });
       logger.debug(`Injected console wrapper into tab ${tabId} at ${tab.url}`);
     } catch (error) {
@@ -376,7 +386,13 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 interface MessageRequest {
-  type: 'CAPTURE_SCREENSHOT' | 'SUBMIT_ANNOTATION' | 'ACTIVATE_WINGMAN' | 'TUNNEL_CREATE' | 'TUNNEL_STOP' | 'TUNNEL_STATUS';
+  type:
+    | 'CAPTURE_SCREENSHOT'
+    | 'SUBMIT_ANNOTATION'
+    | 'ACTIVATE_WINGMAN'
+    | 'TUNNEL_CREATE'
+    | 'TUNNEL_STOP'
+    | 'TUNNEL_STATUS';
   payload?: any;
   targetPort?: number;
 }
@@ -415,7 +431,7 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
   // Handle tunnel messages
   if (request.type === 'TUNNEL_CREATE') {
     logger.info('Tunnel create request received with port:', request.targetPort);
-    
+
     if (!request.targetPort) {
       logger.error('TUNNEL_CREATE: No target port provided');
       sendResponse({ success: false, error: 'No target port provided' });
@@ -423,45 +439,47 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
     }
 
     // Get relay URL from storage to pass to tunnel manager
-    chrome.storage.local.get(['relayUrl']).then(({ relayUrl }) => {
-      // For tunnels, never use clipboard mode - always use actual server
-      let finalRelayUrl = relayUrl;
-      if (relayUrl === 'clipboard') {
-        finalRelayUrl = extensionConfig?.relayUrl || 'https://api.wingmanux.com';
-        logger.debug('Skipping clipboard mode for tunnel, using:', finalRelayUrl);
-      } else {
-        finalRelayUrl = relayUrl || extensionConfig?.relayUrl || 'https://api.wingmanux.com';
-      }
-      logger.debug('Using relay URL for tunnel:', finalRelayUrl);
-      
-      return tunnelManager.createTunnel(request.targetPort, finalRelayUrl);
-    })
-    .then((tunnel) => {
-      logger.info('Tunnel created successfully:', tunnel);
-      sendResponse({ success: true, tunnel });
-    })
-    .catch((error) => {
-      logger.error('Failed to create tunnel:', error);
-      sendResponse({ 
-        success: false, 
-        error: error.message || 'Failed to create tunnel' 
+    chrome.storage.local
+      .get(['relayUrl'])
+      .then(({ relayUrl }) => {
+        // For tunnels, never use clipboard mode - always use actual server
+        let finalRelayUrl = relayUrl;
+        if (relayUrl === 'clipboard') {
+          finalRelayUrl = extensionConfig?.relayUrl || 'https://api.wingmanux.com';
+          logger.debug('Skipping clipboard mode for tunnel, using:', finalRelayUrl);
+        } else {
+          finalRelayUrl = relayUrl || extensionConfig?.relayUrl || 'https://api.wingmanux.com';
+        }
+        logger.debug('Using relay URL for tunnel:', finalRelayUrl);
+
+        return tunnelManager.createTunnel(request.targetPort, finalRelayUrl);
+      })
+      .then((tunnel) => {
+        logger.info('Tunnel created successfully:', tunnel);
+        sendResponse({ success: true, tunnel });
+      })
+      .catch((error) => {
+        logger.error('Failed to create tunnel:', error);
+        sendResponse({
+          success: false,
+          error: error.message || 'Failed to create tunnel',
+        });
       });
-    });
     return true; // Will respond asynchronously
   }
 
   if (request.type === 'TUNNEL_STOP') {
     logger.info('Tunnel stop request received');
-    
+
     try {
       tunnelManager.stopTunnel();
       logger.info('Tunnel stopped successfully');
       sendResponse({ success: true });
     } catch (error: any) {
       logger.error('Failed to stop tunnel:', error);
-      sendResponse({ 
-        success: false, 
-        error: error.message || 'Failed to stop tunnel' 
+      sendResponse({
+        success: false,
+        error: error.message || 'Failed to stop tunnel',
       });
     }
     return false; // Synchronous response
@@ -469,16 +487,16 @@ chrome.runtime.onMessage.addListener((request: MessageRequest, sender, sendRespo
 
   if (request.type === 'TUNNEL_STATUS') {
     logger.debug('Tunnel status request received');
-    
+
     try {
       const tunnel = tunnelManager.getCurrentTunnel();
       logger.debug('Current tunnel status:', tunnel);
       sendResponse({ success: true, tunnel });
     } catch (error: any) {
       logger.error('Failed to get tunnel status:', error);
-      sendResponse({ 
-        success: false, 
-        error: error.message || 'Failed to get tunnel status' 
+      sendResponse({
+        success: false,
+        error: error.message || 'Failed to get tunnel status',
       });
     }
     return false; // Synchronous response
@@ -521,145 +539,72 @@ async function captureScreenshot(): Promise<string> {
 
 async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   try {
-    // Get relay URL from config first, then fall back to storage, then default
-    let relayUrl = extensionConfig?.relayUrl || 'https://api.wingmanux.com';
-    const stored = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId', 'customTemplates', 'copyFormat', 'remoteUrl']);
+    // 1. Get settings from storage (there's always a selection)
+    const stored = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId']);
+    const relayUrl = stored.relayUrl || 'https://api.wingmanux.com';
+    const templateId = stored.selectedTemplateId || 'claude-code';
 
-    if (stored.relayUrl) {
-      relayUrl = stored.relayUrl;
-    }
+    logger.info('Submitting annotation with mode:', relayUrl);
 
-    // Track the remote URL for clipboard mode
-    if (relayUrl && relayUrl !== 'clipboard' && !relayUrl.includes('localhost')) {
-      await chrome.storage.local.set({ remoteUrl: relayUrl });
-    }
-
-    // Get template settings with migration support
-    let selectedTemplateId = stored.selectedTemplateId;
-    if (!selectedTemplateId && stored.copyFormat) {
-      // Migration from old copyFormat system
-      const formatToTemplate: { [key: string]: string } = {
-        'claude': 'claude-code',
-        'json': 'short',
-        'markdown': 'medium'
-      };
-      selectedTemplateId = formatToTemplate[stored.copyFormat] || 'claude-code';
-    }
-    selectedTemplateId = selectedTemplateId || 'claude-code';
-
-    const customTemplates = stored.customTemplates || [];
-
-    // Handle clipboard mode - need to use content script for clipboard access
+    // 2. Handle based on mode
     if (relayUrl === 'clipboard') {
-      const template = getTemplateForId(selectedTemplateId);
-      let screenshotPath = '';
+      // CLIPBOARD MODE: Save locally and copy to clipboard
 
-      // Try to save screenshot to Downloads folder
-      try {
-        if (annotation.media?.screenshot?.dataUrl) {
-          // Generate timestamp-based filename
-          const timestamp = Date.now();
-          const filename = `wingman-screenshot-${timestamp}.png`;
-
-          // Convert base64 to blob
-          const base64Data = annotation.media.screenshot.dataUrl.split(',')[1];
-          const byteCharacters = atob(base64Data);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: 'image/png' });
-
-          // Create object URL for the blob
-          const url = URL.createObjectURL(blob);
-
-          // Download the file
-          const downloadId = await chrome.downloads.download({
-            url: url,
-            filename: filename,
-            saveAs: false // Don't prompt user
-          });
-
-          // Wait for download to complete and get the file path
-          await new Promise<void>((resolve) => {
-            const checkDownload = () => {
-              chrome.downloads.search({ id: downloadId }, (downloads) => {
-                if (downloads && downloads[0]) {
-                  const download = downloads[0];
-                  if (download.state === 'complete' && download.filename) {
-                    screenshotPath = download.filename;
-                    // Clean up the object URL
-                    URL.revokeObjectURL(url);
-                    resolve();
-                  } else if (download.state === 'interrupted') {
-                    // Download failed, clean up and resolve anyway
-                    URL.revokeObjectURL(url);
-                    logger.warn('Screenshot download failed:', download.error);
-                    resolve();
-                  } else {
-                    // Still downloading, check again
-                    setTimeout(checkDownload, 100);
-                  }
-                }
-              });
-            };
-            checkDownload();
-          });
-        }
-      } catch (error) {
-        logger.warn('Failed to save screenshot to Downloads folder:', error);
-        // Continue without local file path
+      // a. Try to save screenshot to Downloads folder
+      let screenshotPath: string | null = null;
+      if (annotation.media?.screenshot?.dataUrl) {
+        screenshotPath = await screenshotHandler.saveToDownloads(annotation.media.screenshot.dataUrl);
+        logger.info('Screenshot save result:', screenshotPath);
       }
 
-      // Use local file path if available, otherwise fall back to remote URL
-      let formattedContent: string;
+      // b. Determine the screenshot URL for the template
+      let screenshotUrl: string;
       if (screenshotPath) {
-        // Use the local file path for the screenshot
-        const fileUrl = `file://${screenshotPath}`;
-        formattedContent = templateEngine.render(annotation, template, { relayUrl: fileUrl, isLocalFile: true });
-        // Replace any remaining remote URLs with the local file URL
-        formattedContent = formattedContent.replace(
-          /!\[.*?\]\(.*?\/annotations\/.*?\/screenshot\)/g,
-          `![Wingman Screenshot - Local file](${fileUrl})`
-        );
+        // Use local file path
+        screenshotUrl = `file://${screenshotPath}`;
+        logger.info('Using local file for screenshot:', screenshotUrl);
       } else {
-        // Fall back to API URL for screenshot URLs (always use API server for screenshots)
-        const actualRelayUrl = REMOTE_API_URL;
-        formattedContent = templateEngine.render(annotation, template, { relayUrl: actualRelayUrl });
+        // Fall back to base64 data URL
+        screenshotUrl = annotation.media?.screenshot?.dataUrl || '';
+        logger.warn('Using base64 fallback for screenshot');
       }
 
-      // Service workers don't have clipboard access, return the formatted content
-      // The content script will handle the actual clipboard operation
+      // c. Render the template with the correct screenshot URL
+      const template = getTemplateForId(templateId);
+      const contextOverride = {
+        relayUrl: '', // Not needed for clipboard mode
+        screenshotUrl: screenshotUrl // Override the screenshot URL directly
+      };
+      const content = templateEngine.render(annotation, template, contextOverride);
+
+      // d. Return for clipboard copy
       return {
         success: true,
-        message: screenshotPath ? 'Screenshot saved to Downloads folder and copied to clipboard' : 'Copied to clipboard',
-        clipboardContent: formattedContent,
+        message: screenshotPath
+          ? 'Screenshot saved to Downloads folder and copied to clipboard'
+          : 'Copied to clipboard',
+        clipboardContent: content,
         screenshotPath: screenshotPath
       };
+
+    } else {
+      // SERVER MODE: Submit to remote or local server
+      const response = await fetch(`${relayUrl}/annotations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(annotation),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     }
-
-    // Save the relay URL for later use (e.g., in clipboard mode)
-    if (relayUrl !== 'clipboard') {
-      await chrome.storage.local.set({ lastUsedRelayUrl: relayUrl });
-    }
-
-    const response = await fetch(`${relayUrl}/annotations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(annotation),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
   } catch (error) {
     logger.error('Failed to submit annotation:', error);
     throw error;
   }
 }
-

@@ -60,6 +60,7 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^5.0.0",
     "canvas": "^3.2.0",
+    "crx": "^5.0.1",
     "hot-reload-extension-vite": "^1.0.13",
     "jsdom": "^26.0.0",
     "terser": "^5.43.1",

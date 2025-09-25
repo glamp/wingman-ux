@@ -32,7 +32,7 @@ if (fs.existsSync(outputFile)) {
 
 // Create zip file
 try {
-  // Change to the dist directory and zip contents
+  // Create zip with contents at root level (no subdirectories)
   const zipCommand = `cd "${distDir}" && zip -r "${outputFile}" . -x "*.DS_Store" -x "__MACOSX/*"`;
   execSync(zipCommand, { stdio: 'inherit' });
   

@@ -1,3 +1,8 @@
+// ⚠️ WARNING: THIS FILE IS NOT USED IN THE BUILD!
+// The actual content script is vanilla-overlay.ts
+// See vite.content.config.ts line 30 for the entry point
+// Any changes here will have NO EFFECT on the extension
+
 import type { RelayResponse, WingmanAnnotation } from '@wingman/shared';
 import { ulid } from 'ulid';
 import { ConsoleCapture } from './console-capture';
@@ -158,9 +163,8 @@ async function activateOverlay() {
           // Show appropriate success notification
           const { showPreviewUrl = true } = await chrome.storage.local.get('showPreviewUrl');
 
-          // Handle clipboard mode - copy to clipboard in content script context
-          if (result.message === 'Copied to clipboard' && result.clipboardContent) {
-            // Use the more reliable textarea method as primary approach
+          // If clipboard content is present, copy it
+          if (result.clipboardContent) {
             const textArea = document.createElement('textarea');
             textArea.value = result.clipboardContent;
             textArea.style.position = 'fixed';
@@ -174,6 +178,8 @@ async function activateOverlay() {
               const successful = document.execCommand('copy');
               if (!successful) {
                 logger.error('Copy command returned false');
+              } else {
+                logger.info('Successfully copied to clipboard');
               }
             } catch (err) {
               logger.error('Failed to copy to clipboard:', err);
@@ -182,8 +188,9 @@ async function activateOverlay() {
             document.body.removeChild(textArea);
           }
 
-          if (result.message === 'Copied to clipboard') {
-            // Clipboard mode - always show copy notification
+          // Show appropriate notification
+          if (result.clipboardContent) {
+            // Clipboard mode - show copy notification
             if (mountSuccessNotification) {
               mountSuccessNotification({
                 mode: 'clipboard',

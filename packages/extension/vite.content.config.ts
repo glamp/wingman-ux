@@ -12,8 +12,9 @@ console.log(`Building Chrome Extension Content Script for environment: ${environ
 export default defineConfig(async () => {
   // Dynamically import React plugin to avoid ESM issues
   const { default: react } = await import('@vitejs/plugin-react');
-  
+
   return {
+    publicDir: false,  // Disable public directory copying - main build handles this
     build: {
       outDir: `dist/${environment}`,
       emptyOutDir: false,  // Don't empty the dir since main build already did
@@ -26,8 +27,10 @@ export default defineConfig(async () => {
         },
       } : undefined,
       lib: {
+        // ⚠️ IMPORTANT: This is the ACTUAL content script entry point
+        // NOT src/content/index.ts! That file is not used.
         entry: resolve(__dirname, 'src/content/vanilla-overlay.ts'),
-        name: 'WingmanContent', 
+        name: 'WingmanContent',
         fileName: () => 'content.js',
         formats: ['iife'],
       },

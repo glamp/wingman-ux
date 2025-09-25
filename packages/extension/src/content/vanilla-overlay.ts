@@ -6,8 +6,12 @@ import { NetworkCapture } from './network-capture';
 import { SDKBridge } from './sdk-bridge';
 import { createLogger } from '../utils/logger';
 
+console.log('[WINGMAN DEBUG] Content script starting...');
+
 const logger = createLogger('Wingman:Content');
+console.log('[WINGMAN DEBUG] Logger created, attempting info log...');
 logger.info('Content script loaded on:', window.location.href);
+console.log('[WINGMAN DEBUG] Content script loaded on:', window.location.href);
 
 let consoleCapture: ConsoleCapture | null = null;
 let networkCapture: NetworkCapture | null = null;
@@ -438,12 +442,15 @@ async function submitFeedback() {
     const annotation = buildAnnotation(note, target, screenshot, reactData);
     
     // Submit annotation
+    console.log('[WINGMAN DEBUG] About to submit annotation...');
     const result = await submitAnnotation(annotation);
-    logger.info('Annotation submitted successfully:', result);
+    console.log('[WINGMAN DEBUG] Annotation result:', result);
     
-    // Handle clipboard mode - copy to clipboard in content script context
-    if (result.message === 'Copied to clipboard' && result.clipboardContent) {
-      // Use the more reliable textarea method as primary approach
+    // If clipboard content is present, copy it
+    if (result.clipboardContent) {
+      console.log('[WINGMAN DEBUG] Clipboard content detected, attempting copy...');
+      console.log('[WINGMAN DEBUG] Content length:', result.clipboardContent.length);
+
       const textArea = document.createElement('textarea');
       textArea.value = result.clipboardContent;
       textArea.style.position = 'fixed';
@@ -456,13 +463,20 @@ async function submitFeedback() {
       try {
         const successful = document.execCommand('copy');
         if (!successful) {
+          console.error('[WINGMAN DEBUG] Copy command returned false');
           logger.error('Copy command returned false');
+        } else {
+          console.log('[WINGMAN DEBUG] Successfully copied to clipboard!');
+          logger.info('Successfully copied to clipboard');
         }
       } catch (err) {
+        console.error('[WINGMAN DEBUG] Failed to copy to clipboard:', err);
         logger.error('Failed to copy to clipboard:', err);
       }
 
       document.body.removeChild(textArea);
+    } else {
+      console.log('[WINGMAN DEBUG] No clipboard content in result');
     }
     
     // Show success notification
@@ -529,12 +543,17 @@ async function captureScreenshot(): Promise<string> {
 
 async function submitAnnotation(annotation: WingmanAnnotation): Promise<RelayResponse> {
   return new Promise((resolve, reject) => {
+    console.log('[WINGMAN DEBUG] Sending message to background script...');
     chrome.runtime.sendMessage({ type: 'SUBMIT_ANNOTATION', payload: annotation }, (response) => {
+      console.log('[WINGMAN DEBUG] Received response from background:', response);
       if (chrome.runtime.lastError) {
+        console.error('[WINGMAN DEBUG] Chrome runtime error:', chrome.runtime.lastError);
         reject(chrome.runtime.lastError);
-      } else if (response.error) {
+      } else if (response && response.error) {
+        console.error('[WINGMAN DEBUG] Response error:', response.error);
         reject(new Error(response.error));
       } else {
+        console.log('[WINGMAN DEBUG] Resolving with response:', response);
         resolve(response);
       }
     });
@@ -568,10 +587,12 @@ function showSuccessNotification(result: RelayResponse, annotationId: string) {
   // Determine message based on result
   let message = 'Feedback submitted successfully!';
   let linkHtml = '';
-  
-  if (result.message === 'Copied to clipboard') {
+
+  if (result.clipboardContent) {
+    console.log('[WINGMAN DEBUG] Showing clipboard success notification');
     message = 'Feedback copied to clipboard!';
   } else {
+    console.log('[WINGMAN DEBUG] Showing server submission notification');
     message = 'Feedback submitted successfully!';
     // Construct correct webapp dashboard URL
     const dashboardUrl = `https://wingmanux.com/annotations?id=${annotationId}`;

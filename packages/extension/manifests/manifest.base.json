@@ -5,7 +5,8 @@
     "activeTab",
     "scripting",
     "tabs",
-    "storage"
+    "storage",
+    "downloads"
   ],
   "host_permissions": [
     "http://localhost:*/*",

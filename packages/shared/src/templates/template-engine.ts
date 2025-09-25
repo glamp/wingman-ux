@@ -54,10 +54,22 @@ export class SimpleTemplateEngine implements TemplateEngine {
 
     // Process variables
     for (const variable of template.variables) {
-      const value = this.getValue(annotation, variable.path);
-      const formattedValue = variable.formatter
-        ? variable.formatter(value, context)
-        : value?.toString() || variable.defaultValue || '';
+      // Check if context has an override for this variable
+      let formattedValue: string;
+
+      // Special handling for screenshotUrl - ALWAYS use context override if present
+      if (variable.key === 'screenshotUrl' && context && 'screenshotUrl' in context && context.screenshotUrl) {
+        formattedValue = context.screenshotUrl.toString();
+      } else if (context && variable.key in context && context[variable.key as keyof TemplateContext] !== '') {
+        // Use the override from context for other variables
+        formattedValue = context[variable.key as keyof TemplateContext]?.toString() || '';
+      } else {
+        // Normal processing
+        const value = this.getValue(annotation, variable.path);
+        formattedValue = variable.formatter
+          ? variable.formatter(value, context)
+          : value?.toString() || variable.defaultValue || '';
+      }
 
       // Simple replacement for now (will be enhanced with Handlebars)
       const placeholder = `{{${variable.key}}}`;
