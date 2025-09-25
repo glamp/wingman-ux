@@ -3,9 +3,28 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "types": ["chrome"]
+    "types": ["chrome", "wxt/client-types"],
+
+    // Path mapping for cleaner imports
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"],
+      "@/components/*": ["components/*"],
+      "@/stores/*": ["stores/*"],
+      "@/lib/*": ["lib/*"],
+      "@/types/*": ["types/*"]
+    },
+
+    // Additional strict settings for better code quality
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "wxt.config.ts"],
   "exclude": ["node_modules", "dist"],
   "references": [
     { "path": "../shared" }
