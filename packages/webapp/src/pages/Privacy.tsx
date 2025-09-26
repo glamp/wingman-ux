@@ -203,20 +203,6 @@ export default function Privacy() {
 
             <Divider />
 
-            {/* Open Source */}
-            <Box>
-              <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <Typography variant="h5" fontWeight="600">
-                  💻 Open Source Transparency
-                </Typography>
-              </Box>
-              <Typography variant="body1" color="text.secondary" paragraph>
-                Wingman is open source software. You can review our code to verify our privacy practices.
-              </Typography>
-            </Box>
-
-            <Divider />
-
             {/* Contact */}
             <Box>
               <Typography variant="h5" gutterBottom fontWeight="600">

@@ -37,7 +37,7 @@ Capture AI ready UI feedback with screenshots, element selection, and rich conte
 ## DETAILED DESCRIPTION
 
 ```
-Wingman is a lightweight UX feedback assistant that helps designers, developers, and product teams capture and share UI feedback effortlessly.
+Wingman lets you identify problems in your web application by pointing, clicking, and providing feedback - then automatically generates an AI-ready prompt that will fix the issue.
 
 🎯 One-Click Capture
 Press ⌘⇧K (Mac) or Ctrl+Shift+K (Windows/Linux) to instantly activate feedback mode. Click any element on the page to select it and add your feedback.
@@ -149,7 +149,7 @@ Required to persist user preferences including output mode selection and relay s
 Required to allow users to optionally download captured screenshots to their computer.
 ```
 
-**host*permissions (http://localhost:*/\_)**
+**host_permissions (http://localhost/\*)**
 
 ```
 Required for integration with local development servers to send feedback directly to localhost endpoints.

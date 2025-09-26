@@ -35,8 +35,15 @@ export default defineConfig({
         "downloads",
         "downloads.ui"
       ],
-      host_permissions: [
+      host_permissions: isProd ? [
+        // Production: Chrome Web Store compliant (no port wildcards)
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "https://*/*"
+      ] : [
+        // Development: Support all localhost ports
         "http://localhost:*/*",
+        "http://127.0.0.1:*/*",
         "https://*/*"
       ],
       web_accessible_resources: [
@@ -103,7 +110,7 @@ export default defineConfig({
     return {
       ...baseManifest,
       name: "Wingman",
-      description: "Wingman Chrome Extension - Lightweight UX feedback assistant for web applications",
+      description: "Point. Click. Prompt. Fix. Identify problems in your web application and generate AI-ready prompts to fix them.",
       icons: {
         "16": "icons/icon16.png",
         "48": "icons/icon48.png",
