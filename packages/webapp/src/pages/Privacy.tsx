@@ -1,21 +1,10 @@
-import { Container, Typography, Box, Paper, Stack, Divider, Link } from '@mui/material';
-import { motion } from 'framer-motion';
+import { Container, Typography, Box, Paper, Stack, Divider } from '@mui/material';
 import { ShieldCheckIcon, LockIcon, ServerIcon, CodeIcon } from 'lucide-react';
-
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 }
-};
 
 export default function Privacy() {
   return (
     <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 } }}>
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={fadeIn}
-        transition={{ duration: 0.5 }}
-      >
+      <Box>
         <Box textAlign="center" mb={6}>
           <ShieldCheckIcon size={48} style={{ marginBottom: '16px', color: '#0084ff' }} />
           <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom>
@@ -254,7 +243,7 @@ export default function Privacy() {
             </Box>
           </Stack>
         </Paper>
-      </motion.div>
+      </Box>
     </Container>
   );
 }
