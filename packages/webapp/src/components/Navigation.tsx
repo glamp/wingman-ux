@@ -107,9 +107,10 @@ interface NavItemData {
 const navItems: NavItemData[] = [
   { path: '/', label: 'Home' },
   { path: '/install', label: 'Install' },
-  { path: '/tunnels', label: 'Tunnels' },
-  { path: '/annotations', label: 'Annotations' },
-  { path: '/dashboard', label: 'Dashboard' },
+  // Beta features temporarily hidden for public launch
+  // { path: '/tunnels', label: 'Tunnels' },
+  // { path: '/annotations', label: 'Annotations' },
+  // { path: '/dashboard', label: 'Dashboard' },
 ];
 
 /**
@@ -144,7 +145,7 @@ export default function Navigation() {
           </NavItem>
         ))}
         
-        <SignInButton onClick={() => console.log('Sign in clicked')}>
+        <SignInButton onClick={() => navigate('/beta-signup')}>
           <NavText>Sign In</NavText>
         </SignInButton>
       </NavPill>

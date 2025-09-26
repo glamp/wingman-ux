@@ -210,36 +210,6 @@ export default function Home() {
         {/* Server Status */}
         <ServerStatus />
 
-        {/* Navigation Cards */}
-        <NavCards>
-          <NavCard onClick={() => navigate('/annotations')}>
-            <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
-              📝 Annotations
-            </Typography>
-            <Typography variant="body2" sx={{ color: colors.textSecondary, mt: 1 }}>
-              View feedback
-            </Typography>
-          </NavCard>
-          
-          <NavCard onClick={() => navigate('/tunnels')}>
-            <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
-              🚇 Tunnels
-            </Typography>
-            <Typography variant="body2" sx={{ color: colors.textSecondary, mt: 1 }}>
-              Share sessions
-            </Typography>
-          </NavCard>
-          
-          <NavCard onClick={() => navigate('/dashboard')}>
-            <Typography variant="h6" sx={{ color: colors.textPrimary, fontWeight: 600 }}>
-              📊 Dashboard
-            </Typography>
-            <Typography variant="body2" sx={{ color: colors.textSecondary, mt: 1 }}>
-              System status
-            </Typography>
-          </NavCard>
-        </NavCards>
-
         {/* Chrome Extension Section */}
         <ChromeExtension />
 
