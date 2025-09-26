@@ -99,7 +99,7 @@ const NotePanel: React.FC<NotePanelProps> = ({
           size="small"
           sx={{ textTransform: 'none' }}
         >
-          Send
+          Submit
           <Box component="span" sx={{ ml: 0.5, opacity: 0.8, fontSize: '0.75rem' }}>
             ({submitShortcut})
           </Box>
