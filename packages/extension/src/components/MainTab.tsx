@@ -1,25 +1,14 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  Paper,
-  Stack,
-  CircularProgress,
-  Alert,
-  Divider
-} from '@mui/material';
-import { useIsLoading, useError, usePopupStore } from '@/stores/popup-store';
-import { useRelayUrl } from '@/stores/settings-store';
 import { ExtensionMessenger } from '@/lib/messaging';
+import { useError, useIsLoading, usePopupStore } from '@/stores/popup-store';
+import { useRelayUrl } from '@/stores/settings-store';
 import { colors, glassStyles, radius, shadows } from '@/theme/theme';
+import { Alert, Box, Button, CircularProgress, Divider, Stack, Typography } from '@mui/material';
+import React from 'react';
 
 export const MainTab: React.FC = () => {
   const isLoading = useIsLoading();
   const error = useError();
   const { setLoading, setError, clearError, setLastAction } = usePopupStore();
-
-  const [lastCaptureTime, setLastCaptureTime] = useState<Date | null>(null);
 
   const relayUrl = useRelayUrl();
 
@@ -34,7 +23,6 @@ export const MainTab: React.FC = () => {
 
       if (activated) {
         setLastAction('Overlay activated successfully!');
-        setLastCaptureTime(new Date());
       } else {
         throw new Error('Failed to activate overlay. Make sure you have an active tab.');
       }
@@ -55,7 +43,7 @@ export const MainTab: React.FC = () => {
           icon: '📋',
           shortLabel: 'Clipboard',
           color: colors.primary,
-          bgColor: 'rgba(0, 132, 255, 0.1)'
+          bgColor: 'rgba(0, 132, 255, 0.1)',
         };
       case 'http://localhost:8787':
         return {
@@ -63,7 +51,7 @@ export const MainTab: React.FC = () => {
           icon: '💻',
           shortLabel: 'Local',
           color: colors.success,
-          bgColor: 'rgba(16, 185, 129, 0.1)'
+          bgColor: 'rgba(16, 185, 129, 0.1)',
         };
       default:
         return {
@@ -71,7 +59,7 @@ export const MainTab: React.FC = () => {
           icon: '🌐',
           shortLabel: 'Remote',
           color: colors.secondary,
-          bgColor: 'rgba(139, 92, 246, 0.1)'
+          bgColor: 'rgba(139, 92, 246, 0.1)',
         };
     }
   };
@@ -134,16 +122,12 @@ export const MainTab: React.FC = () => {
             )}
           </Button>
 
-      {/* Error Display */}
-      {error && (
-        <Alert
-          severity="error"
-          onClose={clearError}
-          sx={{ fontSize: '0.875rem' }}
-        >
-          {error}
-        </Alert>
-      )}
+          {/* Error Display */}
+          {error && (
+            <Alert severity="error" onClose={clearError} sx={{ fontSize: '0.875rem' }}>
+              {error}
+            </Alert>
+          )}
 
           {/* Divider */}
           <Divider sx={{ borderColor: colors.border, opacity: 0.5 }} />
@@ -164,11 +148,24 @@ export const MainTab: React.FC = () => {
               How it works
             </Typography>
             <Stack spacing={0.5}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: colors.textSecondary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  fontSize: '12px',
+                }}
+              >
+                <span style={{ fontSize: '14px' }}>1️⃣</span>
+                Press {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Shift+K or click{' '}
+                <i>Capture Feedback</i> button
+              </Typography>
               {[
-                { step: '1️⃣', text: `Press ${navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Shift+K or click button` },
-                { step: '2️⃣', text: 'Select element or draw area' },
-                { step: '3️⃣', text: 'Add your feedback note' },
-                { step: '4️⃣', text: `Submit to ${mode.shortLabel}` },
+                { step: '2️⃣', text: 'Select element' },
+                { step: '3️⃣', text: 'Add your feedback' },
+                { step: '4️⃣', text: 'Generate an AI-ready prompt' },
               ].map((item, index) => (
                 <Typography
                   key={index}
@@ -189,25 +186,6 @@ export const MainTab: React.FC = () => {
           </Stack>
         </Stack>
       </Box>
-
-      {/* Last Capture Info */}
-      {lastCaptureTime && !error && (
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: colors.success,
-              fontWeight: 500,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 0.5,
-            }}
-          >
-            <span style={{ fontSize: '16px' }}>✅</span>
-            Last capture: {lastCaptureTime.toLocaleTimeString()}
-          </Typography>
-        </Box>
-      )}
     </Stack>
   );
 };

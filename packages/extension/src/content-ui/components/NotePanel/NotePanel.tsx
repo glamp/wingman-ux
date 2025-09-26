@@ -21,6 +21,10 @@ const NotePanel: React.FC<NotePanelProps> = ({
 }) => {
   const editorRef = useRef<RichTextEditorHandle>(null);
 
+  // Detect platform for keyboard shortcut display
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const submitShortcut = isMac ? '⌘↩' : 'Ctrl+↩';
+
   // Autofocus the editor when the panel becomes visible
   useEffect(() => {
     if (visible) {
@@ -85,6 +89,9 @@ const NotePanel: React.FC<NotePanelProps> = ({
           sx={{ textTransform: 'none' }}
         >
           Cancel
+          <Box component="span" sx={{ ml: 0.5, opacity: 0.6, fontSize: '0.75rem' }}>
+            (Esc)
+          </Box>
         </Button>
         <Button
           variant="contained"
@@ -93,6 +100,9 @@ const NotePanel: React.FC<NotePanelProps> = ({
           sx={{ textTransform: 'none' }}
         >
           Send
+          <Box component="span" sx={{ ml: 0.5, opacity: 0.8, fontSize: '0.75rem' }}>
+            ({submitShortcut})
+          </Box>
         </Button>
       </Stack>
     </Paper>

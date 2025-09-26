@@ -1,30 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Stack,
-  Chip,
-  Alert,
-  TextField,
-  Button,
-  IconButton,
-  InputAdornment,
-  CircularProgress
-} from '@mui/material';
-import {
-  PlayArrow as PlayIcon,
-  Stop as StopIcon,
-  ContentCopy as CopyIcon,
-  Check as CheckIcon
-} from '@mui/icons-material';
 import {
   useActiveTunnel,
+  useConnectionError,
+  useIsConnecting,
   useTunnelStatus,
   useTunnelStore,
-  useIsConnecting,
-  useConnectionError
 } from '@/stores/tunnel-store';
+import {
+  Check as CheckIcon,
+  ContentCopy as CopyIcon,
+  PlayArrow as PlayIcon,
+  Stop as StopIcon,
+} from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import React, { useEffect, useState } from 'react';
 
 export const ShareTab: React.FC = () => {
   const activeTunnel = useActiveTunnel();
@@ -60,10 +60,14 @@ export const ShareTab: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'connected': return 'success' as const;
-      case 'connecting': return 'warning' as const;
-      case 'error': return 'error' as const;
-      default: return 'default' as const;
+      case 'connected':
+        return 'success' as const;
+      case 'connecting':
+        return 'warning' as const;
+      case 'error':
+        return 'error' as const;
+      default:
+        return 'default' as const;
     }
   };
 
@@ -99,7 +103,6 @@ export const ShareTab: React.FC = () => {
 
   return (
     <Stack spacing={2}>
-
       {/* Compact Tunnel Controls */}
       <Paper elevation={1} sx={{ p: 2 }}>
         {!activeTunnel ? (
@@ -115,7 +118,7 @@ export const ShareTab: React.FC = () => {
                 Create tunnel
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="stretch">
               <TextField
                 placeholder="Port"
                 value={targetPort}
@@ -124,19 +127,18 @@ export const ShareTab: React.FC = () => {
                 type="number"
                 disabled={isConnecting}
                 InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">:</InputAdornment>
-                  ),
+                  startAdornment: <InputAdornment position="start">:</InputAdornment>,
                 }}
-                sx={{ width: 150 }}
+                sx={{ width: 120 }}
               />
               <Button
                 variant="contained"
                 color="primary"
+                size="small"
                 onClick={handleStartTunnel}
                 disabled={isConnecting || !targetPort}
                 startIcon={isConnecting ? <CircularProgress size={16} /> : <PlayIcon />}
-                fullWidth
+                sx={{ flexGrow: 1 }}
               >
                 {isConnecting ? 'Connecting' : 'Start'}
               </Button>
@@ -149,28 +151,36 @@ export const ShareTab: React.FC = () => {
                 label="Connected"
                 color="success"
                 size="small"
-                icon={<Box component="span" sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  bgcolor: 'success.main',
-                  display: 'inline-block',
-                  ml: 0.5
-                }} />}
+                icon={
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      bgcolor: 'success.main',
+                      display: 'inline-block',
+                      ml: 0.5,
+                    }}
+                  />
+                }
               />
               <Typography variant="caption" color="text.secondary">
-                localhost:{activeTunnel.tunnelUrl?.match(/:([0-9]+)/)?.[1] || targetPort} · {getRelativeTime(activeTunnel.connectedAt)}
+                localhost:{activeTunnel.tunnelUrl?.match(/:([0-9]+)/)?.[1] || targetPort} ·{' '}
+                {getRelativeTime(activeTunnel.connectedAt)}
               </Typography>
             </Box>
 
-            <Box sx={{
-              p: 1,
-              bgcolor: 'grey.50',
-              borderRadius: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}>
+            <Box
+              sx={{
+                p: 1,
+                bgcolor: 'grey.50',
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
               <Typography
                 variant="body2"
                 sx={{
@@ -179,7 +189,7 @@ export const ShareTab: React.FC = () => {
                   flexGrow: 1,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {activeTunnel.tunnelUrl || activeTunnel.publicUrl || 'Waiting...'}
@@ -211,9 +221,7 @@ export const ShareTab: React.FC = () => {
       {/* Error Display */}
       {connectionError && (
         <Alert severity="error" sx={{ py: 1 }}>
-          <Typography variant="body2">
-            {connectionError}
-          </Typography>
+          <Typography variant="body2">{connectionError}</Typography>
         </Alert>
       )}
     </Stack>

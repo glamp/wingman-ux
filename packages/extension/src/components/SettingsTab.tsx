@@ -106,13 +106,6 @@ export const SettingsTab: React.FC = () => {
           />
         </Stack>
       </Paper>
-
-      {/* Status */}
-      <Box sx={{ textAlign: 'center', pt: 2 }}>
-        <Typography variant="caption" color="text.secondary">
-          Settings are automatically saved
-        </Typography>
-      </Box>
     </Stack>
   );
 };
