@@ -187,8 +187,8 @@ export default function BetaSignup() {
           margin: '0 auto 32px'
         }}
       >
-        Be the first to access new features including cloud sync, team collaboration,
-        and advanced feedback workflows.
+        Wingman is free to use. We're working on premium features including cloud sync,
+        team collaboration, and advanced feedback workflows. Sign up to be notified when they launch.
       </Typography>
 
       {!submitted ? (
