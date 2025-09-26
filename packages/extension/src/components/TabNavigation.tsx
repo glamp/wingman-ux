@@ -1,39 +1,34 @@
 import React from 'react';
 import {
   Box,
-  Tabs,
-  Tab,
-  Paper
+  ButtonBase,
+  Typography
 } from '@mui/material';
-import {
-  RocketLaunch as RocketLaunchIcon,
-  Share as ShareIcon,
-  Settings as SettingsIcon
-} from '@mui/icons-material';
 import { useActiveTab, usePopupStore } from '@/stores/popup-store';
 import { TabId } from '@/types/stores';
+import { colors, glassStyles, radius, shadows } from '@/theme/theme';
 
 interface TabData {
   id: TabId;
   label: string;
-  icon: React.ReactElement;
+  emoji: string;
 }
 
 const tabs: TabData[] = [
   {
     id: 'main',
     label: 'Capture',
-    icon: <RocketLaunchIcon fontSize="small" />
+    emoji: '🎯'
   },
   {
     id: 'live-share',
     label: 'Share',
-    icon: <ShareIcon fontSize="small" />
+    emoji: '🚀'
   },
   {
     id: 'settings',
     label: 'Settings',
-    icon: <SettingsIcon fontSize="small" />
+    emoji: '⚙️'
   }
 ];
 
@@ -41,35 +36,97 @@ export const TabNavigation: React.FC = () => {
   const activeTab = useActiveTab();
   const setActiveTab = usePopupStore(state => state.setActiveTab);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: TabId) => {
-    setActiveTab(newValue);
+  const handleTabClick = (tabId: TabId) => {
+    setActiveTab(tabId);
   };
 
-  const activeIndex = tabs.findIndex(tab => tab.id === activeTab);
-
   return (
-    <Paper elevation={0} sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-      <Tabs
-        value={activeIndex}
-        onChange={(e, index) => handleTabChange(e, tabs[index]?.id)}
-        variant="fullWidth"
-        textColor="primary"
-        indicatorColor="primary"
-      >
-        {tabs.map((tab) => (
-          <Tab
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 2,
+        mx: 2,
+        mb: 1.5,
+        p: 1,
+        ...glassStyles,
+        borderRadius: radius.xl,
+      }}
+    >
+      {tabs.map((tab) => {
+        const isActive = tab.id === activeTab;
+
+        return (
+          <ButtonBase
             key={tab.id}
-            label={tab.label}
-            icon={tab.icon}
-            iconPosition="start"
+            onClick={() => handleTabClick(tab.id)}
             sx={{
-              minHeight: 48,
-              textTransform: 'none',
-              fontSize: '0.875rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 0.5,
+              p: 1.2,
+              px: 2,
+              borderRadius: radius.md,
+              minWidth: 80,
+              transition: 'all 0.2s ease',
+              position: 'relative',
+              overflow: 'hidden',
+              background: isActive
+                ? 'linear-gradient(white, white) padding-box, linear-gradient(135deg, #0084ff, #8b5cf6) border-box'
+                : 'transparent',
+              border: isActive ? '2px solid transparent' : '2px solid transparent',
+              color: isActive ? colors.primary : colors.textSecondary,
+              boxShadow: isActive ? shadows.md : 'none',
+              '&::before': isActive ? {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 132, 255, 0.08)',
+                borderRadius: radius.md,
+              } : {},
+              '&:hover': {
+                transform: 'scale(1.05) translateY(-2px)',
+                background: isActive
+                  ? 'linear-gradient(white, white) padding-box, linear-gradient(135deg, #0084ff, #8b5cf6) border-box'
+                  : 'rgba(0, 132, 255, 0.05)',
+                boxShadow: isActive ? shadows.glow : shadows.sm,
+              },
+              '&:active': {
+                transform: 'scale(0.98)',
+              },
             }}
-          />
-        ))}
-      </Tabs>
-    </Paper>
+          >
+            <Typography
+              sx={{
+                fontSize: '24px',
+                lineHeight: 1,
+                display: 'block',
+                filter: isActive ? 'none' : 'grayscale(0.3)',
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              {tab.emoji}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: isActive ? 600 : 500,
+                fontSize: '11px',
+                letterSpacing: '0.02em',
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              {tab.label}
+            </Typography>
+          </ButtonBase>
+        );
+      })}
+    </Box>
   );
 };
