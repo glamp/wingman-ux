@@ -7,6 +7,7 @@ import SessionLanding from './pages/SessionLanding';
 import ShareLanding from './pages/ShareLanding';
 import TunnelDashboard from './pages/TunnelDashboard';
 import InstallationGuide from './pages/InstallationGuide';
+import Privacy from './pages/Privacy';
 import Navigation from './components/Navigation';
 import { gradients, typography } from './styles/theme';
 import { theme } from './theme';
@@ -59,6 +60,9 @@ function AppLayout() {
 
         {/* Installation guide */}
         <Route path="/install" element={<InstallationGuide />} />
+
+        {/* Privacy policy */}
+        <Route path="/privacy" element={<Privacy />} />
 
         {/* Session landing page (developer URLs) */}
         <Route path="/sessions/:sessionId" element={<SessionLanding />} />

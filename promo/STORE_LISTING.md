@@ -217,7 +217,7 @@ https://github.com/glamp/wingman-ux
 **Privacy Policy URL:**
 
 ```
-[To be added - Phase 4]
+https://wingmanux.com/privacy
 ```
 
 ---
