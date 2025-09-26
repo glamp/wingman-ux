@@ -1,26 +1,20 @@
-import React from 'react';
+import { useSettingsStore } from '@/stores/settings-store';
 import {
   Box,
   FormControl,
   FormControlLabel,
   FormLabel,
+  Paper,
   Radio,
   RadioGroup,
+  Stack,
   Switch,
   Typography,
-  Paper,
-  Stack,
-  Divider
 } from '@mui/material';
-import { useSettingsStore } from '@/stores/settings-store';
+import React from 'react';
 
 export const SettingsTab: React.FC = () => {
-  const {
-    relayUrl,
-    showPreviewUrl,
-    setRelayUrl,
-    setShowPreviewUrl
-  } = useSettingsStore();
+  const { relayUrl, showPreviewUrl, setRelayUrl, setShowPreviewUrl } = useSettingsStore();
 
   const handleRelayChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRelayUrl(event.target.value);
@@ -38,10 +32,7 @@ export const SettingsTab: React.FC = () => {
           <FormLabel component="legend" sx={{ mb: 2 }}>
             <Typography variant="subtitle2">Output Mode</Typography>
           </FormLabel>
-          <RadioGroup
-            value={relayUrl}
-            onChange={handleRelayChange}
-          >
+          <RadioGroup value={relayUrl} onChange={handleRelayChange}>
             <FormControlLabel
               value="clipboard"
               control={<Radio />}
@@ -54,6 +45,8 @@ export const SettingsTab: React.FC = () => {
                 </Box>
               }
             />
+            {/* Local and Remote modes temporarily disabled. Not yet implemented.*/}
+            {/*
             <FormControlLabel
               value="http://localhost:8787"
               control={<Radio />}
@@ -78,10 +71,10 @@ export const SettingsTab: React.FC = () => {
                 </Box>
               }
             />
+            */}
           </RadioGroup>
         </FormControl>
       </Paper>
-
 
       {/* Additional Options */}
       <Paper elevation={1} sx={{ p: 3 }}>
@@ -89,12 +82,7 @@ export const SettingsTab: React.FC = () => {
           <Typography variant="subtitle2">Display Options</Typography>
 
           <FormControlLabel
-            control={
-              <Switch
-                checked={showPreviewUrl}
-                onChange={handlePreviewToggle}
-              />
-            }
+            control={<Switch checked={showPreviewUrl} onChange={handlePreviewToggle} />}
             label={
               <Box>
                 <Typography variant="body2">Show Preview URLs</Typography>

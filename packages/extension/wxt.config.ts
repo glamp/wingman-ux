@@ -36,9 +36,7 @@ export default defineConfig({
         "downloads.ui"
       ],
       host_permissions: isProd ? [
-        // Production: Chrome Web Store compliant (no port wildcards)
-        "http://localhost/*",
-        "http://127.0.0.1/*",
+        // Production: Clipboard-only mode (no localhost needed for initial release)
         "https://*/*"
       ] : [
         // Development: Support all localhost ports
