@@ -93,6 +93,7 @@ export const MainTab: React.FC = () => {
               boxShadow: shadows.md,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 1.5,
               transition: 'all 0.3s ease',
               '&:hover': {
@@ -118,6 +119,12 @@ export const MainTab: React.FC = () => {
               <>
                 <span style={{ fontSize: '20px' }}>🎯</span>
                 <span>Capture Feedback</span>
+                <Box
+                  component="span"
+                  sx={{ ml: 1, opacity: 0.75, fontSize: '13px', fontWeight: 500 }}
+                >
+                  ({navigator.platform.includes('Mac') ? '⌘⇧K' : 'Ctrl+Shift+K'})
+                </Box>
               </>
             )}
           </Button>
