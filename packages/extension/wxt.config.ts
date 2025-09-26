@@ -10,6 +10,9 @@ export default defineConfig({
   // Enable React support
   modules: ['@wxt-dev/module-react'],
 
+  // Extension mode - ensures proper extension context
+  mode: isDev ? 'development' : 'production',
+
   // Configure source directory
   srcDir: './src',
 
@@ -118,7 +121,13 @@ export default defineConfig({
 
   // Development configuration
   dev: {
+    // Auto-reload the extension when files change
     reloadOnChange: true,
+    // Server configuration for HMR
+    server: {
+      port: 3000,
+      hostname: 'localhost'
+    }
   },
 
   // Build configuration

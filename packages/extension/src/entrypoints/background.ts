@@ -1,7 +1,16 @@
 import { TunnelManager } from '../background/tunnel-manager';
+import { ScreenshotHandler } from '../background/screenshot-handler';
+import { createTemplateEngine, defaultTemplate } from '@wingman/shared';
+import type { WingmanAnnotation } from '@wingman/shared';
 
 // Global tunnel manager instance
 const tunnelManager = new TunnelManager();
+
+// Template engine for formatting annotations
+const templateEngine = createTemplateEngine();
+
+// Screenshot handler for clipboard mode
+const screenshotHandler = new ScreenshotHandler(templateEngine);
 
 export default defineBackground(() => {
   console.log('Background script started with WXT!');
@@ -45,7 +54,7 @@ export default defineBackground(() => {
 
     // Handle annotation processing
     if (request.type === 'PROCESS_ANNOTATION') {
-      processAnnotation(request.annotation, request.relayUrl, request.templateId)
+      processAnnotation(request.annotation, request.relayUrl)
         .then((result) => sendResponse(result))
         .catch((error) => {
           console.error('Failed to process annotation:', error);
@@ -145,33 +154,55 @@ export default defineBackground(() => {
   });
 
   // Process annotation with screenshot and template formatting
-  async function processAnnotation(annotation: any, relayUrl: string, templateId: string) {
+  async function processAnnotation(annotation: any, relayUrl: string) {
     try {
-      console.log('Processing annotation:', { relayUrl, templateId });
+      console.log('Processing annotation:', { relayUrl });
 
       // Capture screenshot
-      let screenshotUrl = '';
+      let screenshotDataUrl = '';
       try {
         const dataUrl = await chrome.tabs.captureVisibleTab({ format: 'png' });
-        screenshotUrl = dataUrl;
+        screenshotDataUrl = dataUrl;
         console.log('Screenshot captured successfully');
       } catch (error) {
         console.error('Screenshot capture failed:', error);
       }
 
-      // Add screenshot to annotation
+      // Add screenshot to annotation structure (matching WingmanAnnotation type)
       const annotationWithScreenshot = {
         ...annotation,
-        screenshotUrl
+        media: {
+          screenshot: {
+            dataUrl: screenshotDataUrl,
+            timestamp: Date.now()
+          }
+        }
       };
 
       if (relayUrl === 'clipboard') {
-        // Format annotation for clipboard
-        const formattedText = await formatAnnotation(annotationWithScreenshot, templateId);
-        console.log('Annotation formatted for clipboard');
-        return { success: true, mode: 'clipboard', text: formattedText };
+        // CLIPBOARD MODE: Download screenshot and use local file path
+
+        // Process screenshot for clipboard mode
+        const { content, localPath } = await screenshotHandler.processForClipboard(
+          annotationWithScreenshot,
+          defaultTemplate,
+          relayUrl
+        );
+
+        console.log('Annotation formatted for clipboard', {
+          hasLocalPath: !!localPath
+        });
+
+        return {
+          success: true,
+          mode: 'clipboard',
+          text: content,
+          screenshotPath: localPath
+        };
+
       } else {
-        // Send to server
+        // SERVER MODE: Send to remote or local server
+        // Include screenshot as base64 in the payload
         const response = await fetch(`${relayUrl}/annotations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -195,28 +226,4 @@ export default defineBackground(() => {
     }
   }
 
-  // Format annotation for clipboard
-  async function formatAnnotation(annotation: any, templateId: string) {
-    // Get template from storage
-    const settings = await chrome.storage.local.get(['customTemplates']);
-    const customTemplates = settings.customTemplates || [];
-
-    // Find template (built-in templates would need to be imported here)
-    let template = customTemplates.find((t: any) => t.id === templateId);
-
-    // Fallback to simple format if template not found
-    return template?.content || formatAnnotationSimple(annotation);
-  }
-
-  // Simple annotation formatter (fallback)
-  function formatAnnotationSimple(annotation: any): string {
-    return `# UI Feedback
-
-**Note**: ${annotation.note}
-
-**Page**: ${annotation.page.title}
-**URL**: ${annotation.page.url}
-
-**Captured**: ${new Date(annotation.createdAt).toLocaleString()}`;
-  }
 });

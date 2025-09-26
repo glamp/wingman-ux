@@ -80,7 +80,7 @@ export default defineContentScript({
               console.log('Processing overlay submission:', { note, target });
 
               // Get settings from storage
-              const settings = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId']);
+              const settings = await chrome.storage.local.get(['relayUrl']);
               const relayUrl = settings.relayUrl || 'clipboard';
 
               // Extract React data safely
@@ -124,8 +124,7 @@ export default defineContentScript({
                 {
                   type: 'PROCESS_ANNOTATION',
                   annotation,
-                  relayUrl,
-                  templateId: settings.selectedTemplateId || 'claude-code'
+                  relayUrl
                 },
                 async (response) => {
                   if (chrome.runtime.lastError) {

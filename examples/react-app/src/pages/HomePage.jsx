@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import Counter from '../components/Counter';
 import TodoList from '../components/TodoList';
 import InputForm from '../components/InputForm';
+import StateTestBox from '../components/StateTestBox';
 
 // Demo context for testing context capture
 const DemoContext = React.createContext({ theme: 'light', user: null });
@@ -116,6 +117,9 @@ export default function HomePage() {
             </Link>
           </nav>
         </header>
+
+        {/* PROMINENT STATE TEST BOX */}
+        <StateTestBox />
 
         {/* Interactive Demo Components Grid */}
         <div style={{ 

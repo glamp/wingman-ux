@@ -1,26 +1,12 @@
-// Shared types for Zustand stores
-export interface Template {
-  id: string;
-  name: string;
-  content: string;
-  builtin: boolean;
-  icon?: string;
-}
-
 // Settings Store Types
 export interface SettingsState {
   relayUrl: string;
   showPreviewUrl: boolean;
-  selectedTemplateId: string;
-  customTemplates: Template[];
 }
 
 export interface SettingsActions {
   setRelayUrl: (url: string) => void;
   setShowPreviewUrl: (show: boolean) => void;
-  setSelectedTemplateId: (id: string) => void;
-  addCustomTemplate: (template: Template) => void;
-  removeCustomTemplate: (id: string) => void;
   loadSettings: () => Promise<void>;
   saveSettings: () => Promise<void>;
 }

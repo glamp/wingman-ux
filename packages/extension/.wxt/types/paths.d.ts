@@ -15,6 +15,7 @@ declare module "wxt/browser" {
     | "/icons/icon16.png"
     | "/icons/icon48.png"
     | "/icons/logo.png"
+    | "/page-console-injector.js"
     | "/popup.html"
   type HtmlPublicPath = Extract<PublicPath, `${string}.html`>
   export interface WxtRuntime {

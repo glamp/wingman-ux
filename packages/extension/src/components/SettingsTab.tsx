@@ -10,24 +10,17 @@ import {
   Typography,
   Paper,
   Stack,
-  Divider,
-  Select,
-  MenuItem,
-  InputLabel
+  Divider
 } from '@mui/material';
-import { useSettingsStore, useAllTemplates } from '@/stores/settings-store';
+import { useSettingsStore } from '@/stores/settings-store';
 
 export const SettingsTab: React.FC = () => {
   const {
     relayUrl,
     showPreviewUrl,
-    selectedTemplateId,
     setRelayUrl,
-    setShowPreviewUrl,
-    setSelectedTemplateId
+    setShowPreviewUrl
   } = useSettingsStore();
-
-  const allTemplates = useAllTemplates();
 
   const handleRelayChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRelayUrl(event.target.value);
@@ -35,10 +28,6 @@ export const SettingsTab: React.FC = () => {
 
   const handlePreviewToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
     setShowPreviewUrl(event.target.checked);
-  };
-
-  const handleTemplateChange = (event: any) => {
-    setSelectedTemplateId(event.target.value);
   };
 
   return (
@@ -93,48 +82,6 @@ export const SettingsTab: React.FC = () => {
         </FormControl>
       </Paper>
 
-      <Divider />
-
-      {/* Template Selection */}
-      <Paper elevation={1} sx={{ p: 3 }}>
-        <Stack spacing={2}>
-          <Typography variant="subtitle2">Output Format</Typography>
-
-          <FormControl fullWidth size="small">
-            <InputLabel>Template</InputLabel>
-            <Select
-              value={selectedTemplateId}
-              onChange={handleTemplateChange}
-              label="Template"
-            >
-              {allTemplates.map((template) => (
-                <MenuItem key={template.id} value={template.id}>
-                  <Box>
-                    <Typography variant="body2">
-                      {template.name}
-                      {template.builtin && (
-                        <Typography
-                          component="span"
-                          variant="caption"
-                          color="primary"
-                          sx={{ ml: 1 }}
-                        >
-                          Built-in
-                        </Typography>
-                      )}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {template.content}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Stack>
-      </Paper>
-
-      <Divider />
 
       {/* Additional Options */}
       <Paper elevation={1} sx={{ p: 3 }}>

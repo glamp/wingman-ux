@@ -59,7 +59,7 @@ describe('React Introspector', () => {
     const result = introspector.getReactData(element);
     
     // Should have component name but props/state might be sanitized
-    expect(result.obtainedVia).toBe('devtools-hook');
+    expect(result.obtainedVia).toBe('sdk');
     expect(result.componentName).toBe('TestComponent');
     // Functions should be filtered out
     if (result.props) {
@@ -141,8 +141,8 @@ describe('React Introspector', () => {
     const introspector = new ReactIntrospector();
     const result = introspector.getReactData(element);
     
-    expect(result.obtainedVia).toBe('devtools-hook');
-    expect(result.componentName).toBeUndefined();
+    expect(result.obtainedVia).toBe('sdk');
+    expect(result.componentName).toBe('Unknown');
   });
 
   it('should handle circular references in props/state', () => {

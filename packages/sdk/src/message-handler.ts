@@ -82,7 +82,23 @@ export function setupMessageHandler(introspector: ReactIntrospector, debug: bool
           logger.debug('Found element, extracting React data');
           const reactData = introspector.getReactData(element);
           logger.debug('Extracted React data:', reactData);
-          
+
+          // Enhanced debug logging for state visibility
+          if (debug) {
+            console.log('[Wingman SDK] 🎯 React data extraction successful!');
+            console.log('[Wingman SDK] 📍 Component:', reactData.componentName || 'Unknown');
+            console.log('[Wingman SDK] 📊 Has State:', !!reactData.state);
+            if (reactData.state) {
+              console.log('[Wingman SDK] 🔍 State Details:', reactData.state);
+              // Log each state field for clarity
+              Object.entries(reactData.state).forEach(([key, value]) => {
+                console.log(`[Wingman SDK]   - ${key}:`, value);
+              });
+            }
+            console.log('[Wingman SDK] 🎨 Has Props:', !!reactData.props);
+            console.log('[Wingman SDK] 📡 Obtained Via:', reactData.obtainedVia);
+          }
+
           window.postMessage({
             type: 'WINGMAN_REACT_DATA_RESPONSE',
             requestId,

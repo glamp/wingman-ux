@@ -137,44 +137,46 @@ export class SDKBridge {
    */
   async getReactData(element: HTMLElement): Promise<any> {
     this.logger.debug('Getting React data for element:', element);
-    
+    this.logger.debug('SDK ready status:', this.sdkReady);
+
     // Wait a bit for SDK to be ready if it's not yet
     if (!this.sdkReady) {
       this.logger.debug('SDK not ready, waiting 500ms...');
       await new Promise(resolve => setTimeout(resolve, 500));
     }
-    
+
     if (!this.sdkReady) {
-      this.logger.debug('SDK still not ready after wait, attempting direct extraction');
-      // Try direct extraction as fallback
-      const directData = this.extractReactDataDirectly(element);
-      this.logger.debug('Direct extraction result:', directData);
-      return directData;
+      this.logger.debug('SDK not available');
+      return { obtainedVia: 'none', error: 'SDK not loaded' };
     }
 
     try {
       // Generate unique selector for the element
       const selector = generateUniqueSelector(element);
       this.logger.debug('Generated selector for element:', selector);
-      
+
       this.logger.debug('Sending request to SDK for React data');
       const data = await this.sendRequest<any>('WINGMAN_GET_REACT_DATA', { selector });
-      
+
       // Clean up any temporary attributes we may have added
       cleanupTempAttributes();
-      
+
       this.logger.debug('Received React data from SDK:', data);
+      this.logger.debug('React data extraction result:', {
+        obtainedVia: data?.obtainedVia,
+        componentName: data?.componentName,
+        hasProps: !!data?.props,
+        hasState: !!data?.state,
+        propsKeys: data?.props ? Object.keys(data.props) : []
+      });
       return data || { obtainedVia: 'none' };
     } catch (error) {
       this.logger.warn('Failed to get React data from SDK:', error);
-      // Fallback to direct extraction
-      const directData = this.extractReactDataDirectly(element);
-      this.logger.debug('Fallback direct extraction result:', directData);
-      
+
       // Clean up any temporary attributes
       cleanupTempAttributes();
-      
-      return directData;
+
+      return { obtainedVia: 'none', error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -191,196 +193,12 @@ export class SDKBridge {
       return selector;
     } catch (error) {
       this.logger.warn('Failed to generate selector:', error);
-      return this.generateBasicSelector(element);
+      return undefined;
     }
   }
 
-  /**
-   * Direct extraction of React data (fallback when SDK is not available)
-   */
-  private extractReactDataDirectly(element: HTMLElement): any {
-    try {
-      // Try to find React fiber directly - support multiple React versions
-      // React 16-17: __reactFiber, __reactInternalInstance
-      // React 18-19: __reactFiber$[hash], __reactProps$[hash]
-      const keys = Object.keys(element);
-      this.logger.debug('Element keys:', keys.filter(k => k.includes('react') || k.includes('React')));
-      
-      const key = keys.find(
-        key => key.startsWith('__reactInternalInstance') || 
-               key.startsWith('__reactFiber') ||
-               key.startsWith('_reactInternal') ||
-               /^__reactFiber\$/.test(key) ||
-               /^__reactProps\$/.test(key)
-      );
-      
-      if (!key) {
-        this.logger.debug('No React fiber key found on element');
-        return { obtainedVia: 'none' };
-      }
-      
-      this.logger.debug('Found React fiber key:', key);
+  // Removed direct extraction methods as we rely solely on SDK now
 
-      const fiber = (element as any)[key];
-      if (!fiber) {
-        return { obtainedVia: 'none' };
-      }
-
-      // Find component fiber
-      let componentFiber = fiber;
-      while (componentFiber && typeof componentFiber.type === 'string') {
-        componentFiber = componentFiber.return;
-      }
-
-      if (!componentFiber) {
-        return { obtainedVia: 'none' };
-      }
-
-      // Extract basic data
-      const data: any = {
-        obtainedVia: 'fiber-direct',
-      };
-
-      // Get component name
-      if (componentFiber.type) {
-        if (typeof componentFiber.type === 'function') {
-          data.componentName = componentFiber.type.displayName || 
-                             componentFiber.type.name || 
-                             'Unknown';
-          
-          // Check if it's a class component
-          if (componentFiber.type.prototype?.isReactComponent) {
-            data.componentType = 'class';
-          } else {
-            data.componentType = 'function';
-          }
-        }
-      }
-
-      // Get props (basic sanitization)
-      if (componentFiber.memoizedProps) {
-        data.props = this.sanitizeBasic(componentFiber.memoizedProps);
-      }
-
-      // Get state (for class components)
-      if (componentFiber.memoizedState && data.componentType === 'class') {
-        data.state = this.sanitizeBasic(componentFiber.memoizedState);
-      }
-
-      // Try to get parent components
-      const parents: string[] = [];
-      let current = componentFiber.return;
-      let depth = 0;
-      while (current && depth < 5) {
-        if (current.type && typeof current.type !== 'string') {
-          const name = current.type.displayName || current.type.name;
-          if (name) {
-            parents.push(name);
-          }
-        }
-        current = current.return;
-        depth++;
-      }
-      if (parents.length > 0) {
-        data.parentComponents = parents;
-      }
-
-      return data;
-    } catch (error) {
-      this.logger.warn('Direct React extraction failed:', error);
-      return { obtainedVia: 'none' };
-    }
-  }
-
-  /**
-   * Basic data sanitization for direct extraction
-   */
-  private sanitizeBasic(data: any, depth = 0, maxDepth = 2): any {
-    if (depth > maxDepth) {
-      return '[Max depth]';
-    }
-
-    if (data === null || data === undefined) {
-      return data;
-    }
-
-    if (typeof data === 'function') {
-      return '[Function]';
-    }
-
-    if (typeof data === 'symbol') {
-      return data.toString();
-    }
-
-    if (typeof data === 'string') {
-      if (data.length > 100) {
-        return data.substring(0, 100) + '...';
-      }
-      return data;
-    }
-
-    if (Array.isArray(data)) {
-      return data.slice(0, 5).map(item => this.sanitizeBasic(item, depth + 1, maxDepth));
-    }
-
-    if (typeof data === 'object') {
-      const sanitized: any = {};
-      const keys = Object.keys(data).slice(0, 10);
-      
-      for (const key of keys) {
-        if (key.startsWith('_') || key.startsWith('$$')) {
-          continue;
-        }
-        try {
-          sanitized[key] = this.sanitizeBasic(data[key], depth + 1, maxDepth);
-        } catch {
-          sanitized[key] = '[Unserializable]';
-        }
-      }
-      
-      return sanitized;
-    }
-
-    return data;
-  }
-
-  /**
-   * Generate basic CSS selector (fallback)
-   */
-  private generateBasicSelector(element: HTMLElement): string {
-    const path: string[] = [];
-    let current: HTMLElement | null = element;
-
-    while (current && current !== document.body) {
-      let selector = current.tagName.toLowerCase();
-      
-      if (current.id) {
-        selector = `#${current.id}`;
-        path.unshift(selector);
-        break;
-      }
-      
-      if (current.className) {
-        const classes = Array.from(current.classList)
-          .filter(c => !c.startsWith('wingman-'))
-          .join('.');
-        if (classes) {
-          selector += `.${classes}`;
-        }
-      }
-      
-      const siblings = Array.from(current.parentNode?.children || []);
-      if (siblings.length > 1) {
-        const index = siblings.indexOf(current) + 1;
-        selector += `:nth-child(${index})`;
-      }
-      
-      path.unshift(selector);
-      current = current.parentElement;
-    }
-
-    return path.join(' > ');
-  }
 
   /**
    * Clean up resources

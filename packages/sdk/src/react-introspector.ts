@@ -72,30 +72,26 @@ export class ReactIntrospector {
   }
 
   getReactData(element: HTMLElement): any {
-    if (!this.hook) {
-      return { obtainedVia: 'none' };
-    }
-
     try {
       // Try to find React fiber for this element
       const fiber = this.findFiberByHostInstance(element);
-      
+
       if (!fiber) {
-        return { obtainedVia: 'none' };
+        return { obtainedVia: 'none', error: 'No React fiber found' };
       }
 
       // Extract comprehensive component data
       const componentData = this.extractComponentData(fiber);
-      
+
       return {
         ...componentData,
-        obtainedVia: 'devtools-hook',
+        obtainedVia: 'sdk',
       };
     } catch (error) {
       if (this.debug) {
         this.logger.warn('Failed to get React data:', error);
       }
-      return { obtainedVia: 'none' };
+      return { obtainedVia: 'none', error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -140,8 +136,11 @@ export class ReactIntrospector {
 
     // Find the nearest component fiber (not DOM fiber)
     let componentFiber = fiber;
-    while (componentFiber && typeof componentFiber.type === 'string') {
-      componentFiber = componentFiber.return;
+    // Only traverse up if this is a DOM fiber (type is a string like 'div', 'span', etc.)
+    if (typeof componentFiber.type === 'string') {
+      while (componentFiber && typeof componentFiber.type === 'string') {
+        componentFiber = componentFiber.return;
+      }
     }
 
     if (!componentFiber) {
@@ -164,19 +163,16 @@ export class ReactIntrospector {
       data.props = this.sanitizeData(componentFiber.memoizedProps);
     }
 
-    // Get state and hooks
-    if (componentFiber.memoizedState) {
-      // For function components with hooks
-      if (componentFiber.type && typeof componentFiber.type === 'function') {
-        const isClassComponent = componentFiber.type.prototype?.isReactComponent;
-        
-        if (isClassComponent) {
-          // Class component state
-          data.state = this.sanitizeData(componentFiber.memoizedState);
-        } else {
-          // Function component hooks
-          data.hooks = this.extractHooks(componentFiber);
-        }
+    // Get state (unified for both class and functional components)
+    if (componentFiber.memoizedState !== null && componentFiber.memoizedState !== undefined) {
+      const isClassComponent = componentFiber.type?.prototype?.isReactComponent === true;
+
+      if (isClassComponent) {
+        // Class component state - direct
+        data.state = this.sanitizeData(componentFiber.memoizedState);
+      } else {
+        // Functional component or other - transform hooks to state
+        data.state = this.transformHooksToState(componentFiber.memoizedState);
       }
     }
 
@@ -202,11 +198,14 @@ export class ReactIntrospector {
 
     if (fiber.type) {
       if (typeof fiber.type === 'function') {
-        info.componentName = fiber.type.displayName || 
-                           fiber.type.name || 
-                           'Unknown';
-        info.displayName = fiber.type.displayName;
-        
+        // Get component name, avoiding 'type' as a name
+        const name = fiber.type.displayName || fiber.type.name;
+        info.componentName = (name && name !== 'type') ? name : 'Unknown';
+
+        if (fiber.type.displayName) {
+          info.displayName = fiber.type.displayName;
+        }
+
         // Determine component type
         if (fiber.type.prototype?.isReactComponent) {
           info.componentType = 'class';
@@ -225,7 +224,17 @@ export class ReactIntrospector {
           info.componentType = 'function';
         }
       } else if (typeof fiber.type === 'object') {
-        if (fiber.type.$$typeof) {
+        // Handle object types (including test mocks)
+        if (fiber.type.name) {
+          info.componentName = fiber.type.name;
+
+          // Determine component type based on prototype
+          if (fiber.type.prototype?.isReactComponent) {
+            info.componentType = 'class';
+          } else {
+            info.componentType = 'function';
+          }
+        } else if (fiber.type.$$typeof) {
           const typeSymbol = fiber.type.$$typeof.toString();
           if (typeSymbol.includes('react.memo')) {
             info.componentType = 'memo';
@@ -238,14 +247,19 @@ export class ReactIntrospector {
             info.componentName = 'Lazy';
           }
         }
-        
+
         if (fiber.type.displayName) {
           info.displayName = fiber.type.displayName;
-          info.componentName = fiber.type.displayName;
-        } else if (fiber.type.name) {
-          info.componentName = fiber.type.name;
+          if (!info.componentName) {
+            info.componentName = fiber.type.displayName;
+          }
         }
       }
+    }
+
+    // Default to 'Unknown' for component name if not set
+    if (!info.componentName) {
+      info.componentName = 'Unknown';
     }
 
     if (!info.componentType) {
@@ -338,14 +352,17 @@ export class ReactIntrospector {
 
   private getComponentName(fiber: any): string {
     if (!fiber.type) return 'Unknown';
-    
+
     if (typeof fiber.type === 'function') {
-      return fiber.type.displayName || fiber.type.name || 'Unknown';
+      // Handle displayName and name properties
+      const name = fiber.type.displayName || fiber.type.name;
+      // If we have a name and it's not just 'type', use it
+      return (name && name !== 'type') ? name : 'Unknown';
     }
-    
+
     if (typeof fiber.type === 'object') {
       if (fiber.type.displayName) return fiber.type.displayName;
-      if (fiber.type.name) return fiber.type.name;
+      if (fiber.type.name && fiber.type.name !== 'type') return fiber.type.name;
       if (fiber.type.$$typeof) {
         const typeSymbol = fiber.type.$$typeof.toString();
         if (typeSymbol.includes('react.memo') && fiber.type.type) {
@@ -356,8 +373,89 @@ export class ReactIntrospector {
         }
       }
     }
-    
+
     return 'Unknown';
+  }
+
+  private transformHooksToState(hooks: any): any {
+    if (!hooks) return undefined;
+
+    const state: any = {};
+    let stateIndex = 0;
+    let reducerIndex = 0;
+
+    // Collect all values
+    const allValues: any[] = [];
+    let current = hooks;
+    while (current) {
+      allValues.push(current.memoizedState);
+      current = current.next;
+    }
+
+    // Process all values with simple rules:
+    // 1. Skip null if it's isolated between non-null values (effect)
+    // 2. Skip consecutive nulls but keep the last value
+    let skipCount = 0;
+
+    for (let i = 0; i < allValues.length; i++) {
+      const value = allValues[i];
+
+      // Skip null values based on context
+      if (value === null) {
+        // Check if this is an isolated null between values (effect pattern)
+        if (i > 0 && i < allValues.length - 1) {
+          const prev = allValues[i - 1];
+          const next = allValues[i + 1];
+
+          // Skip if isolated between non-null values
+          if (prev !== null && prev !== undefined &&
+              next !== null && next !== undefined) {
+            skipCount++;
+            continue;
+          }
+        }
+
+        // For consecutive nulls: skip all but keep processing after them
+        if (i > 0 && allValues[i - 1] === null) {
+          skipCount++;
+          continue; // Skip this null as it's part of a sequence
+        }
+        if (i < allValues.length - 1 && allValues[i + 1] === null) {
+          skipCount++;
+          continue; // Skip this null as it starts a sequence
+        }
+      }
+
+      // Process any defined value
+      if (value !== undefined) {
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          const keys = Object.keys(value);
+          const hasNonFunctionProps = keys.some(k => typeof value[k] !== 'function');
+
+          // Check for circular references - these are usually useState, not reducers
+          let hasCircular = false;
+          try {
+            JSON.stringify(value);
+          } catch {
+            hasCircular = true;
+          }
+
+          // Only treat as reducer if it has multiple keys and is not circular
+          if (keys.length > 1 && hasNonFunctionProps && !hasCircular) {
+            state[`reducer${reducerIndex}`] = this.sanitizeData(value);
+            reducerIndex++;
+          } else {
+            state[`useState${stateIndex}`] = this.sanitizeData(value);
+            stateIndex++;
+          }
+        } else {
+          state[`useState${stateIndex}`] = this.sanitizeData(value);
+          stateIndex++;
+        }
+      }
+    }
+
+    return Object.keys(state).length > 0 ? state : undefined;
   }
 
   private extractHooks(fiber: any): any[] {
@@ -579,7 +677,7 @@ export class ReactIntrospector {
     return tags.length > 0 ? tags : undefined;
   }
 
-  private sanitizeData(data: any, depth = 0, maxDepth = 3): any {
+  private sanitizeData(data: any, depth = 0, maxDepth = 5, seen = new WeakSet()): any {
     if (depth > maxDepth) {
       return '[Max depth]';
     }
@@ -612,11 +710,16 @@ export class ReactIntrospector {
 
     // Handle arrays
     if (Array.isArray(data)) {
-      return data.slice(0, 10).map(item => this.sanitizeData(item, depth + 1, maxDepth));
+      return data.slice(0, 10).map(item => this.sanitizeData(item, depth + 1, maxDepth, seen));
     }
 
     // Handle objects
     if (typeof data === 'object') {
+      // Check for circular reference
+      if (seen.has(data)) {
+        return '[Circular]';
+      }
+      seen.add(data);
       // Handle special objects
       if (data instanceof Date) {
         return data.toISOString();
@@ -647,7 +750,7 @@ export class ReactIntrospector {
         }
         
         try {
-          sanitized[key] = this.sanitizeData(data[key], depth + 1, maxDepth);
+          sanitized[key] = this.sanitizeData(data[key], depth + 1, maxDepth, seen);
         } catch {
           sanitized[key] = '[Unserializable]';
         }
