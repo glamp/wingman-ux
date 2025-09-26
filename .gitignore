@@ -13,6 +13,11 @@ wingman/annotations/
 .wingman-dev/
 .swissarmyhammer/
 
+# WXT build artifacts
+.wxt/
+.output/
+dist-wxt/
+
 # Coverage directories
 coverage/
 .nyc_output/
