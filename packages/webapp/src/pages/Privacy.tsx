@@ -1,12 +1,13 @@
 import { Container, Typography, Box, Paper, Stack, Divider } from '@mui/material';
-import { ShieldCheckIcon, LockIcon, ServerIcon, CodeIcon } from 'lucide-react';
 
 export default function Privacy() {
   return (
     <Container maxWidth="md" sx={{ py: { xs: 4, md: 8 } }}>
       <Box>
         <Box textAlign="center" mb={6}>
-          <ShieldCheckIcon size={48} style={{ marginBottom: '16px', color: '#0084ff' }} />
+          <Typography variant="h1" sx={{ fontSize: '48px', mb: 2 }}>
+            🛡️
+          </Typography>
           <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom>
             Privacy Policy
           </Typography>
@@ -33,9 +34,8 @@ export default function Privacy() {
             {/* What We Don't Collect */}
             <Box>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <LockIcon size={24} style={{ color: '#10b981' }} />
                 <Typography variant="h5" fontWeight="600">
-                  Information We DO NOT Collect
+                  🔒 Information We DO NOT Collect
                 </Typography>
               </Box>
               <Typography variant="body1" color="text.secondary" paragraph>
@@ -134,9 +134,8 @@ export default function Privacy() {
             {/* Data Destinations */}
             <Box>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <ServerIcon size={24} style={{ color: '#0084ff' }} />
                 <Typography variant="h5" fontWeight="600">
-                  Data Destinations
+                  🌐 Data Destinations
                 </Typography>
               </Box>
               <Typography variant="body1" color="text.secondary" paragraph>
@@ -207,9 +206,8 @@ export default function Privacy() {
             {/* Open Source */}
             <Box>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
-                <CodeIcon size={24} style={{ color: '#8b5cf6' }} />
                 <Typography variant="h5" fontWeight="600">
-                  Open Source Transparency
+                  💻 Open Source Transparency
                 </Typography>
               </Box>
               <Typography variant="body1" color="text.secondary" paragraph>
