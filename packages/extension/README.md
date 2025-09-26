@@ -1,285 +1,166 @@
 # Wingman Chrome Extension
 
-Lightweight UX feedback assistant for web applications. The Wingman Chrome Extension captures screenshots, context, and user feedback to help improve your web applications.
+Chrome extension for capturing UI feedback with screenshots, console logs, and network activity.
 
 ## Quick Start
 
-### Development Setup
-
-1. **Build the extension**:
-   ```bash
-   npm run build:dev
-   ```
-
-2. **Choose your development approach**:
-
-   **Option A: Personal Chrome (Recommended)**
-   ```bash
-   # Launch your personal Chrome with extension auto-loaded
-   npm run dev:chrome:personal
-   
-   # Enable file watching for auto-rebuild
-   npm run dev:chrome:watch
-   ```
-
-   **Option B: Playwright MCP (Advanced Testing)**
-   ```bash
-   # One-time setup
-   npm run dev:playwright:setup
-   
-   # Run automated tests
-   npm run dev:playwright:test
-   ```
-
-### Manual Installation (Fallback)
-
-1. Build the extension: `npm run build:dev`
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode"
-4. Click "Load unpacked" and select `packages/chrome-extension/dist/development`
-
-## Development Workflows
-
-### Personal Chrome Development
-
-**Best for**: Daily development, UI iteration, manual testing
-
 ```bash
-# Quick start: Build and launch Chrome with extension
-npm run dev:chrome:personal
+# Install dependencies
+npm install
 
-# Development with auto-reload on file changes
-npm run dev:chrome:watch
+# Development mode with hot reload
+npm run dev
 
-# Use fresh Chrome profile (no personal data)
-npm run dev:chrome:fresh
-
-# Combined: Start build watcher and Chrome launcher
-npm run dev:full
+# Build for production
+npm run build
 ```
 
-**Features**:
-- Uses your personal Chrome profile with existing bookmarks and sessions
-- Automatically builds extension and launches Chrome with `--load-extension` flag
-- Supports file watching for automatic rebuilds
-- Handles Chrome process management gracefully
+## Loading the Extension
 
-### Playwright MCP Integration
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable "Developer mode" (top right)
+3. Click "Load unpacked"
+4. Select the `dist-wxt/chrome-mv3-dev` folder (for development)
 
-**Best for**: Automated testing, screenshot comparison, API integration testing
+## Project Structure
 
-```bash
-# One-time setup: Install Playwright MCP dependencies
-npm run dev:playwright:setup
-
-# Run extension tests through Playwright
-npm run dev:playwright:test
-
-# Interactive test development with UI
-npm run dev:playwright:test:ui
-
-# Run tests in headed mode (visible browser)
-npm run test:playwright:headed
+```
+src/
+├── entrypoints/       # Extension entry points
+│   ├── background.ts  # Background service worker
+│   ├── content.ts     # Content script
+│   └── popup/         # Extension popup UI
+├── components/        # React components
+├── stores/           # State management (Zustand)
+├── lib/              # Utilities
+└── content-ui/       # Overlay components
 ```
 
-**Features**:
-- Programmatic browser automation through Claude Code
-- Automated testing with screenshot capture and network monitoring
-- Perfect for regression testing and complex user flow validation
-- Integration with Model Context Protocol for AI-assisted testing
+## Development
 
-## Available Scripts
+### Commands
 
-### Build Scripts
-- `npm run build` - Production build
-- `npm run build:dev` - Development build
-- `npm run build:staging` - Staging build
-- `npm run dev` - Development build with watch mode
-
-### Chrome Development Scripts
-- `npm run dev:chrome:personal` - Launch personal Chrome with extension
-- `npm run dev:chrome:watch` - File watching with auto-reload
-- `npm run dev:chrome:fresh` - Use temporary Chrome profile
-- `npm run dev:full` - Combined build watcher and Chrome launcher
-
-### Playwright MCP Scripts
-- `npm run dev:playwright:setup` - Install and configure Playwright MCP
-- `npm run dev:playwright:config` - Create configuration files only
-- `npm run dev:playwright:test` - Run Playwright tests
-- `npm run dev:playwright:test:ui` - Interactive test development
-
-### Testing Scripts
-- `npm test` - Run Vitest unit tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:playwright` - Run Playwright extension tests
-- `npm run test:playwright:headed` - Run Playwright tests with visible browser
-
-### Utility Scripts
-- `npm run clean` - Clean dist directory
-- `npm run clean:all` - Clean all environment builds
-- `npm run package` - Package extension for distribution
-
-## Development Features
+```bash
+npm run dev          # Start development mode with hot reload
+npm run build        # Build for production
+npm run build:dev    # Build for development
+npm run clean        # Clean build artifacts
+```
 
 ### Hot Reload
-The development build includes automatic extension reloading:
-- Changes to source files trigger automatic extension reload
-- No need to manually reload the extension in Chrome
-- Uses the `hot-reload-extension-vite` plugin
-- Requires `NODE_ENV=development`
 
-### Multi-Environment Builds
-- **Development**: `dist/development` - includes hot reload, debugging tools
-- **Staging**: `dist/staging` - staging environment configuration  
-- **Production**: `dist/production` - optimized for performance
+The extension automatically reloads when you make changes in development mode. WXT handles this for you - no manual reload needed.
 
-## Architecture
+### Environment Configuration
 
-### Core Components
-
-**Content Script**: Element/region selection overlay
-**Background Script**: Screenshot capture via `chrome.tabs.captureVisibleTab()`
-**Popup**: User interface for feedback submission
-**Options Page**: Configuration and settings
-
-### Integration Points
-
-**Wingman Web SDK** (Optional):
-- Provides enhanced CSS selectors for selected elements
-- React metadata extraction via DevTools hooks
-- Graceful degradation when unavailable
-
-**Relay Server**:
-- Posts feedback to `http://localhost:8787/annotations` (configurable)
-- Handles annotation storage and MCP integration
+The extension uses `.env` files for configuration:
+- `.env` - Default configuration
+- `.env.development` - Development overrides
+- `.env.production` - Production settings
 
 ## Usage
 
 ### Keyboard Shortcuts
 
-**Activate Wingman Feedback Overlay**:
 - **Windows/Linux**: `Alt + Shift + K`
 - **Mac**: `⌘ + Shift + K` (Command + Shift + K)
 
-**Important Notes**:
-- On Mac, the shortcut uses the Command key (⌘), not Control
-- If the shortcut doesn't work, check Chrome's extension shortcuts in `chrome://extensions/shortcuts`
-- You can customize the shortcut through Chrome's extension settings
-- The shortcut only works on regular web pages (not chrome:// pages or the Chrome Web Store)
+### Output Modes
 
-**Troubleshooting Keyboard Shortcuts**:
-1. **Shortcut not working**: 
-   - Go to `chrome://extensions/shortcuts`
-   - Find "Wingman UX Feedback" and verify the shortcut is set
-   - Try manually setting a different shortcut if needed
+The extension supports three output modes (configurable in settings):
 
-2. **Conflicts with other extensions**:
-   - Chrome will show shortcut conflicts in the shortcuts page
-   - Choose a different combination or disable conflicting shortcuts
+1. **Clipboard**: Copies feedback as formatted text
+2. **Local Server**: Posts to `http://localhost:8787`
+3. **Remote**: Sends to configured remote endpoint
 
-3. **Mac users experiencing inconsistent behavior**:
-   - Ensure you're using Command (⌘) + Shift + K, not Option or Control
-   - Some keyboard layouts may affect key detection - try the extension popup as an alternative
+## Features
 
-### Alternative Activation Methods
-- **Extension Icon**: Click the Wingman icon in the Chrome toolbar
-- **Context Menu**: Right-click → Wingman (if enabled)
-- **Programmatic**: Via the Wingman Web SDK integration
+- **Screenshot Capture**: Captures visible tab area
+- **Element Selection**: Click to select DOM elements
+- **Console Logging**: Captures console output
+- **Network Timing**: Records network request performance
+- **React DevTools Integration**: Extracts React component data when available
 
-## Configuration
+## Architecture
 
-### Environment Variables
-Set via `WINGMAN_ENV` environment variable:
-- `development` - Local development with debug features
-- `staging` - Staging environment
-- `production` - Production build
+### Technology Stack
 
-### Extension Settings
-Configurable through the extension's options page:
-- Relay server endpoint URL
-- Screenshot quality settings
-- Feedback form customization
+- **Framework**: WXT (Web Extension Framework)
+- **UI**: React + Material-UI
+- **State**: Zustand with chrome.storage sync
+- **Styling**: MUI theme system with Geist font
+- **Language**: TypeScript (strict mode)
+
+### Key Components
+
+1. **Background Script** (`src/entrypoints/background.ts`)
+   - Handles screenshot capture
+   - Manages message passing
+   - Coordinates with content scripts
+
+2. **Content Script** (`src/entrypoints/content.ts`)
+   - Injects overlay UI
+   - Captures page context
+   - Handles element selection
+
+3. **Popup UI** (`src/entrypoints/popup/`)
+   - Settings management
+   - Quick feedback capture
+   - Live share functionality
+
+4. **State Management** (`src/stores/`)
+   - Zustand stores for reactive state
+   - Chrome storage for persistence
+   - Cross-context synchronization
 
 ## Testing
 
-### Unit Tests (Vitest)
 ```bash
-npm test              # Run once
-npm run test:watch    # Watch mode
-```
+# Unit tests
+npm test
 
-### Integration Tests (Playwright)
-```bash
-npm run test:playwright         # Headless tests
-npm run test:playwright:headed  # Visible browser tests
-```
-
-### Manual Testing
-```bash
-npm run dev:chrome:personal     # Launch with extension
+# Build and test manually
+npm run build:dev
+# Then load the extension in Chrome
 ```
 
 ## Troubleshooting
 
-### Chrome Launch Issues
-- **Chrome fails to start**: Ensure all Chrome processes are closed first
-- **Extension not loading**: Verify `dist/development` directory exists and contains `manifest.json`
-- **Permission denied**: Check that Chrome has necessary permissions
+### Extension not working?
 
-### Build Issues  
-- **Build fails**: Check TypeScript compilation errors
-- **Hot reload not working**: Ensure development environment is set correctly
-- **Missing dependencies**: Run `npm install` in the chrome-extension directory
+1. **Check extension is loaded**: Go to `chrome://extensions/` and verify it's enabled
+2. **Check for errors**: Right-click extension icon → "Inspect popup" to see console
+3. **Reload extension**: Click the refresh button in `chrome://extensions/`
+4. **Check permissions**: Extension won't work on chrome:// or chrome-extension:// pages
 
-### Playwright Setup Issues
-- **MCP setup fails**: Run `npm run dev:playwright:setup` to reinstall dependencies
-- **Tests fail to run**: Ensure relay server is running (`cd ../relay-server && npm run dev`)
-- **Browser launch errors**: Check Playwright browser installation
+### Build issues?
 
-### File Watching Issues
-- **Auto-reload not working**: Ensure `chokidar` dependency is installed
-- **Performance issues**: Large file trees may cause excessive watching - add exclusions if needed
+1. **Clean and rebuild**: `npm run clean && npm run build:dev`
+2. **Check Node version**: Requires Node.js 18+
+3. **Reinstall dependencies**: `rm -rf node_modules && npm install`
 
-## Integration with Claude Code
+### Development issues?
 
-### MCP Configuration
-Add to your Claude Code settings for Playwright MCP integration:
+1. **Hot reload not working**: Make sure you're running `npm run dev`
+2. **Changes not appearing**: Check that WXT server is running
+3. **TypeScript errors**: Run `npx tsc --noEmit` to check types
 
-```json
-{
-  "mcpServers": {
-    "wingman-playwright": {
-      "command": "node",
-      "args": [".mcp/server.js"],
-      "cwd": "packages/chrome-extension"
-    }
-  }
-}
-```
+## Configuration
 
-### Available MCP Tools
-- `wingman_test_extension` - Test extension in browser context
-- `wingman_capture_screenshot` - Capture screenshots with extension overlay
-- `wingman_simulate_feedback` - Simulate user feedback flows
-- `wingman_test_api_integration` - Test relay server integration
+Settings are stored in Chrome's local storage and persist across sessions:
+
+- **Output Mode**: Choose between Clipboard, Local, or Remote
+- **Relay URL**: Configure custom server endpoint
+- **Display Options**: Toggle various UI features
 
 ## Contributing
 
-1. Use the automated development workflows (`npm run dev:chrome:personal`)
-2. Follow the testing philosophy: prefer integration tests over mocks
-3. Maintain TypeScript strictness for compile-time safety
-4. Test across multiple environments (development, staging, production)
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-## Architecture Decisions
+## License
 
-- **Manifest V3**: Uses the latest Chrome extension manifest format
-- **TypeScript**: Strict configuration for compile-time error catching  
-- **Vite**: Fast build system with Hot Module Replacement
-- **Shared Types**: Uses `@wingman/shared` for type consistency across packages
-- **No Mocking**: Tests use real implementations for reliability
-
-## Related Packages
-
-- `@wingman/shared` - Shared TypeScript types and utilities
-- `@wingman/web-sdk` - Optional React integration for enhanced metadata
-- `@wingman/relay-server` - Local server for annotation processing and MCP integration
+See LICENSE file in the root directory.

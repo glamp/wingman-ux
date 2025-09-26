@@ -12,6 +12,7 @@ import { TabNavigation } from '@/components/TabNavigation';
 import { MainTab } from '@/components/MainTab';
 import { ShareTab } from '@/components/ShareTab';
 import { SettingsTab } from '@/components/SettingsTab';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { useActiveTab } from '@/stores/popup-store';
 import { useRelayUrl } from '@/stores/settings-store';
 import { wingmanTheme, colors, gradientTextStyle, animations } from '@/theme/theme';
@@ -74,9 +75,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <ThemeProvider theme={wingmanTheme}>
-      <CssBaseline />
-      <GlobalStyles
+    <ErrorBoundary>
+      <ThemeProvider theme={wingmanTheme}>
+        <CssBaseline />
+        <GlobalStyles
         styles={{
           ...animations,
           'html, body': {
@@ -179,7 +181,8 @@ const App: React.FC = () => {
           },
         }}
       />
-    </ThemeProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 

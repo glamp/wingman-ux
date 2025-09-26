@@ -118,7 +118,7 @@ export const ShareTab: React.FC = () => {
                 Create tunnel
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1} alignItems="stretch">
+            <Stack direction="row" spacing={1} alignItems="center">
               <TextField
                 placeholder="Port"
                 value={targetPort}
