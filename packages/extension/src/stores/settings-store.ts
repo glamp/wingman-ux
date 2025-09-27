@@ -7,6 +7,7 @@ import { createPersistOptions, broadcastStoreChange } from './chrome-storage';
 const defaultSettings = {
   relayUrl: 'clipboard',
   showPreviewUrl: true,
+  customPromptTemplate: null,
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -26,13 +27,19 @@ export const useSettingsStore = create<SettingsStore>()(
         broadcastStoreChange('settings', get());
       },
 
+      setCustomPromptTemplate: (customPromptTemplate: string | null) => {
+        set({ customPromptTemplate });
+        broadcastStoreChange('settings', get());
+      },
+
 
       loadSettings: async () => {
         try {
           // Migration from old popup storage format
           const result = await chrome.storage.local.get([
             'relayUrl',
-            'showPreviewUrl'
+            'showPreviewUrl',
+            'customPromptTemplate'
           ]);
 
           const updates: Partial<SettingsStore> = {};
@@ -43,6 +50,10 @@ export const useSettingsStore = create<SettingsStore>()(
 
           if (typeof result.showPreviewUrl === 'boolean') {
             updates.showPreviewUrl = result.showPreviewUrl;
+          }
+
+          if (typeof result.customPromptTemplate === 'string' || result.customPromptTemplate === null) {
+            updates.customPromptTemplate = result.customPromptTemplate;
           }
 
 
@@ -61,6 +72,7 @@ export const useSettingsStore = create<SettingsStore>()(
           await chrome.storage.local.set({
             relayUrl: state.relayUrl,
             showPreviewUrl: state.showPreviewUrl,
+            customPromptTemplate: state.customPromptTemplate,
           });
         } catch (error) {
           console.error('Failed to save settings:', error);

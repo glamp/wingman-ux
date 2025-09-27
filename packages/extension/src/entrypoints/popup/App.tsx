@@ -161,12 +161,12 @@ const App: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Mode Chip - Absolute positioned in frame corner */}
+      {/* Mode Chip - Fixed positioned in viewport corner */}
       <Chip
         label={mode.label}
         size="small"
         sx={{
-          position: 'absolute',
+          position: 'fixed',
           bottom: 8,
           right: 8,
           fontWeight: 600,

@@ -540,9 +540,10 @@ async function captureScreenshot(): Promise<string> {
 async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
   try {
     // 1. Get settings from storage (there's always a selection)
-    const stored = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId']);
+    const stored = await chrome.storage.local.get(['relayUrl', 'selectedTemplateId', 'customPromptTemplate']);
     const relayUrl = stored.relayUrl || 'clipboard';
     const templateId = stored.selectedTemplateId || 'claude-code';
+    const customTemplate = stored.customPromptTemplate;
 
     logger.info('Submitting annotation with mode:', relayUrl);
 
@@ -570,7 +571,23 @@ async function submitAnnotation(annotation: WingmanAnnotation): Promise<any> {
       }
 
       // c. Render the template with the correct screenshot URL
-      const template = getTemplateForId(templateId);
+      let template: AnnotationTemplate;
+      if (customTemplate) {
+        // Use custom template
+        logger.info('Using custom prompt template');
+        template = {
+          id: 'custom',
+          name: 'Custom',
+          description: 'User-defined custom template',
+          builtIn: false,
+          template: customTemplate,
+          variables: getStandardVariables()
+        };
+      } else {
+        // Use selected built-in template
+        template = getTemplateForId(templateId);
+      }
+
       const contextOverride = {
         relayUrl: '', // Not needed for clipboard mode
         screenshotUrl: screenshotUrl // Override the screenshot URL directly

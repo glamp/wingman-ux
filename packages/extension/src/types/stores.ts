@@ -2,11 +2,13 @@
 export interface SettingsState {
   relayUrl: string;
   showPreviewUrl: boolean;
+  customPromptTemplate: string | null;
 }
 
 export interface SettingsActions {
   setRelayUrl: (url: string) => void;
   setShowPreviewUrl: (show: boolean) => void;
+  setCustomPromptTemplate: (template: string | null) => void;
   loadSettings: () => Promise<void>;
   saveSettings: () => Promise<void>;
 }
