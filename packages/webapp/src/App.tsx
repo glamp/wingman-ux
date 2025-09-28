@@ -9,6 +9,8 @@ import TunnelDashboard from './pages/TunnelDashboard';
 import InstallationGuide from './pages/InstallationGuide';
 import Privacy from './pages/Privacy';
 import BetaSignup from './pages/BetaSignup';
+import Documentation from './pages/Documentation';
+import Status from './pages/Status';
 import Navigation from './components/Navigation';
 import { gradients, typography } from './styles/theme';
 import { theme } from './theme';
@@ -58,6 +60,12 @@ function AppLayout() {
 
         {/* Installation guide */}
         <Route path="/install" element={<InstallationGuide />} />
+
+        {/* Documentation */}
+        <Route path="/docs" element={<Documentation />} />
+
+        {/* Status page */}
+        <Route path="/status" element={<Status />} />
 
         {/* Privacy policy */}
         <Route path="/privacy" element={<Privacy />} />

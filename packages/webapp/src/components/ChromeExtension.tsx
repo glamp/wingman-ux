@@ -1,8 +1,8 @@
-import { Box, Typography, Button, Chip } from '@mui/material';
+import { Extension, GetApp, Help, Keyboard } from '@mui/icons-material';
+import { Box, Button, Chip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { GetApp, Extension, Keyboard, Help } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { colors, gradients, typography } from '../styles/theme';
+import { colors, gradients } from '../styles/theme';
 
 /**
  * Gradient heading for Chrome Extension section
@@ -67,7 +67,6 @@ const SecondaryButton = styled(Button)({
   },
 });
 
-
 /**
  * Keyboard shortcut display
  */
@@ -102,20 +101,22 @@ export default function ChromeExtension() {
 
   return (
     <Box sx={{ margin: '60px auto 50px', maxWidth: '700px' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 1.5 }}>
+      <Box
+        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 1.5 }}
+      >
         <Extension sx={{ fontSize: '2.5rem', color: colors.textPrimary }} />
         <GradientHeading variant="h2" sx={{ margin: 0 }}>
           Chrome Extension
         </GradientHeading>
       </Box>
-      
-      <Typography 
-        variant="body1" 
-        sx={{ 
-          fontSize: '1.1em', 
-          mb: 4, 
+
+      <Typography
+        variant="body1"
+        sx={{
+          fontSize: '1.1em',
+          mb: 4,
           color: colors.textSecondary,
-          textAlign: 'center' 
+          textAlign: 'center',
         }}
       >
         Capture and annotate UI issues directly in your browser
@@ -133,9 +134,6 @@ export default function ChromeExtension() {
       </Box>
 
       <Box sx={{ textAlign: 'center', mt: 3 }}>
-        <Typography variant="body2" sx={{ color: colors.textMuted, mb: 1 }}>
-          Self-hosted distribution with automatic updates
-        </Typography>
         <KeyboardShortcut sx={{ maxWidth: '400px', margin: '0 auto' }}>
           <Keyboard sx={{ color: colors.primary }} />
           <Typography variant="body2" sx={{ color: colors.textSecondary }}>
