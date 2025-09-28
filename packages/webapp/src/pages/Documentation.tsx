@@ -51,14 +51,12 @@ const DocContainer = styled(Box)({
   display: 'flex',
   minHeight: 'calc(100vh - 64px)',
   position: 'relative',
-  backgroundColor: '#0a0b0d',
 });
 
 const Sidebar = styled(Box)(({ theme }) => ({
   width: 280,
-  borderRight: `1px solid ${colors.borderColor}`,
-  background: 'rgba(10, 11, 13, 0.95)',
-  backdropFilter: 'blur(10px)',
+  borderRight: `1px solid ${theme.palette.divider}`,
+  background: theme.palette.background.paper,
   overflowY: 'auto',
   position: 'sticky',
   top: 64,
@@ -111,10 +109,10 @@ const DocSection = styled(Box)(({ theme }) => ({
   },
 }));
 
-const CodeBlock = styled(Box)({
-  backgroundColor: '#1e1e1e',
+const CodeBlock = styled(Box)(({ theme }) => ({
+  backgroundColor: theme.palette.mode === 'light' ? '#f5f5f5' : '#1e1e1e',
   borderRadius: '12px',
-  border: `1px solid ${colors.borderColor}`,
+  border: `1px solid ${theme.palette.divider}`,
   position: 'relative',
   overflow: 'hidden',
   marginBottom: '24px',
@@ -127,22 +125,22 @@ const CodeBlock = styled(Box)({
     fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
   },
   '& code': {
-    color: '#d4d4d4',
+    color: theme.palette.mode === 'light' ? '#333333' : '#d4d4d4',
     fontFamily: 'Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace',
   },
-});
+}));
 
-const CopyButton = styled(IconButton)({
+const CopyButton = styled(IconButton)(({ theme }) => ({
   position: 'absolute',
   top: '12px',
   right: '12px',
-  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  color: colors.textMuted,
+  backgroundColor: theme.palette.mode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.1)',
+  color: theme.palette.text.secondary,
   '&:hover': {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    color: colors.textPrimary,
+    backgroundColor: theme.palette.mode === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.2)',
+    color: theme.palette.text.primary,
   },
-});
+}));
 
 const NavItem = styled(ListItem)(({ active }: { active?: boolean }) => ({
   padding: '8px 16px',
@@ -554,12 +552,13 @@ export default function Documentation() {
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
               Installation
             </Typography>
-            <Paper sx={{ bgcolor: '#1e1e1e', mb: 3 }}>
+            <Paper sx={{ mb: 3 }}>
               <Tabs
                 value={packageManager}
                 onChange={(e, v) => setPackageManager(v)}
                 sx={{
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderBottom: 1,
+                  borderColor: 'divider',
                   '& .MuiTab-root': {
                     color: colors.textMuted,
                     textTransform: 'none',

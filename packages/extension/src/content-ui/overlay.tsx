@@ -4,7 +4,7 @@ import { mountReactInShadow, ShadowMountResult } from './utils/shadowMount';
 import type { WingmanAnnotation } from '@wingman/shared';
 
 export interface MountOverlayOptions {
-  onSubmit: (note: string, target: any, element?: HTMLElement) => void;
+  onSubmit: (note: string, target: any, element?: HTMLElement, screenshot?: string) => void;
   onCancel: () => void;
 }
 
@@ -34,10 +34,10 @@ export function mountReactOverlay(options: MountOverlayOptions): () => void {
     component: App,
     props: {
       mode: 'overlay',
-      onSubmit: (note: string, target: any, element?: HTMLElement) => {
+      onSubmit: (note: string, target: any, element?: HTMLElement, screenshot?: string) => {
         // Don't unmount here - let the handler do it after screenshot
         // Call the original handler
-        options.onSubmit(note, target, element);
+        options.onSubmit(note, target, element, screenshot);
       },
       onCancel: () => {
         // Clean up the overlay

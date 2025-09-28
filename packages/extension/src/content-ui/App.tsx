@@ -6,7 +6,7 @@ import type { WingmanAnnotation } from '@wingman/shared';
 export interface AppProps {
   mode: 'overlay' | 'success';
   // Overlay props
-  onSubmit?: (note: string, target: any, element?: HTMLElement) => void;
+  onSubmit?: (note: string, target: any, element?: HTMLElement, screenshot?: string) => void;
   onCancel?: () => void;
   // Success notification props
   previewUrl?: string;

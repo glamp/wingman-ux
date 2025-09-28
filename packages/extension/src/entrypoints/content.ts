@@ -75,9 +75,9 @@ export default defineContentScript({
 
         // Mount React overlay with Shadow DOM
         currentOverlayCleanup = mountReactOverlay({
-          onSubmit: async (note: string, target: any, element?: HTMLElement) => {
+          onSubmit: async (note: string, target: any, element?: HTMLElement, screenshot?: string) => {
             try {
-              console.log('Processing overlay submission:', { note, target });
+              console.log('Processing overlay submission:', { note, target, hasScreenshot: !!screenshot });
 
               // Get settings from storage
               const settings = await chrome.storage.local.get(['relayUrl']);
@@ -124,7 +124,8 @@ export default defineContentScript({
                 {
                   type: 'PROCESS_ANNOTATION',
                   annotation,
-                  relayUrl
+                  relayUrl,
+                  screenshot // Pass pre-captured screenshot if available
                 },
                 async (response) => {
                   if (chrome.runtime.lastError) {

@@ -54,7 +54,7 @@ export default defineBackground(() => {
 
     // Handle annotation processing
     if (request.type === 'PROCESS_ANNOTATION') {
-      processAnnotation(request.annotation, request.relayUrl)
+      processAnnotation(request.annotation, request.relayUrl, request.screenshot)
         .then((result) => sendResponse(result))
         .catch((error) => {
           console.error('Failed to process annotation:', error);
@@ -72,6 +72,20 @@ export default defineBackground(() => {
         .catch((error) => {
           console.error('Screenshot failed:', error);
           sendResponse(null);
+        });
+      return true; // Will respond asynchronously
+    }
+
+    // Handle screenshot capture only (for pre-capture before dialog)
+    if (request.type === 'CAPTURE_SCREENSHOT_ONLY') {
+      chrome.tabs.captureVisibleTab({ format: 'png' })
+        .then((dataUrl) => {
+          console.log('Screenshot pre-captured successfully');
+          sendResponse({ success: true, screenshot: dataUrl });
+        })
+        .catch((error) => {
+          console.error('Screenshot pre-capture failed:', error);
+          sendResponse({ success: false, error: error.message });
         });
       return true; // Will respond asynchronously
     }
@@ -154,18 +168,24 @@ export default defineBackground(() => {
   });
 
   // Process annotation with screenshot and template formatting
-  async function processAnnotation(annotation: any, relayUrl: string) {
+  async function processAnnotation(annotation: any, relayUrl: string, preCapturedScreenshot?: string) {
     try {
-      console.log('Processing annotation:', { relayUrl });
+      console.log('Processing annotation:', { relayUrl, hasPreCapturedScreenshot: !!preCapturedScreenshot });
 
-      // Capture screenshot
+      // Use pre-captured screenshot if available, otherwise capture now
       let screenshotDataUrl = '';
-      try {
-        const dataUrl = await chrome.tabs.captureVisibleTab({ format: 'png' });
-        screenshotDataUrl = dataUrl;
-        console.log('Screenshot captured successfully');
-      } catch (error) {
-        console.error('Screenshot capture failed:', error);
+      if (preCapturedScreenshot) {
+        screenshotDataUrl = preCapturedScreenshot;
+        console.log('Using pre-captured screenshot');
+      } else {
+        // Fallback to capturing now (for backward compatibility)
+        try {
+          const dataUrl = await chrome.tabs.captureVisibleTab({ format: 'png' });
+          screenshotDataUrl = dataUrl;
+          console.log('Screenshot captured successfully (fallback)');
+        } catch (error) {
+          console.error('Screenshot capture failed:', error);
+        }
       }
 
       // Add screenshot to annotation structure (matching WingmanAnnotation type)

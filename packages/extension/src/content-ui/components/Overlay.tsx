@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import ElementSelector from './ElementSelector';
 import NotePanel from './NotePanel/NotePanel';
 import { generateSelector } from '../utils/domHelpers';
 
 export interface OverlayProps {
-  onSubmit: (note: string, target: any, element?: HTMLElement) => void;
+  onSubmit: (note: string, target: any, element?: HTMLElement, screenshot?: string) => void;
   onCancel: () => void;
 }
 
@@ -14,12 +14,31 @@ const Overlay: React.FC<OverlayProps> = ({ onSubmit, onCancel }) => {
   const [notePanelVisible, setNotePanelVisible] = useState(false);
   const [selectedElement, setSelectedElement] = useState<HTMLElement | null>(null);
   const [selectedRect, setSelectedRect] = useState<DOMRect | null>(null);
+  const [capturedScreenshot, setCapturedScreenshot] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   const handleElementSelect = useCallback((element: HTMLElement, rect: DOMRect) => {
     setSelectedElement(element);
     setSelectedRect(rect);
     setSelectorActive(false);
-    setNotePanelVisible(true);
+    setIsCapturing(true);
+
+    // Request screenshot capture BEFORE showing dialog
+    chrome.runtime.sendMessage(
+      { type: 'CAPTURE_SCREENSHOT_ONLY' },
+      (response) => {
+        if (response?.success && response?.screenshot) {
+          setCapturedScreenshot(response.screenshot);
+          setIsCapturing(false);
+          setNotePanelVisible(true);  // Only show dialog AFTER screenshot
+        } else {
+          console.error('Screenshot capture failed:', response?.error);
+          setIsCapturing(false);
+          // Still show the dialog but without screenshot
+          setNotePanelVisible(true);
+        }
+      }
+    );
   }, []);
 
   const handleNoteSubmit = useCallback((note: string) => {
@@ -36,8 +55,8 @@ const Overlay: React.FC<OverlayProps> = ({ onSubmit, onCancel }) => {
       selector: generateSelector(selectedElement),
     };
     
-    onSubmit(note, target, selectedElement);
-  }, [selectedElement, selectedRect, onSubmit]);
+    onSubmit(note, target, selectedElement, capturedScreenshot || undefined);
+  }, [selectedElement, selectedRect, onSubmit, capturedScreenshot]);
 
   const handleCancel = useCallback(() => {
     onCancel();
