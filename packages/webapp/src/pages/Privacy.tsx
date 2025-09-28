@@ -12,7 +12,7 @@ export default function Privacy() {
             Privacy Policy
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
-            Last Updated: September 26, 2024
+            Last Updated: September 28, 2024
           </Typography>
         </Box>
 
@@ -25,7 +25,8 @@ export default function Privacy() {
               </Typography>
               <Typography variant="body1" color="text.secondary" paragraph>
                 Wingman is committed to protecting your privacy. This Privacy Policy explains how we handle
-                information when you use our Chrome extension for capturing UI feedback.
+                information when you use our Chrome extension for capturing UI feedback. Wingman operates
+                entirely locally on your device with no external data collection or tracking.
               </Typography>
             </Box>
 
@@ -113,16 +114,19 @@ export default function Privacy() {
                 </Box>
 
                 <Box>
-                  <Typography variant="h6" gutterBottom>User Preferences</Typography>
+                  <Typography variant="h6" gutterBottom>User Preferences & Settings</Typography>
                   <Box component="ul" sx={{ pl: 3, '& li': { mb: 0.5 } }}>
                     <Typography component="li" variant="body2" color="text.secondary">
-                      Your chosen output mode (Clipboard, Local, or Remote)
+                      Your chosen output mode (currently Clipboard only)
                     </Typography>
                     <Typography component="li" variant="body2" color="text.secondary">
-                      Custom server URL (if configured)
+                      Custom prompt templates (if you've modified them)
                     </Typography>
                     <Typography component="li" variant="body2" color="text.secondary">
-                      Stored locally using Chrome's storage API
+                      Template preferences and settings
+                    </Typography>
+                    <Typography component="li" variant="body2" color="text.secondary">
+                      All stored locally using Chrome's storage API
                     </Typography>
                   </Box>
                 </Box>
@@ -139,37 +143,90 @@ export default function Privacy() {
                 </Typography>
               </Box>
               <Typography variant="body1" color="text.secondary" paragraph>
-                You control where captured feedback is sent:
+                Currently available output mode:
               </Typography>
 
               <Stack spacing={2}>
                 <Paper variant="outlined" sx={{ p: 2 }}>
                   <Typography variant="subtitle1" fontWeight="600" gutterBottom>
-                    📋 Clipboard Mode
+                    📋 Clipboard Mode (Available Now)
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Your formatted feedback is copied to your system clipboard. No network transmission occurs.
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Data is copied to your system clipboard. No network transmission occurs.
+                    <strong>Important:</strong> Screenshots are automatically saved to your Downloads folder for easy access.
+                    The clipboard contains a reference to this local file.
                   </Typography>
                 </Paper>
 
-                <Paper variant="outlined" sx={{ p: 2 }}>
+                <Paper variant="outlined" sx={{ p: 2, opacity: 0.7 }}>
                   <Typography variant="subtitle1" fontWeight="600" gutterBottom>
-                    💻 Local Mode
+                    💻 Local & Remote Modes (Coming Soon)
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Data is sent to a localhost server you specify. Transmission occurs only within your local machine.
-                  </Typography>
-                </Paper>
-
-                <Paper variant="outlined" sx={{ p: 2 }}>
-                  <Typography variant="subtitle1" fontWeight="600" gutterBottom>
-                    🌐 Remote Mode
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Data is sent to a server URL you configure. You are responsible for the security of your chosen endpoint.
+                    Future updates will allow sending feedback to local or remote servers for team collaboration.
+                    These modes are not yet available.
                   </Typography>
                 </Paper>
               </Stack>
+            </Box>
+
+            <Divider />
+
+            {/* Screenshot Handling */}
+            <Box>
+              <Box display="flex" alignItems="center" gap={1} mb={2}>
+                <Typography variant="h5" fontWeight="600">
+                  📸 Screenshot Handling
+                </Typography>
+              </Box>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                When you capture feedback, Wingman handles screenshots with privacy in mind:
+              </Typography>
+              <Box component="ul" sx={{ pl: 3, '& li': { mb: 1 } }}>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  Screenshots are captured only when you explicitly trigger the capture
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  Images are automatically saved to your Downloads folder (e.g., wingman-screenshot-[timestamp].png)
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  The formatted text in your clipboard references the local file path
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  If Downloads folder is unavailable, a fallback to browser storage is used (with size limits)
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  No screenshots are ever transmitted to external servers in Clipboard mode
+                </Typography>
+              </Box>
+            </Box>
+
+            <Divider />
+
+            {/* Template Customization */}
+            <Box>
+              <Typography variant="h5" gutterBottom fontWeight="600">
+                🎨 Template Customization
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph>
+                Wingman allows you to customize the prompt template used for formatting feedback:
+              </Typography>
+              <Box component="ul" sx={{ pl: 3, '& li': { mb: 1 } }}>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  Custom templates are stored locally in Chrome storage
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  No template data is sent to external servers
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  You can reset to default template at any time
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  Templates use Handlebars syntax for variable substitution
+                </Typography>
+              </Box>
             </Box>
 
             <Divider />
@@ -193,10 +250,13 @@ export default function Privacy() {
                   <strong>tabs:</strong> To access tab information for context
                 </Typography>
                 <Typography component="li" variant="body2" color="text.secondary">
-                  <strong>storage:</strong> To save your preferences locally
+                  <strong>storage:</strong> To save your preferences and custom templates locally
                 </Typography>
                 <Typography component="li" variant="body2" color="text.secondary">
-                  <strong>downloads:</strong> To optionally save screenshots to your device
+                  <strong>downloads & downloads.ui:</strong> To save screenshots to your Downloads folder and minimize UI disruption
+                </Typography>
+                <Typography component="li" variant="body2" color="text.secondary">
+                  <strong>host_permissions:</strong> Reserved for future server modes (currently unused)
                 </Typography>
               </Box>
             </Box>
