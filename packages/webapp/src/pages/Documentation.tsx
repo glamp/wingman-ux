@@ -76,14 +76,15 @@ const MainContent = styled(Box)({
   width: '100%',
 });
 
-const HeroSection = styled(Box)({
-  background: gradients.cardHover,
+const HeroSection = styled(Box)(({ theme }) => ({
+  background: theme.palette.background.paper,
   borderRadius: '24px',
   padding: '64px 48px',
   marginBottom: '48px',
   position: 'relative',
   overflow: 'hidden',
   textAlign: 'center',
+  boxShadow: theme.shadows[2],
   '&::before': {
     content: '""',
     position: 'absolute',
@@ -92,23 +93,23 @@ const HeroSection = styled(Box)({
     right: 0,
     bottom: 0,
     background: `
-      radial-gradient(circle at 25% 25%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)
+      radial-gradient(circle at 25% 25%, rgba(102, 126, 234, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.08) 0%, transparent 50%)
     `,
     pointerEvents: 'none',
   },
-});
+}));
 
-const DocSection = styled(Box)({
+const DocSection = styled(Box)(({ theme }) => ({
   marginBottom: '64px',
   '& h4': {
     marginBottom: '24px',
   },
   '& h6': {
     marginBottom: '16px',
-    color: colors.textPrimary,
+    color: theme.palette.text.primary,
   },
-});
+}));
 
 const CodeBlock = styled(Box)({
   backgroundColor: '#1e1e1e',
