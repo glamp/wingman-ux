@@ -26,7 +26,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { useTemplateStore } from '@/stores/template-store';
+import { useTemplateStore } from '@/stores';
 import { builtInTemplates } from '@wingman/shared';
 import type { AnnotationTemplate } from '@wingman/shared';
 

@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import {
   builtInTemplates,
   DEFAULT_TEMPLATE_ID,
   type AnnotationTemplate
 } from '@wingman/shared';
+import { chromeStorageAdapter, broadcastStoreChange } from './chrome-storage';
 
 interface CustomTemplate extends AnnotationTemplate {
   builtIn: false;
@@ -40,6 +41,11 @@ export const useTemplateStore = create<TemplateStore>()(
         const template = get().getTemplateById(id);
         if (template) {
           set({ selectedTemplateId: id });
+          const state = get();
+          broadcastStoreChange('wingman-templates', {
+            selectedTemplateId: state.selectedTemplateId,
+            customTemplates: state.customTemplates,
+          });
         }
       },
 
@@ -49,6 +55,11 @@ export const useTemplateStore = create<TemplateStore>()(
         const currentIndex = allTemplates.findIndex(t => t.id === get().selectedTemplateId);
         const nextIndex = (currentIndex + 1) % allTemplates.length;
         set({ selectedTemplateId: allTemplates[nextIndex].id });
+        const state = get();
+        broadcastStoreChange('wingman-templates', {
+          selectedTemplateId: state.selectedTemplateId,
+          customTemplates: state.customTemplates,
+        });
       },
 
       // Add custom template
@@ -67,6 +78,11 @@ export const useTemplateStore = create<TemplateStore>()(
           customTemplates: [...state.customTemplates, newTemplate],
           selectedTemplateId: id, // Auto-select new template
         }));
+        const state = get();
+        broadcastStoreChange('wingman-templates', {
+          selectedTemplateId: state.selectedTemplateId,
+          customTemplates: state.customTemplates,
+        });
       },
 
       // Update custom template
@@ -78,6 +94,11 @@ export const useTemplateStore = create<TemplateStore>()(
               : t
           ),
         }));
+        const state = get();
+        broadcastStoreChange('wingman-templates', {
+          selectedTemplateId: state.selectedTemplateId,
+          customTemplates: state.customTemplates,
+        });
       },
 
       // Delete custom template
@@ -91,6 +112,11 @@ export const useTemplateStore = create<TemplateStore>()(
             // If deleted template was selected, switch to default
             selectedTemplateId: wasSelected ? DEFAULT_TEMPLATE_ID : state.selectedTemplateId,
           };
+        });
+        const state = get();
+        broadcastStoreChange('wingman-templates', {
+          selectedTemplateId: state.selectedTemplateId,
+          customTemplates: state.customTemplates,
         });
       },
 
@@ -119,22 +145,31 @@ export const useTemplateStore = create<TemplateStore>()(
     }),
     {
       name: 'wingman-templates',
-      storage: createJSONStorage(() => ({
-        getItem: async (name: string) => {
-          const result = await chrome.storage.local.get(name);
-          return result[name] || null;
-        },
-        setItem: async (name: string, value: string) => {
-          await chrome.storage.local.set({ [name]: value });
-        },
-        removeItem: async (name: string) => {
-          await chrome.storage.local.remove(name);
-        },
-      })),
+      storage: chromeStorageAdapter,
       partialize: (state) => ({
         selectedTemplateId: state.selectedTemplateId,
         customTemplates: state.customTemplates,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Broadcast rehydrated state to other contexts
+          broadcastStoreChange('wingman-templates', {
+            selectedTemplateId: state.selectedTemplateId,
+            customTemplates: state.customTemplates,
+          });
+        }
+      },
     }
   )
 );
+
+// Listen for store sync events from other extension contexts
+if (typeof window !== 'undefined') {
+  window.addEventListener('store-sync-wingman-templates', (event: any) => {
+    const { selectedTemplateId, customTemplates } = event.detail;
+    useTemplateStore.setState({
+      selectedTemplateId,
+      customTemplates,
+    }, false); // false = don't trigger listeners to avoid infinite loops
+  });
+}

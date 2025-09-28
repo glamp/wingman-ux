@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import RichTextEditor, { RichTextEditorHandle } from './RichTextEditor';
 import { htmlToMarkdown } from '../../utils/htmlToMarkdown';
-import { useTemplateStore } from '@/stores/template-store';
+import { useTemplateStore } from '@/stores';
 // Removed icon imports - using emoji instead for better compatibility
 
 export interface NotePanelProps {
@@ -32,41 +32,14 @@ const NotePanel: React.FC<NotePanelProps> = ({
   const [showTemplateToast, setShowTemplateToast] = useState(false);
   const [cycledTemplate, setCycledTemplate] = useState<string | null>(null);
 
-  // Try to use template store, with fallback
-  let getSelectedTemplate: any, cycleTemplate: any, getAllTemplates: any, setSelectedTemplate: any;
-  let selectedTemplate: any = null;
-  let allTemplates: any[] = [];
-
-  try {
-    const store = useTemplateStore();
-    getSelectedTemplate = store.getSelectedTemplate;
-    cycleTemplate = store.cycleTemplate;
-    getAllTemplates = store.getAllTemplates;
-    setSelectedTemplate = store.setSelectedTemplate;
-    selectedTemplate = getSelectedTemplate();
-    allTemplates = getAllTemplates();
-  } catch (error) {
-    console.warn('Template store not available in content script:', error);
-    // Provide fallback functions with built-in templates
-    const fallbackTemplates = [
-      { id: 'builtin-minimal', name: 'Minimal', description: 'Quick capture with essentials' },
-      { id: 'builtin-standard', name: 'Standard', description: 'Balanced detail' },
-      { id: 'builtin-robust', name: 'Robust', description: 'Full diagnostic info' }
-    ];
-    selectedTemplate = fallbackTemplates[1]; // Default to Standard
-    allTemplates = fallbackTemplates;
-    getSelectedTemplate = () => selectedTemplate;
-    setSelectedTemplate = (id: string) => {
-      const template = fallbackTemplates.find(t => t.id === id);
-      if (template) selectedTemplate = template;
-    };
-    cycleTemplate = () => {
-      const currentIndex = fallbackTemplates.findIndex(t => t.id === selectedTemplate.id);
-      const nextIndex = (currentIndex + 1) % fallbackTemplates.length;
-      selectedTemplate = fallbackTemplates[nextIndex];
-    };
-    getAllTemplates = () => fallbackTemplates;
-  }
+  // Use template store directly
+  const store = useTemplateStore();
+  const getSelectedTemplate = store.getSelectedTemplate;
+  const cycleTemplate = store.cycleTemplate;
+  const getAllTemplates = store.getAllTemplates;
+  const setSelectedTemplate = store.setSelectedTemplate;
+  const selectedTemplate = getSelectedTemplate();
+  const allTemplates = getAllTemplates();
 
   // Detect platform for keyboard shortcut display
   const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -186,11 +159,24 @@ const NotePanel: React.FC<NotePanelProps> = ({
         }}
       >
         {/* Template Selector */}
-        <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
+        <Box sx={{ mb: 1.5 }}>
+          <FormControl size="small" fullWidth>
             <Select
               value={selectedTemplate?.id || 'builtin-standard'}
               onChange={(e) => handleTemplateSelect(e.target.value)}
+              renderValue={(value) => {
+                const template = allTemplates.find(t => t.id === value);
+                return (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {template?.name || 'Standard'}
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.5, fontSize: '0.7rem' }}>
+                      Tab to cycle
+                    </Typography>
+                  </Box>
+                );
+              }}
               MenuProps={{
                 disablePortal: true,
                 anchorOrigin: {
@@ -204,9 +190,9 @@ const NotePanel: React.FC<NotePanelProps> = ({
               }}
               sx={{
                 fontSize: '0.875rem',
-                height: 32,
+                height: 36,
                 '& .MuiSelect-select': {
-                  py: 0.5,
+                  py: 0.75,
                   display: 'flex',
                   alignItems: 'center',
                 }
@@ -219,23 +205,6 @@ const NotePanel: React.FC<NotePanelProps> = ({
               ))}
             </Select>
           </FormControl>
-
-          <Box sx={{ flex: 1 }} />
-
-          <Tooltip title={`Press ${cycleShortcut} to cycle templates`}>
-            <Typography
-              variant="caption"
-              sx={{
-                fontSize: '0.75rem',
-                color: 'text.secondary',
-                cursor: 'pointer',
-                '&:hover': { color: 'text.primary' }
-              }}
-              onClick={handleCycleTemplate}
-            >
-              ⌨️ {cycleShortcut}
-            </Typography>
-          </Tooltip>
         </Box>
 
         <RichTextEditor
