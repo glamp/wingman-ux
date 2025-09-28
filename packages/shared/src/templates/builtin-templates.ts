@@ -1,0 +1,586 @@
+/**
+ * Built-in templates for Wingman Chrome Extension
+ * These templates provide different levels of detail for various use cases
+ */
+
+import type { AnnotationTemplate } from './types.js';
+
+/**
+ * Minimal template - Quick capture with just essentials
+ * Best for: Simple UI issues, quick notes, visual bugs
+ */
+export const minimalTemplate: AnnotationTemplate = {
+  id: 'builtin-minimal',
+  name: 'Minimal',
+  description: 'Quick capture with essentials only',
+  builtIn: true,
+  tags: ['minimal', 'quick', 'simple'],
+
+  template: `{{#if userNote}}{{userNote}}
+
+{{/if}}![Screenshot]({{screenshotUrl}})
+
+**Page:** {{pageUrl}}
+{{#if targetSelector}}**Element:** \`{{targetSelector}}\`{{/if}}
+
+{{#if hasReact}}**React Component:** {{reactComponentName}}
+{{#if reactPropsJson}}Props: \`\`\`json
+{{reactPropsJson}}
+\`\`\`{{/if}}{{/if}}`,
+
+  variables: [
+    {
+      key: 'userNote',
+      path: 'note',
+      required: false,
+      description: 'User feedback'
+    },
+    {
+      key: 'screenshotUrl',
+      path: 'id',
+      formatter: (id: string, context?: { relayUrl?: string }) =>
+        `${context?.relayUrl || 'https://api.wingmanux.com'}/annotations/${id}/screenshot`,
+      required: true,
+      description: 'Screenshot URL'
+    },
+    {
+      key: 'pageUrl',
+      path: 'page.url',
+      required: true,
+      description: 'Page URL'
+    },
+    {
+      key: 'targetSelector',
+      path: 'target.selector',
+      required: false,
+      description: 'CSS selector'
+    },
+    {
+      key: 'hasReact',
+      path: 'react',
+      formatter: (value: any) => String(!!value),
+      required: false,
+      description: 'Has React info'
+    },
+    {
+      key: 'reactComponentName',
+      path: 'react.componentName',
+      required: false,
+      description: 'React component name'
+    },
+    {
+      key: 'reactPropsJson',
+      path: 'react.props',
+      formatter: (value: any) => value ? JSON.stringify(value, null, 2) : '',
+      required: false,
+      description: 'React props'
+    }
+  ]
+};
+
+/**
+ * Standard template - Balanced detail level
+ * Best for: General bug reports, feature requests, most use cases
+ */
+export const standardTemplate: AnnotationTemplate = {
+  id: 'builtin-standard',
+  name: 'Standard',
+  description: 'Balanced detail for most use cases',
+  builtIn: true,
+  tags: ['standard', 'default', 'balanced'],
+
+  template: `# UI Feedback
+
+{{#if userNote}}## Description
+> {{userNote}}
+
+{{/if}}## Screenshot
+![Screenshot]({{screenshotUrl}})
+
+## Context
+- **Page:** {{pageUrl}}
+- **Title:** {{pageTitle}}
+{{#if targetSelector}}- **Element:** \`{{targetSelector}}\`{{/if}}
+{{#if targetRect}}- **Position:** {{targetRectX}}, {{targetRectY}} ({{targetRectWidth}}×{{targetRectHeight}}){{/if}}
+- **Viewport:** {{viewportWidth}}×{{viewportHeight}}
+
+{{#if hasErrors}}## Errors ({{errorCount}})
+{{#each errors}}
+- {{message}}
+{{/each}}
+
+{{/if}}{{#if hasConsole}}## Recent Console Output
+{{#each consoleLogs}}
+- [{{level}}] {{args}}
+{{/each}}
+
+{{/if}}{{#if hasNetwork}}## Network Activity
+{{#each networkRequests}}
+- {{url}} ({{status}}) - {{duration}}ms
+{{/each}}
+{{/if}}`,
+
+  variables: [
+    {
+      key: 'userNote',
+      path: 'note',
+      required: false,
+      description: 'User feedback'
+    },
+    {
+      key: 'screenshotUrl',
+      path: 'id',
+      formatter: (id: string, context?: { relayUrl?: string }) =>
+        `${context?.relayUrl || 'https://api.wingmanux.com'}/annotations/${id}/screenshot`,
+      required: true,
+      description: 'Screenshot URL'
+    },
+    {
+      key: 'pageUrl',
+      path: 'page.url',
+      required: true,
+      description: 'Page URL'
+    },
+    {
+      key: 'pageTitle',
+      path: 'page.title',
+      required: true,
+      description: 'Page title'
+    },
+    {
+      key: 'targetSelector',
+      path: 'target.selector',
+      required: false,
+      description: 'CSS selector'
+    },
+    {
+      key: 'targetRect',
+      path: 'target.rect',
+      required: false,
+      description: 'Selection rectangle'
+    },
+    {
+      key: 'targetRectX',
+      path: 'target.rect.x',
+      required: false,
+      description: 'X position'
+    },
+    {
+      key: 'targetRectY',
+      path: 'target.rect.y',
+      required: false,
+      description: 'Y position'
+    },
+    {
+      key: 'targetRectWidth',
+      path: 'target.rect.width',
+      required: false,
+      description: 'Width'
+    },
+    {
+      key: 'targetRectHeight',
+      path: 'target.rect.height',
+      required: false,
+      description: 'Height'
+    },
+    {
+      key: 'viewportWidth',
+      path: 'page.viewport.w',
+      required: true,
+      description: 'Viewport width'
+    },
+    {
+      key: 'viewportHeight',
+      path: 'page.viewport.h',
+      required: true,
+      description: 'Viewport height'
+    },
+    {
+      key: 'hasErrors',
+      path: 'errors',
+      formatter: (value: any[]) => String(value && value.length > 0),
+      required: false,
+      description: 'Has errors'
+    },
+    {
+      key: 'errorCount',
+      path: 'errors',
+      formatter: (value: any[]) => String(value?.length || 0),
+      required: false,
+      description: 'Error count'
+    },
+    {
+      key: 'errors',
+      path: 'errors',
+      required: false,
+      description: 'Errors array'
+    },
+    {
+      key: 'hasConsole',
+      path: 'console',
+      formatter: (value: any[]) => String(value && value.length > 0),
+      required: false,
+      description: 'Has console logs'
+    },
+    {
+      key: 'consoleLogs',
+      path: 'console',
+      required: false,
+      description: 'Console logs array'
+    },
+    {
+      key: 'hasNetwork',
+      path: 'network',
+      formatter: (value: any[]) => String(value && value.length > 0),
+      required: false,
+      description: 'Has network requests'
+    },
+    {
+      key: 'networkRequests',
+      path: 'network',
+      required: false,
+      description: 'Network requests array'
+    }
+  ]
+};
+
+/**
+ * Robust template - Full diagnostic information
+ * Best for: Complex debugging, React issues, performance problems
+ */
+export const robustTemplate: AnnotationTemplate = {
+  id: 'builtin-robust',
+  name: 'Robust',
+  description: 'Full diagnostic information for complex debugging',
+  builtIn: true,
+  tags: ['robust', 'detailed', 'debugging', 'diagnostic'],
+
+  template: `# 🔬 Detailed Bug Report
+
+{{#if userNote}}## 📝 User Feedback
+> **{{userNote}}**
+
+---
+
+{{/if}}## 🖼️ Visual Evidence
+![Screenshot - {{capturedAt}}]({{screenshotUrl}})
+
+---
+
+## 📍 Location & Context
+
+### Page Information
+- **URL:** \`{{pageUrl}}\`
+- **Title:** {{pageTitle}}
+- **Captured:** {{capturedAt}}
+- **Annotation ID:** \`{{annotationId}}\`
+
+### Selection Details
+{{#if targetSelector}}- **CSS Selector:** \`{{targetSelector}}\`{{/if}}
+{{#if targetRect}}- **Coordinates:** ({{targetRectX}}, {{targetRectY}})
+- **Dimensions:** {{targetRectWidth}}×{{targetRectHeight}} pixels{{/if}}
+- **Selection Mode:** {{selectionModeText}}
+
+### Viewport & Display
+- **Viewport Size:** {{viewportWidth}}×{{viewportHeight}}
+- **Device Pixel Ratio:** {{viewportDpr}}
+- **User Agent:** \`{{userAgent}}\`
+
+{{#if hasReact}}---
+
+## ⚛️ React Component Information
+
+### Component Details
+- **Name:** {{reactComponentName}}
+- **Data Source:** {{reactDataSource}}
+
+### Props
+\`\`\`json
+{{reactPropsJson}}
+\`\`\`
+
+### State
+\`\`\`json
+{{reactStateJson}}
+\`\`\`
+{{/if}}
+
+{{#if hasErrors}}---
+
+## ⚠️ JavaScript Errors ({{errorCount}} total)
+
+{{#each errors}}
+### Error {{index}}
+- **Time:** {{timestamp}}
+- **Message:** {{message}}
+- **Stack Trace:**
+\`\`\`
+{{stack}}
+\`\`\`
+
+{{/each}}
+{{/if}}
+
+{{#if hasConsole}}---
+
+## 📋 Console Output ({{consoleCount}} entries)
+
+\`\`\`
+{{#each consoleLogs}}
+[{{timestamp}}] [{{level}}] {{args}}
+{{/each}}
+\`\`\`
+{{/if}}
+
+{{#if hasNetwork}}---
+
+## 🌐 Network Activity ({{networkCount}} requests)
+
+| URL | Status | Duration | Type |
+|-----|--------|----------|------|
+{{#each networkRequests}}
+| \`{{url}}\` | {{status}} | {{duration}}ms | {{initiatorType}} |
+{{/each}}
+{{/if}}
+
+---
+
+## 🔧 Debug Information
+
+### Browser Environment
+- **User Agent:** {{userAgent}}
+- **Viewport:** {{viewportWidth}}×{{viewportHeight}} @ {{viewportDpr}}x DPR
+
+### Annotation Metadata
+- **ID:** {{annotationId}}
+- **Created:** {{capturedAt}}
+- **Template:** Robust Diagnostic Template
+
+---
+
+*Generated by Wingman Chrome Extension*`,
+
+  variables: [
+    // All variables from standard template plus additional ones
+    {
+      key: 'userNote',
+      path: 'note',
+      required: false,
+      description: 'User feedback'
+    },
+    {
+      key: 'screenshotUrl',
+      path: 'id',
+      formatter: (id: string, context?: { relayUrl?: string }) =>
+        `${context?.relayUrl || 'https://api.wingmanux.com'}/annotations/${id}/screenshot`,
+      required: true,
+      description: 'Screenshot URL'
+    },
+    {
+      key: 'capturedAt',
+      path: 'createdAt',
+      formatter: (value: string) => new Date(value).toLocaleString(),
+      required: true,
+      description: 'Capture timestamp'
+    },
+    {
+      key: 'pageUrl',
+      path: 'page.url',
+      required: true,
+      description: 'Page URL'
+    },
+    {
+      key: 'pageTitle',
+      path: 'page.title',
+      required: true,
+      description: 'Page title'
+    },
+    {
+      key: 'annotationId',
+      path: 'id',
+      required: true,
+      description: 'Annotation ID'
+    },
+    {
+      key: 'targetSelector',
+      path: 'target.selector',
+      required: false,
+      description: 'CSS selector'
+    },
+    {
+      key: 'targetRect',
+      path: 'target.rect',
+      required: false,
+      description: 'Selection rectangle'
+    },
+    {
+      key: 'targetRectX',
+      path: 'target.rect.x',
+      required: false,
+      description: 'X position'
+    },
+    {
+      key: 'targetRectY',
+      path: 'target.rect.y',
+      required: false,
+      description: 'Y position'
+    },
+    {
+      key: 'targetRectWidth',
+      path: 'target.rect.width',
+      required: false,
+      description: 'Width'
+    },
+    {
+      key: 'targetRectHeight',
+      path: 'target.rect.height',
+      required: false,
+      description: 'Height'
+    },
+    {
+      key: 'selectionModeText',
+      path: 'target.mode',
+      formatter: (mode: string) => mode === 'element' ? 'Specific Element' : 'Region Selection',
+      required: true,
+      description: 'Selection mode'
+    },
+    {
+      key: 'viewportWidth',
+      path: 'page.viewport.w',
+      required: true,
+      description: 'Viewport width'
+    },
+    {
+      key: 'viewportHeight',
+      path: 'page.viewport.h',
+      required: true,
+      description: 'Viewport height'
+    },
+    {
+      key: 'viewportDpr',
+      path: 'page.viewport.dpr',
+      required: true,
+      description: 'Device pixel ratio'
+    },
+    {
+      key: 'userAgent',
+      path: 'page.ua',
+      required: true,
+      description: 'User agent'
+    },
+    {
+      key: 'hasReact',
+      path: 'react',
+      formatter: (value: any) => String(!!value),
+      required: false,
+      description: 'Has React info'
+    },
+    {
+      key: 'reactComponentName',
+      path: 'react.componentName',
+      required: false,
+      description: 'React component name'
+    },
+    {
+      key: 'reactDataSource',
+      path: 'react.obtainedVia',
+      required: false,
+      description: 'React data source'
+    },
+    {
+      key: 'reactPropsJson',
+      path: 'react.props',
+      formatter: (value: any) => JSON.stringify(value, null, 2),
+      required: false,
+      description: 'React props'
+    },
+    {
+      key: 'reactStateJson',
+      path: 'react.state',
+      formatter: (value: any) => JSON.stringify(value, null, 2),
+      required: false,
+      description: 'React state'
+    },
+    {
+      key: 'hasErrors',
+      path: 'errors',
+      formatter: (value: any[]) => String(value && value.length > 0),
+      required: false,
+      description: 'Has errors'
+    },
+    {
+      key: 'errorCount',
+      path: 'errors',
+      formatter: (value: any[]) => String(value?.length || 0),
+      required: false,
+      description: 'Error count'
+    },
+    {
+      key: 'errors',
+      path: 'errors',
+      required: false,
+      description: 'Errors array'
+    },
+    {
+      key: 'hasConsole',
+      path: 'console',
+      formatter: (value: any[]) => String(value && value.length > 0),
+      required: false,
+      description: 'Has console logs'
+    },
+    {
+      key: 'consoleCount',
+      path: 'console',
+      formatter: (value: any[]) => String(value?.length || 0),
+      required: false,
+      description: 'Console count'
+    },
+    {
+      key: 'consoleLogs',
+      path: 'console',
+      required: false,
+      description: 'Console logs array'
+    },
+    {
+      key: 'hasNetwork',
+      path: 'network',
+      formatter: (value: any[]) => String(value && value.length > 0),
+      required: false,
+      description: 'Has network requests'
+    },
+    {
+      key: 'networkCount',
+      path: 'network',
+      formatter: (value: any[]) => String(value?.length || 0),
+      required: false,
+      description: 'Network count'
+    },
+    {
+      key: 'networkRequests',
+      path: 'network',
+      required: false,
+      description: 'Network requests array'
+    }
+  ]
+};
+
+/**
+ * All built-in templates
+ */
+export const builtInTemplates = [
+  minimalTemplate,
+  standardTemplate,
+  robustTemplate
+];
+
+/**
+ * Get a built-in template by ID
+ */
+export function getBuiltInTemplate(id: string): AnnotationTemplate | undefined {
+  return builtInTemplates.find(t => t.id === id);
+}
+
+/**
+ * Default template ID
+ */
+export const DEFAULT_TEMPLATE_ID = 'builtin-standard';

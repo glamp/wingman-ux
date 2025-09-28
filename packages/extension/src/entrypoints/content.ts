@@ -80,8 +80,19 @@ export default defineContentScript({
               console.log('Processing overlay submission:', { note, target, hasScreenshot: !!screenshot });
 
               // Get settings from storage
-              const settings = await chrome.storage.local.get(['relayUrl']);
+              const settings = await chrome.storage.local.get(['relayUrl', 'wingman-templates']);
               const relayUrl = settings.relayUrl || 'clipboard';
+
+              // Get selected template ID from stored state
+              let selectedTemplateId = 'builtin-standard';
+              try {
+                if (settings['wingman-templates']) {
+                  const templateState = JSON.parse(settings['wingman-templates']);
+                  selectedTemplateId = templateState.state?.selectedTemplateId || 'builtin-standard';
+                }
+              } catch (error) {
+                console.warn('Failed to parse template settings:', error);
+              }
 
               // Extract React data safely
               const reactData = await safeExtractAsync(
@@ -125,7 +136,8 @@ export default defineContentScript({
                   type: 'PROCESS_ANNOTATION',
                   annotation,
                   relayUrl,
-                  screenshot // Pass pre-captured screenshot if available
+                  screenshot, // Pass pre-captured screenshot if available
+                  templateId: selectedTemplateId // Pass selected template ID
                 },
                 async (response) => {
                   if (chrome.runtime.lastError) {

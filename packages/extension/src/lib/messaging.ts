@@ -130,21 +130,44 @@ export class ExtensionMessenger {
 
   // Activate overlay helper
   static async activateOverlay(tabId?: number): Promise<boolean> {
-    if (tabId) {
+    try {
+      // Get the current tab if no tabId provided
+      if (!tabId) {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!activeTab?.id) {
+          throw new Error('No active tab found');
+        }
+        tabId = activeTab.id;
+
+        // Check if the URL is valid for content scripts
+        const url = activeTab.url || '';
+        if (url.startsWith('chrome://') ||
+            url.startsWith('chrome-extension://') ||
+            url.startsWith('edge://') ||
+            url.startsWith('about:') ||
+            url === '' ||
+            url === 'chrome://newtab/') {
+          throw new Error('Cannot capture feedback on browser system pages. Please navigate to a regular website.');
+        }
+      }
+
+      // Try to activate via direct message first
       const response = await this.sendToContent(tabId, {
         type: 'ACTIVATE_OVERLAY',
       });
-      return response?.success || false;
-    } else {
-      // Send to current active tab
-      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (activeTab?.id) {
-        const response = await this.sendToContent(activeTab.id, {
+
+      // If that fails, try via background script
+      if (!response?.success) {
+        const bgResponse = await this.sendToBackground({
           type: 'ACTIVATE_OVERLAY',
         });
-        return response?.success || false;
+        return bgResponse?.success || false;
       }
-      return false;
+
+      return response?.success || false;
+    } catch (error) {
+      console.error('Failed to activate overlay:', error);
+      throw error;
     }
   }
 

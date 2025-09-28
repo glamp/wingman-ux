@@ -1,7 +1,7 @@
 import { TunnelManager } from '../background/tunnel-manager';
 import { ScreenshotHandler } from '../background/screenshot-handler';
-import { createTemplateEngine, defaultTemplate } from '@wingman/shared';
-import type { WingmanAnnotation } from '@wingman/shared';
+import { createTemplateEngine, defaultTemplate, builtInTemplates, getBuiltInTemplate } from '@wingman/shared';
+import type { WingmanAnnotation, AnnotationTemplate } from '@wingman/shared';
 
 // Global tunnel manager instance
 const tunnelManager = new TunnelManager();
@@ -41,20 +41,79 @@ export default defineBackground(() => {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('Background received message:', request.type);
 
-    // Route ACTIVATE_OVERLAY from content script back to content script
-    if (request.type === 'ACTIVATE_OVERLAY' && sender.tab?.id) {
-      chrome.tabs.sendMessage(sender.tab.id, { type: 'ACTIVATE_OVERLAY' })
-        .then((response) => sendResponse(response))
-        .catch((error) => {
-          console.error('Failed to activate overlay:', error);
-          sendResponse({ success: false, error: error.message });
-        });
-      return true;
+    // Handle ACTIVATE_OVERLAY from popup or content script
+    if (request.type === 'ACTIVATE_OVERLAY') {
+      // If it's from a tab (content script), send it back to that tab
+      if (sender.tab?.id) {
+        chrome.tabs.sendMessage(sender.tab.id, { type: 'ACTIVATE_OVERLAY' })
+          .then((response) => sendResponse(response))
+          .catch((error) => {
+            console.error('Failed to activate overlay:', error);
+            sendResponse({ success: false, error: error.message });
+          });
+        return true;
+      } else {
+        // It's from the popup - send to the active tab
+        chrome.tabs.query({ active: true, currentWindow: true })
+          .then(([activeTab]) => {
+            if (!activeTab?.id) {
+              throw new Error('No active tab found');
+            }
+
+            // Check if URL is valid for content scripts
+            const url = activeTab.url || '';
+            if (url.startsWith('chrome://') ||
+                url.startsWith('chrome-extension://') ||
+                url.startsWith('edge://') ||
+                url.startsWith('about:') ||
+                url === '' ||
+                url === 'chrome://newtab/') {
+              throw new Error('Cannot capture feedback on browser system pages');
+            }
+
+            // Try to send message to content script
+            return chrome.tabs.sendMessage(activeTab.id, { type: 'ACTIVATE_OVERLAY' });
+          })
+          .then((response) => {
+            sendResponse({ success: true, ...response });
+          })
+          .catch((error) => {
+            console.error('Failed to activate overlay:', error);
+
+            // Try injecting content script if it doesn't exist
+            chrome.tabs.query({ active: true, currentWindow: true })
+              .then(([activeTab]) => {
+                if (activeTab?.id) {
+                  // Try to inject the content script
+                  return chrome.scripting.executeScript({
+                    target: { tabId: activeTab.id },
+                    files: ['content-scripts/content.js']
+                  });
+                }
+              })
+              .then(() => {
+                // Try sending message again after injection
+                return chrome.tabs.query({ active: true, currentWindow: true });
+              })
+              .then(([activeTab]) => {
+                if (activeTab?.id) {
+                  return chrome.tabs.sendMessage(activeTab.id, { type: 'ACTIVATE_OVERLAY' });
+                }
+              })
+              .then((response) => {
+                sendResponse({ success: true, ...response });
+              })
+              .catch((finalError) => {
+                sendResponse({ success: false, error: finalError.message || 'Failed to activate overlay' });
+              });
+          });
+        return true;
+      }
     }
 
     // Handle annotation processing
     if (request.type === 'PROCESS_ANNOTATION') {
-      processAnnotation(request.annotation, request.relayUrl, request.screenshot)
+      processAnnotation(request.annotation, request.relayUrl, request.screenshot, request.templateId)
         .then((result) => sendResponse(result))
         .catch((error) => {
           console.error('Failed to process annotation:', error);
@@ -168,9 +227,9 @@ export default defineBackground(() => {
   });
 
   // Process annotation with screenshot and template formatting
-  async function processAnnotation(annotation: any, relayUrl: string, preCapturedScreenshot?: string) {
+  async function processAnnotation(annotation: any, relayUrl: string, preCapturedScreenshot?: string, templateId?: string) {
     try {
-      console.log('Processing annotation:', { relayUrl, hasPreCapturedScreenshot: !!preCapturedScreenshot });
+      console.log('Processing annotation:', { relayUrl, hasPreCapturedScreenshot: !!preCapturedScreenshot, templateId });
 
       // Use pre-captured screenshot if available, otherwise capture now
       let screenshotDataUrl = '';
@@ -202,10 +261,38 @@ export default defineBackground(() => {
       if (relayUrl === 'clipboard') {
         // CLIPBOARD MODE: Download screenshot and use local file path
 
+        // Get the selected template or use default
+        let selectedTemplate: AnnotationTemplate = defaultTemplate;
+
+        if (templateId) {
+          // Try to find built-in template first
+          const builtIn = getBuiltInTemplate(templateId);
+          if (builtIn) {
+            selectedTemplate = builtIn;
+          } else {
+            // Try to get custom template from storage
+            try {
+              const storage = await chrome.storage.local.get(['wingman-templates']);
+              if (storage['wingman-templates']) {
+                const templateState = JSON.parse(storage['wingman-templates']);
+                const customTemplates = templateState.state?.customTemplates || [];
+                const custom = customTemplates.find((t: any) => t.id === templateId);
+                if (custom) {
+                  selectedTemplate = custom;
+                }
+              }
+            } catch (error) {
+              console.error('Failed to load custom template:', error);
+            }
+          }
+        }
+
+        console.log('Using template:', selectedTemplate.name);
+
         // Process screenshot for clipboard mode
         const { content, localPath } = await screenshotHandler.processForClipboard(
           annotationWithScreenshot,
-          defaultTemplate,
+          selectedTemplate,
           relayUrl
         );
 
