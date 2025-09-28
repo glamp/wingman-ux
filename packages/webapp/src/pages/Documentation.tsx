@@ -248,14 +248,150 @@ const codeExamples = {
   'bun': 'bun add wingman-sdk',
 };
 
+// Template examples for different AI assistants
+const templateExamples = [
+  // Claude/Cursor
+  `# 🎯 UI Feedback Request
+
+{{#if userNote}}
+> **{{userNote}}**
+{{/if}}
+
+![Screenshot]({{screenshotUrl}})
+
+### Visual Context
+{{#if targetSelector}}
+- **Element:** \`{{targetSelector}}\`
+{{/if}}
+{{#if targetRect}}
+- **Position:** {{targetRectX}},{{targetRectY}} ({{targetRectWidth}}×{{targetRectHeight}})
+{{/if}}
+
+### Page Context
+- **URL:** {{pageUrl}}
+- **Title:** {{pageTitle}}
+
+{{#if hasReact}}
+### Component Info
+- **Component:** {{reactComponentName}}
+- **Props:** \`{{reactPropsJson}}\`
+{{/if}}
+
+{{#if hasErrors}}
+### Errors
+{{#each errors}}
+- {{message}}
+{{/each}}
+{{/if}}`,
+
+  // ChatGPT
+  `I need help fixing a UI issue on my website.
+
+**Description:**
+{{userNote}}
+
+**Page:** {{pageUrl}}
+**Element:** {{targetSelector}}
+
+Please analyze the screenshot and provide a solution:
+![Screenshot]({{screenshotUrl}})
+
+{{#if hasErrors}}
+**Errors detected:**
+{{#each errors}}
+- {{message}}
+{{/each}}
+{{/if}}
+
+{{#if hasNetwork}}
+**Recent network activity:**
+{{#each networkRequests}}
+- {{url}} ({{status}})
+{{/each}}
+{{/if}}`,
+
+  // Minimal
+  `# UI Issue
+
+{{userNote}}
+
+![Screenshot]({{screenshotUrl}})
+
+Page: {{pageUrl}}
+Element: {{targetSelector}}`,
+
+  // Debug-Heavy
+  `## Bug Report: {{pageTitle}}
+
+**User Feedback:** {{userNote}}
+
+**Screenshot:** ![]({{screenshotUrl}})
+
+**Element Details:**
+- Selector: {{targetSelector}}
+- Position: ({{targetRectX}}, {{targetRectY}})
+- Size: {{targetRectWidth}}×{{targetRectHeight}}
+- Viewport: {{viewportWidth}}×{{viewportHeight}}
+
+{{#if hasErrors}}
+### Errors ({{errorCount}}):
+{{#each errors}}
+- [{{timestamp}}] {{message}}
+  Stack: {{stack}}
+{{/each}}
+{{/if}}
+
+{{#if hasConsole}}
+### Console Output:
+{{#each consoleLogs}}
+- [{{level}}] {{args}}
+{{/each}}
+{{/if}}
+
+{{#if hasNetwork}}
+### Network Activity:
+{{#each networkRequests}}
+- {{url}} ({{status}}) - {{duration}}ms
+{{/each}}
+{{/if}}
+
+{{#if hasReact}}
+### React Component:
+- Name: {{reactComponentName}}
+- Props: {{reactPropsJson}}
+- State: {{reactStateJson}}
+{{/if}}`
+];
+
 export default function Documentation() {
   const [activeSection, setActiveSection] = useState('getting-started');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [packageManager, setPackageManager] = useState(0);
+  const [templateTab, setTemplateTab] = useState(0);
   const [expandedSections, setExpandedSections] = useState<string[]>(['getting-started', 'react-sdk']);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Format section labels with proper capitalization
+  const formatSectionLabel = (section: string) => {
+    const specialCases: { [key: string]: string } = {
+      'sdk': 'SDK',
+      'api': 'API',
+      'apis': 'APIs',
+      'oauth': 'OAuth',
+      'ui': 'UI',
+      'ux': 'UX',
+    };
+
+    return section
+      .split('-')
+      .map(word => {
+        const lower = word.toLowerCase();
+        return specialCases[lower] || word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(' ');
+  };
 
   const handleCopyCode = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
@@ -1156,7 +1292,7 @@ function MyComponent() {
               Example Templates
             </Typography>
 
-            <Tabs value={0} sx={{ mb: 2 }}>
+            <Tabs value={templateTab} onChange={(e, v) => setTemplateTab(v)} sx={{ mb: 2 }}>
               <Tab label="Claude/Cursor" />
               <Tab label="ChatGPT" />
               <Tab label="Minimal" />
@@ -1164,41 +1300,14 @@ function MyComponent() {
             </Tabs>
 
             <CodeBlock>
+              <CopyButton
+                size="small"
+                onClick={() => handleCopyCode(templateExamples[templateTab], `template-${templateTab}`)}
+              >
+                {copiedCode === `template-${templateTab}` ? <Check fontSize="small" /> : <ContentCopy fontSize="small" />}
+              </CopyButton>
               <pre>
-                <code>{`# Claude/Cursor Template
-
-## 🎯 UI Feedback Request
-
-{{#if userNote}}
-> **{{userNote}}**
-{{/if}}
-
-![Screenshot]({{screenshotUrl}})
-
-### Visual Context
-{{#if targetSelector}}
-- **Element:** \`{{targetSelector}}\`
-{{/if}}
-{{#if targetRect}}
-- **Position:** {{targetRectX}},{{targetRectY}} ({{targetRectWidth}}×{{targetRectHeight}})
-{{/if}}
-
-### Page Context
-- **URL:** {{pageUrl}}
-- **Title:** {{pageTitle}}
-
-{{#if hasReact}}
-### Component Info
-- **Component:** {{reactComponentName}}
-- **Props:** \`{{reactPropsJson}}\`
-{{/if}}
-
-{{#if hasErrors}}
-### Errors
-{{#each errors}}
-- {{message}}
-{{/each}}
-{{/if}}`}</code>
+                <code>{templateExamples[templateTab]}</code>
               </pre>
             </CodeBlock>
           </Box>
@@ -1575,7 +1684,7 @@ function MyComponent() {
                         <ListItemText
                           primary={
                             <Typography variant="caption">
-                              {section.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              {formatSectionLabel(section)}
                             </Typography>
                           }
                         />
