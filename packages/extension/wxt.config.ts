@@ -26,10 +26,9 @@ export default defineConfig({
   manifest: ({ browser, manifestVersion }) => {
     const baseManifest = {
       manifest_version: 3,
-      version: "1.0.2",
+      version: "1.0.4",
       permissions: [
         "activeTab",
-        "scripting",
         "tabs",
         "storage",
         "downloads",
