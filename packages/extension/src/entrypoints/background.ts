@@ -79,33 +79,7 @@ export default defineBackground(() => {
           })
           .catch((error) => {
             console.error('Failed to activate overlay:', error);
-
-            // Try injecting content script if it doesn't exist
-            chrome.tabs.query({ active: true, currentWindow: true })
-              .then(([activeTab]) => {
-                if (activeTab?.id) {
-                  // Try to inject the content script
-                  return chrome.scripting.executeScript({
-                    target: { tabId: activeTab.id },
-                    files: ['content-scripts/content.js']
-                  });
-                }
-              })
-              .then(() => {
-                // Try sending message again after injection
-                return chrome.tabs.query({ active: true, currentWindow: true });
-              })
-              .then(([activeTab]) => {
-                if (activeTab?.id) {
-                  return chrome.tabs.sendMessage(activeTab.id, { type: 'ACTIVATE_OVERLAY' });
-                }
-              })
-              .then((response) => {
-                sendResponse({ success: true, ...response });
-              })
-              .catch((finalError) => {
-                sendResponse({ success: false, error: finalError.message || 'Failed to activate overlay' });
-              });
+            sendResponse({ success: false, error: error.message || 'Failed to activate overlay' });
           });
         return true;
       }
@@ -274,8 +248,15 @@ export default defineBackground(() => {
             try {
               const storage = await chrome.storage.local.get(['wingman-templates']);
               if (storage['wingman-templates']) {
-                const templateState = JSON.parse(storage['wingman-templates']);
-                const customTemplates = templateState.state?.customTemplates || [];
+                // Handle both string (JSON) and object cases from Chrome storage
+                let templateState = storage['wingman-templates'];
+                if (typeof templateState === 'string') {
+                  templateState = JSON.parse(templateState);
+                }
+                // Zustand 5 persist stores as {state: {...}, version: 0}
+                // Extract actual state from wrapper or use directly
+                const actualState = templateState.state || templateState;
+                const customTemplates = actualState.customTemplates || [];
                 const custom = customTemplates.find((t: any) => t.id === templateId);
                 if (custom) {
                   selectedTemplate = custom;
@@ -287,7 +268,10 @@ export default defineBackground(() => {
           }
         }
 
-        console.log('Using template:', selectedTemplate.name);
+        console.log('[Wingman Background] Template lookup complete:');
+        console.log('  - Requested templateId:', templateId);
+        console.log('  - Resolved template:', selectedTemplate.name, `(ID: ${selectedTemplate.id})`);
+        console.log('  - Template header:', selectedTemplate.template.split('\n')[0]);
 
         // Process screenshot for clipboard mode
         const { content, localPath } = await screenshotHandler.processForClipboard(

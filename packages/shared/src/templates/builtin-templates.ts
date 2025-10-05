@@ -58,7 +58,7 @@ export const minimalTemplate: AnnotationTemplate = {
     {
       key: 'hasReact',
       path: 'react',
-      formatter: (value: any) => String(!!value),
+      formatter: (value: any) => (value && value.obtainedVia !== 'none') ? 'true' : '',
       required: false,
       description: 'Has React info'
     },
@@ -79,178 +79,12 @@ export const minimalTemplate: AnnotationTemplate = {
 };
 
 /**
- * Standard template - Balanced detail level
- * Best for: General bug reports, feature requests, most use cases
- */
-export const standardTemplate: AnnotationTemplate = {
-  id: 'builtin-standard',
-  name: 'Standard',
-  description: 'Balanced detail for most use cases',
-  builtIn: true,
-  tags: ['standard', 'default', 'balanced'],
-
-  template: `# UI Feedback
-
-{{#if userNote}}## Description
-> {{userNote}}
-
-{{/if}}## Screenshot
-![Screenshot]({{screenshotUrl}})
-
-## Context
-- **Page:** {{pageUrl}}
-- **Title:** {{pageTitle}}
-{{#if targetSelector}}- **Element:** \`{{targetSelector}}\`{{/if}}
-{{#if targetRect}}- **Position:** {{targetRectX}}, {{targetRectY}} ({{targetRectWidth}}×{{targetRectHeight}}){{/if}}
-- **Viewport:** {{viewportWidth}}×{{viewportHeight}}
-
-{{#if hasErrors}}## Errors ({{errorCount}})
-{{#each errors}}
-- {{message}}
-{{/each}}
-
-{{/if}}{{#if hasConsole}}## Recent Console Output
-{{#each consoleLogs}}
-- [{{level}}] {{args}}
-{{/each}}
-
-{{/if}}{{#if hasNetwork}}## Network Activity
-{{#each networkRequests}}
-- {{url}} ({{status}}) - {{duration}}ms
-{{/each}}
-{{/if}}`,
-
-  variables: [
-    {
-      key: 'userNote',
-      path: 'note',
-      required: false,
-      description: 'User feedback'
-    },
-    {
-      key: 'screenshotUrl',
-      path: 'id',
-      formatter: (id: string, context?: { relayUrl?: string }) =>
-        `${context?.relayUrl || 'https://api.wingmanux.com'}/annotations/${id}/screenshot`,
-      required: true,
-      description: 'Screenshot URL'
-    },
-    {
-      key: 'pageUrl',
-      path: 'page.url',
-      required: true,
-      description: 'Page URL'
-    },
-    {
-      key: 'pageTitle',
-      path: 'page.title',
-      required: true,
-      description: 'Page title'
-    },
-    {
-      key: 'targetSelector',
-      path: 'target.selector',
-      required: false,
-      description: 'CSS selector'
-    },
-    {
-      key: 'targetRect',
-      path: 'target.rect',
-      required: false,
-      description: 'Selection rectangle'
-    },
-    {
-      key: 'targetRectX',
-      path: 'target.rect.x',
-      required: false,
-      description: 'X position'
-    },
-    {
-      key: 'targetRectY',
-      path: 'target.rect.y',
-      required: false,
-      description: 'Y position'
-    },
-    {
-      key: 'targetRectWidth',
-      path: 'target.rect.width',
-      required: false,
-      description: 'Width'
-    },
-    {
-      key: 'targetRectHeight',
-      path: 'target.rect.height',
-      required: false,
-      description: 'Height'
-    },
-    {
-      key: 'viewportWidth',
-      path: 'page.viewport.w',
-      required: true,
-      description: 'Viewport width'
-    },
-    {
-      key: 'viewportHeight',
-      path: 'page.viewport.h',
-      required: true,
-      description: 'Viewport height'
-    },
-    {
-      key: 'hasErrors',
-      path: 'errors',
-      formatter: (value: any[]) => String(value && value.length > 0),
-      required: false,
-      description: 'Has errors'
-    },
-    {
-      key: 'errorCount',
-      path: 'errors',
-      formatter: (value: any[]) => String(value?.length || 0),
-      required: false,
-      description: 'Error count'
-    },
-    {
-      key: 'errors',
-      path: 'errors',
-      required: false,
-      description: 'Errors array'
-    },
-    {
-      key: 'hasConsole',
-      path: 'console',
-      formatter: (value: any[]) => String(value && value.length > 0),
-      required: false,
-      description: 'Has console logs'
-    },
-    {
-      key: 'consoleLogs',
-      path: 'console',
-      required: false,
-      description: 'Console logs array'
-    },
-    {
-      key: 'hasNetwork',
-      path: 'network',
-      formatter: (value: any[]) => String(value && value.length > 0),
-      required: false,
-      description: 'Has network requests'
-    },
-    {
-      key: 'networkRequests',
-      path: 'network',
-      required: false,
-      description: 'Network requests array'
-    }
-  ]
-};
-
-/**
- * Robust template - Full diagnostic information
+ * Kitchen Sink template - Full diagnostic information
  * Best for: Complex debugging, React issues, performance problems
  */
 export const robustTemplate: AnnotationTemplate = {
   id: 'builtin-robust',
-  name: 'Robust',
+  name: 'Kitchen Sink',
   description: 'Full diagnostic information for complex debugging',
   builtIn: true,
   tags: ['robust', 'detailed', 'debugging', 'diagnostic'],
@@ -471,7 +305,7 @@ export const robustTemplate: AnnotationTemplate = {
     {
       key: 'hasReact',
       path: 'react',
-      formatter: (value: any) => String(!!value),
+      formatter: (value: any) => (value && value.obtainedVia !== 'none') ? 'true' : '',
       required: false,
       description: 'Has React info'
     },
@@ -569,7 +403,6 @@ export const robustTemplate: AnnotationTemplate = {
  */
 export const builtInTemplates = [
   minimalTemplate,
-  standardTemplate,
   robustTemplate
 ];
 
@@ -583,4 +416,4 @@ export function getBuiltInTemplate(id: string): AnnotationTemplate | undefined {
 /**
  * Default template ID
  */
-export const DEFAULT_TEMPLATE_ID = 'builtin-standard';
+export const DEFAULT_TEMPLATE_ID = 'builtin-minimal';

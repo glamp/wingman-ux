@@ -84,11 +84,20 @@ export default defineContentScript({
               const relayUrl = settings.relayUrl || 'clipboard';
 
               // Get selected template ID from stored state
-              let selectedTemplateId = 'builtin-standard';
+              let selectedTemplateId = 'builtin-minimal';
               try {
                 if (settings['wingman-templates']) {
-                  const templateState = JSON.parse(settings['wingman-templates']);
-                  selectedTemplateId = templateState.state?.selectedTemplateId || 'builtin-standard';
+                  // Handle both string (JSON) and object cases from Chrome storage
+                  let templateState = settings['wingman-templates'];
+                  console.log('[Wingman] Raw template state from storage:', typeof templateState, templateState);
+                  if (typeof templateState === 'string') {
+                    templateState = JSON.parse(templateState);
+                  }
+                  // Zustand 5 persist stores as {state: {...}, version: 0}
+                  // Extract actual state from wrapper or use directly
+                  const actualState = templateState.state || templateState;
+                  selectedTemplateId = actualState.selectedTemplateId || 'builtin-minimal';
+                  console.log('[Wingman] Selected template ID:', selectedTemplateId);
                 }
               } catch (error) {
                 console.warn('Failed to parse template settings:', error);
@@ -100,6 +109,7 @@ export default defineContentScript({
                 null,
                 'React data'
               );
+              console.log('[Wingman] React data extracted:', reactData);
 
               // Create annotation with safe extraction
               const annotation: WingmanAnnotation = {

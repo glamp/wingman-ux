@@ -162,14 +162,14 @@ const NotePanel: React.FC<NotePanelProps> = ({
         <Box sx={{ mb: 1.5 }}>
           <FormControl size="small" fullWidth>
             <Select
-              value={selectedTemplate?.id || 'builtin-standard'}
+              value={selectedTemplate?.id || 'builtin-minimal'}
               onChange={(e) => handleTemplateSelect(e.target.value)}
               renderValue={(value) => {
                 const template = allTemplates.find(t => t.id === value);
                 return (
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {template?.name || 'Standard'}
+                      {template?.name || 'Minimal'}
                     </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.5, fontSize: '0.7rem' }}>
                       Tab to cycle

@@ -1,11 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Wingman UX Feedback",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Lightweight UX feedback assistant",
   "permissions": [
     "activeTab",
-    "scripting",
     "tabs",
     "storage",
     "downloads"

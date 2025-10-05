@@ -131,11 +131,13 @@ export class SimpleTemplateEngine implements TemplateEngine {
       
       const value = this.getValue(annotation, variable.path);
       const processedValue = variable.formatter ? variable.formatter(value) : value;
-      
-      // Check truthiness
-      const isTruthy = processedValue && 
-        (Array.isArray(processedValue) ? processedValue.length > 0 : true);
-      
+
+      // Check truthiness - handle both formatted strings and raw values
+      // Empty string = falsy, string "false" = falsy, arrays check length
+      const isTruthy = processedValue &&
+        processedValue !== '' &&
+        (Array.isArray(processedValue) ? processedValue.length > 0 : processedValue !== 'false');
+
       return isTruthy ? content : '';
     });
   }
