@@ -1,6 +1,8 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Drawer, IconButton, List, ListItem, ListItemButton, ListItemText } from '@mui/material';
+import { Menu as MenuIcon, Close as CloseIcon } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { colors, gradients, effects } from '../styles/theme';
 
 /**
@@ -19,7 +21,7 @@ const NavContainer = styled(Box)({
 /**
  * Glassmorphic navigation pill
  */
-const NavPill = styled(Box)({
+const NavPill = styled(Box)(({ theme }) => ({
   ...effects.glassmorphism,
   borderRadius: '50px',
   padding: '8px 12px',
@@ -28,7 +30,10 @@ const NavPill = styled(Box)({
   gap: '4px',
   position: 'relative',
   overflow: 'hidden',
-});
+  [theme.breakpoints.down('md')]: {
+    padding: '8px 16px',
+  },
+}));
 
 /**
  * Individual navigation item
@@ -99,6 +104,29 @@ const SignInButton = styled(Box)({
   },
 });
 
+/**
+ * Mobile menu button
+ */
+const MobileMenuButton = styled(IconButton)(({ theme }) => ({
+  display: 'none',
+  color: colors.primary,
+  [theme.breakpoints.down('md')]: {
+    display: 'flex',
+  },
+}));
+
+/**
+ * Desktop nav items container
+ */
+const DesktopNavItems = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px',
+  [theme.breakpoints.down('md')]: {
+    display: 'none',
+  },
+}));
+
 interface NavItemData {
   path: string;
   label: string;
@@ -121,36 +149,119 @@ const navItems: NavItemData[] = [
 export default function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    setMobileMenuOpen(false);
   };
 
   return (
-    <NavContainer>
-      <NavPill>
-        <NavLogo onClick={() => navigate('/')}>
-          <img 
-            src="/wingman.png" 
-            alt="Wingman"
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          />
-        </NavLogo>
-        
-        {navItems.map((item) => (
-          <NavItem
-            key={item.path}
-            isActive={location.pathname === item.path}
-            onClick={() => handleNavigation(item.path)}
+    <>
+      <NavContainer>
+        <NavPill>
+          <NavLogo onClick={() => navigate('/')}>
+            <img
+              src="/wingman.png"
+              alt="Wingman"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          </NavLogo>
+
+          {/* Desktop Navigation */}
+          <DesktopNavItems>
+            {navItems.map((item) => (
+              <NavItem
+                key={item.path}
+                isActive={location.pathname === item.path}
+                onClick={() => handleNavigation(item.path)}
+              >
+                <NavText>{item.label}</NavText>
+              </NavItem>
+            ))}
+
+            <SignInButton onClick={() => navigate('/beta-signup')}>
+              <NavText>Sign In</NavText>
+            </SignInButton>
+          </DesktopNavItems>
+
+          {/* Mobile Menu Button */}
+          <MobileMenuButton
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open menu"
           >
-            <NavText>{item.label}</NavText>
-          </NavItem>
-        ))}
-        
-        <SignInButton onClick={() => navigate('/beta-signup')}>
-          <NavText>Sign In</NavText>
-        </SignInButton>
-      </NavPill>
-    </NavContainer>
+            <MenuIcon />
+          </MobileMenuButton>
+        </NavPill>
+      </NavContainer>
+
+      {/* Mobile Drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        PaperProps={{
+          sx: {
+            width: '280px',
+            background: colors.bgPrimary,
+            ...effects.glassmorphism,
+          }
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+          <IconButton onClick={() => setMobileMenuOpen(false)} sx={{ color: colors.primary }}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        <List sx={{ px: 2 }}>
+          {navItems.map((item) => (
+            <ListItem key={item.path} disablePadding sx={{ mb: 1 }}>
+              <ListItemButton
+                onClick={() => handleNavigation(item.path)}
+                selected={location.pathname === item.path}
+                sx={{
+                  borderRadius: '12px',
+                  '&.Mui-selected': {
+                    background: gradients.primary,
+                    color: 'white',
+                    '&:hover': {
+                      background: gradients.primary,
+                    }
+                  }
+                }}
+              >
+                <ListItemText
+                  primary={item.label}
+                  primaryTypographyProps={{
+                    fontWeight: location.pathname === item.path ? 600 : 500
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+
+          <ListItem disablePadding sx={{ mt: 2 }}>
+            <ListItemButton
+              onClick={() => handleNavigation('/beta-signup')}
+              sx={{
+                borderRadius: '12px',
+                background: gradients.primary,
+                color: 'white',
+                '&:hover': {
+                  background: gradients.primary,
+                  opacity: 0.9,
+                }
+              }}
+            >
+              <ListItemText
+                primary="Sign In"
+                primaryTypographyProps={{ fontWeight: 600 }}
+              />
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </Drawer>
+    </>
   );
 }

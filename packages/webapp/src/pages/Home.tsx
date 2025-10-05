@@ -33,6 +33,12 @@ const Section = styled(Box)(({ theme }) => ({
   '&.alt-background': {
     background: 'rgba(248, 250, 252, 1)',
   },
+  [theme.breakpoints.down('md')]: {
+    padding: '40px 0',
+  },
+  [theme.breakpoints.down('sm')]: {
+    padding: '32px 0',
+  },
 }));
 
 /**
@@ -446,7 +452,15 @@ export default function Home() {
             </Subheading>
 
             {/* CTA Buttons */}
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 3 }}>
+            <Box sx={{
+              display: 'flex',
+              gap: 2,
+              justifyContent: 'center',
+              mb: 3,
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: 'center',
+              px: { xs: 2, sm: 0 }
+            }}>
               <PrimaryButton
                 startIcon={<Extension />}
                 onClick={() => {
@@ -455,19 +469,27 @@ export default function Home() {
                   link.download = 'wingman-chrome-extension.crx';
                   link.click();
                 }}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 Install Chrome Extension
               </PrimaryButton>
               <SecondaryButton
                 startIcon={<Code />}
                 onClick={() => window.open('https://github.com/YOUR_REPO', '_blank')}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 View on GitHub
               </SecondaryButton>
             </Box>
 
             {/* Trust indicators */}
-            <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Box sx={{
+              display: 'flex',
+              gap: 1.5,
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              px: { xs: 2, sm: 0 }
+            }}>
               <TrustBadge icon={<CheckCircle />} label="Free Forever" />
               <TrustBadge icon={<GitHub />} label="Open Source" />
               <TrustBadge icon={<Lock />} label="Privacy First" />
@@ -489,7 +511,7 @@ export default function Home() {
             </Typography>
           </Box>
 
-          <Grid container spacing={4}>
+          <Grid container spacing={{ xs: 2, md: 4 }}>
             <Grid item xs={12} md={6}>
               <ComparisonCard className="before">
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -542,7 +564,7 @@ export default function Home() {
             </Typography>
           </Box>
 
-          <Grid container spacing={4} sx={{ position: 'relative' }}>
+          <Grid container spacing={{ xs: 3, md: 4 }} sx={{ position: 'relative' }}>
             <Grid item xs={12} md={4}>
               <Box sx={{ textAlign: 'center' }}>
                 <Box sx={{
@@ -634,7 +656,7 @@ export default function Home() {
             </Typography>
           </Box>
 
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
             <Grid item xs={12} sm={6} md={4}>
               <FeatureCard>
                 <FlashOn sx={{ fontSize: 48, color: colors.primary, mb: 2 }} />
@@ -717,7 +739,7 @@ export default function Home() {
             </Typography>
           </Box>
 
-          <Grid container spacing={4} alignItems="flex-start">
+          <Grid container spacing={{ xs: 3, md: 4 }} alignItems="flex-start">
             <Grid item xs={12} md={6}>
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
@@ -753,13 +775,13 @@ export default function Home() {
               <Paper
                 elevation={0}
                 sx={{
-                  p: 3,
+                  p: { xs: 2, md: 3 },
                   borderRadius: 2,
                   background: colors.bgSecondary,
                   border: `1px solid ${colors.borderColor}`,
                   fontFamily: typography.mono,
-                  fontSize: '0.9rem',
-                  overflow: 'auto'
+                  fontSize: { xs: '0.75rem', sm: '0.85rem', md: '0.9rem' },
+                  overflowX: 'auto'
                 }}
               >
                 <Typography component="pre" sx={{ margin: 0, fontFamily: 'inherit' }}>
@@ -863,7 +885,15 @@ export default function Home() {
             Join thousands of developers shipping better UIs with Wingman
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 4 }}>
+          <Box sx={{
+            display: 'flex',
+            gap: 2,
+            justifyContent: 'center',
+            mb: 4,
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            px: { xs: 2, sm: 0 }
+          }}>
             <PrimaryButton
               size="large"
               startIcon={<Extension />}
@@ -873,12 +903,14 @@ export default function Home() {
                 link.download = 'wingman-chrome-extension.crx';
                 link.click();
               }}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               Install Chrome Extension — Free
             </PrimaryButton>
             <SecondaryButton
               size="large"
               onClick={() => navigate('/install')}
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
               Installation Guide
             </SecondaryButton>
@@ -898,28 +930,34 @@ export default function Home() {
         background: colors.bgPrimary
       }}>
         <Container maxWidth="lg">
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3, mb: 2 }}>
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: { xs: 1.5, sm: 3 },
+            mb: 2,
+            flexWrap: 'wrap'
+          }}>
             <Button
-              sx={{ color: colors.textSecondary }}
+              sx={{ color: colors.textSecondary, fontSize: { xs: '0.85rem', sm: '1rem' } }}
               onClick={() => navigate('/docs')}
             >
               Documentation
             </Button>
             <Button
-              sx={{ color: colors.textSecondary }}
+              sx={{ color: colors.textSecondary, fontSize: { xs: '0.85rem', sm: '1rem' } }}
               onClick={() => window.open('https://github.com/YOUR_REPO', '_blank')}
               startIcon={<GitHub />}
             >
               GitHub
             </Button>
             <Button
-              sx={{ color: colors.textSecondary }}
+              sx={{ color: colors.textSecondary, fontSize: { xs: '0.85rem', sm: '1rem' } }}
               onClick={() => navigate('/status')}
             >
               Status
             </Button>
             <Button
-              sx={{ color: colors.textSecondary }}
+              sx={{ color: colors.textSecondary, fontSize: { xs: '0.85rem', sm: '1rem' } }}
               onClick={() => navigate('/changelog')}
             >
               Changelog
